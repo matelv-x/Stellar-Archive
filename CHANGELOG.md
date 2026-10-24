@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.1
+
+- Fixed installation when an existing root-owned `classes/__pycache__` blocks
+  bytecode output. Python sources are now compiled entirely in memory.
+- Added exact recovery for a ***-style installation interrupted during
+  the 1.3.0 validation step.
+
 ## 1.3.0
 
 - Added one automatic installer for SG1_v3 and SG1_v4.

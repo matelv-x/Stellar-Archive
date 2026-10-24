@@ -26,7 +26,7 @@ grep -q 'Detected platform: SG1_v3' <<<"$dry_run_output"
 "$ROOT/install.sh" --target "$TARGET"
 grep -q 'STELLAR_ARCHIVE_BRIDGE_BEGIN' "$TARGET/main.py"
 grep -q '"dialTarget":"v3"' "$TARGET/stellar-archive/data/integration-nav.js"
-grep -q '^1.3.0$' "$TARGET/.stellar-archive-addon-v3/version"
+grep -q '^1.3.1$' "$TARGET/.stellar-archive-addon-v3/version"
 python3 -m py_compile "$TARGET/main.py" "$TARGET/stellar_archive_bridge.py"
 
 "$ROOT/install.sh" --target "$TARGET"

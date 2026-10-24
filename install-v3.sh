@@ -133,7 +133,7 @@ mv "$staged" "$ARCHIVE_DIR"
 cp -a "$SCRIPT_DIR/stellar_archive_bridge.py" "$BRIDGE"
 cp -a "$SCRIPT_DIR/stellar_archive_maintenance.py" "$MAINTENANCE"
 python3 "$SCRIPT_DIR/patch_v3_main.py" --file "$MAIN"
-python3 -m py_compile "$MAIN" "$BRIDGE" "$MAINTENANCE"
+python3 "$SCRIPT_DIR/validate_python_sources.py" "$MAIN" "$BRIDGE" "$MAINTENANCE"
 
 find "$ARCHIVE_DIR" -type d -exec chmod 755 {} +
 find "$ARCHIVE_DIR" -type f -exec chmod 644 {} +
@@ -150,19 +150,19 @@ cp -a "$BRIDGE" "$MANAGED/stellar_archive_bridge.py"
 cp -a "$MAINTENANCE" "$MANAGED/stellar_archive_maintenance.py"
 updater="$STATE/updater"
 mkdir -p "$updater"
-for file in install.sh install-v3.sh install-v4.sh patch_v3_main.py patch_v4_web_server.py patch_address_book_routes.py patch_navigation_links.py build_navigation.py stellar_archive_bridge.py stellar_archive_maintenance.py; do
+for file in install.sh install-v3.sh install-v4.sh patch_v3_main.py patch_v4_web_server.py patch_address_book_routes.py patch_navigation_links.py build_navigation.py stellar_archive_bridge.py stellar_archive_maintenance.py validate_python_sources.py; do
   [[ -f "$SCRIPT_DIR/$file" ]] && cp -a "$SCRIPT_DIR/$file" "$updater/$file"
 done
 chmod 755 "$updater/install.sh" "$updater/install-v3.sh" "$updater/install-v4.sh"
 cat > "$MAINTENANCE_CONFIG" <<EOF
-{"version":"1.3.0","platform":"v3","target":"$TARGET","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh"}
+{"version":"1.3.1","platform":"v3","target":"$TARGET","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh"}
 EOF
 chmod 644 "$MAINTENANCE_CONFIG"
-printf '1.3.0\n' > "$STATE/version"
+printf '1.3.1\n' > "$STATE/version"
 
 host_name="$(hostname -s 2>/dev/null || true)"
 host_ip="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
-note 'Installed Stellar Archive 1.3.0 for SG1_v3.'
+note 'Installed Stellar Archive 1.3.1 for SG1_v3.'
 [[ -n "$host_ip" ]] && note "LAN URL after restart: http://$host_ip/stellar-archive/"
 [[ -n "$host_name" ]] && note "Local-name URL after restart: http://$host_name.local/stellar-archive/"
 note "Safety backup: $backup"
