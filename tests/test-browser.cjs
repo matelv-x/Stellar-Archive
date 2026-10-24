@@ -1,0 +1,195 @@
+'use strict';
+
+const http=require('http');
+const fs=require('fs');
+const path=require('path');
+const assert=require('assert');
+const {chromium}=require('/Users/marcinmagierski/Documents/Codex/2026-09-06/x20-cz/work/test-tools/node_modules/playwright');
+
+const root=path.resolve(__dirname,'../payload/stellar-archive');
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.png':'image/png','.svg':'image/svg+xml'};
+
+const server=http.createServer((request,response)=>{
+  const requestPath=new URL(request.url,'http://127.0.0.1').pathname;
+  if(requestPath==='/stargate/get/address_book'){
+    response.writeHead(200,{'content-type':'application/json'});
+    response.end(JSON.stringify({address_book:{
+      standard:{type:'standard',gate_address:[27,7,15,32,12,30]},
+      local:{type:'fan',gate_address:[1,2,3,4,5,6],is_gate_online:0},
+      remote:{type:'fan',gate_address:[2,3,4,5,6,7],is_gate_online:0},
+      lan:{type:'lan',gate_address:[3,4,5,6,7,8],is_gate_online:1}
+    }}));
+    return;
+  }
+  if(requestPath==='/stargate/get/dialing_status'){
+    response.writeHead(200,{'content-type':'application/json'});
+    response.end(JSON.stringify({gate_name:'Test Gate ',local_address:[1,2,3,4,5,6]}));
+    return;
+  }
+  const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/stellar-archive\/?/,'').replace(/^\//,'');
+  if(relative.startsWith('data/integration-nav.js')){
+    response.writeHead(200,{'content-type':'text/javascript; charset=utf-8'});
+    response.end('window.STELLAR_ARCHIVE_NAV={"mode":"retro","dialTarget":"retro","items":[{"label":"HOME","href":"/retro/dial.html"},{"label":"SYMBOLS","href":"/retro/symbol_overview.html"},{"label":"ADMIN","children":[{"label":"CONFIGURATION","href":"/config.htm"},{"label":"RESTART SOFTWARE","action":"restart"}]},{"label":"ALARM CLOCK","href":"/alarm_clock.htm","addon":true},{"label":"HELP","href":"/help.htm"}]};');
+    return;
+  }
+  const file=path.resolve(root,relative||'index.html');
+  if(!file.startsWith(`${root}${path.sep}`)&&file!==path.join(root,'index.html')){
+    response.writeHead(403); response.end(); return;
+  }
+  fs.readFile(file,(error,data)=>{
+    if(error){response.writeHead(404);response.end();return;}
+    response.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream'});
+    response.end(data);
+  });
+});
+
+(async()=>{
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const port=server.address().port;
+  const browser=await chromium.launch({headless:true});
+  const page=await browser.newPage({viewport:{width:1728,height:900}});
+  try{
+    await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=original`);
+    await page.waitForSelector('#select-address');
+    const original=await page.evaluate(()=>({
+      address:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.join('-'),
+      href:document.querySelector('#select-address').getAttribute('href'),
+      home:document.querySelector('.brand').getAttribute('href')
+    }));
+    assert.strictEqual(original.href,`/index.htm?address=${original.address}`);
+    assert.strictEqual(original.home,'/index.htm');
+
+    await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=retro`);
+    await page.waitForSelector('#select-address');
+    await page.waitForFunction(()=>document.querySelector('#installed-gate-name').textContent==='TEST GATE ');
+    const six=await page.evaluate(()=>({
+      address:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.join('-'),
+      length:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.length,
+      href:document.querySelector('#select-address').getAttribute('href'),
+      home:document.querySelector('.brand').getAttribute('href')
+    }));
+    assert.strictEqual(six.length,6);
+    assert.strictEqual(six.href,`/retro/dial.html?address=${six.address}`);
+    assert.strictEqual(six.home,'/retro/dial.html');
+    assert.strictEqual(await page.locator('#installed-gate-name').textContent(),'TEST GATE ');
+    assert.strictEqual(await page.locator('.gaia-motion > .gaia-layer').count(),3);
+    assert.strictEqual(await page.locator('.gaia-core').evaluate(element=>getComputedStyle(element).animationDuration),'75s');
+    assert.strictEqual(await page.locator('.gaia-middle').evaluate(element=>getComputedStyle(element).animationDuration),'135s');
+    assert.strictEqual(await page.locator('.gaia-outer').evaluate(element=>getComputedStyle(element).animationDuration),'240s');
+    assert.strictEqual(await page.evaluate(()=>new Promise(resolve=>{const image=new Image();image.onload=()=>resolve(image.naturalWidth);image.onerror=()=>resolve(0);image.src='assets/gaia-milky-way-2025-face-on.jpg'})),1600);
+    const motionStart=await page.locator('#connections .network-link').first().getAttribute('x2');
+    await page.waitForTimeout(500);
+    const motionEnd=await page.locator('#connections .network-link').first().getAttribute('x2');
+    assert.notStrictEqual(motionEnd,motionStart,'Gaia-inspired address points must move at runtime');
+    assert(Number(await page.locator('#nodes .node').first().getAttribute('data-orbit-duration'))>=75);
+    const orbitDurations=(await page.locator('#nodes .node').evaluateAll(nodes=>nodes.map(node=>Number(node.dataset.orbitDuration))));
+    assert(Math.max(...orbitDurations)-Math.min(...orbitDurations)>20,'node orbital periods must differ by galactic radius');
+    assert.strictEqual(await page.locator('.footnote').count(),0);
+    assert.deepStrictEqual(await page.locator('#integration-nav > .integration-button, #integration-nav > .integration-dropdown > summary').allTextContents(),[
+      'HOME','SYMBOLS','ADMIN','ALARM CLOCK','HELP','ABOUT'
+    ]);
+    await page.locator('.integration-dropdown summary').click();
+    await page.waitForSelector('.integration-dropdown[open] .integration-menu');
+    assert.deepStrictEqual(await page.locator('.integration-menu .integration-button').allTextContents(),['CONFIGURATION','RESTART SOFTWARE']);
+    await page.locator('.integration-dropdown summary').click();
+    await page.getByRole('button',{name:'ABOUT'}).click();
+    await page.waitForSelector('#dialog-links:not([hidden])');
+    assert((await page.locator('#dialog-links a').count())>=20);
+    assert.strictEqual(await page.locator('#dialog-links a[href="https://www.gateworld.net/"]').count(),1);
+    assert.strictEqual(await page.locator('#dialog-links a[href="https://www.cosmos.esa.int/web/gaia/milky-way"]').count(),1);
+    assert((await page.locator('#dialog-copy').textContent()).includes('ESA/Gaia/DPAC'));
+    assert.strictEqual(await page.locator('#dialog-maintenance:not([hidden])').count(),1);
+    assert.strictEqual(await page.getByRole('button',{name:'CHECK FOR UPDATES'}).count(),1);
+    assert.strictEqual(await page.getByRole('button',{name:'UNINSTALL'}).count(),1);
+    await page.locator('#close-dialog').click();
+    await page.setViewportSize({width:1256,height:768});
+    await page.waitForFunction(()=>Math.abs(Number(document.querySelector('#archive-shell').dataset.scale)-(1256/1400))<.002);
+    assert(Math.abs(Number(await page.locator('#archive-shell').getAttribute('data-scale'))-(1256/1400))<.002,'complete interface must share one compact-window scale factor');
+    await page.locator('.integration-dropdown summary').click();
+    await page.waitForSelector('.integration-dropdown[open] .integration-menu');
+    const adminMenuAbovePage=await page.evaluate(()=>{
+      const button=document.querySelector('.integration-menu .integration-button:last-child');
+      const rect=button.getBoundingClientRect();
+      const top=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+      return Boolean(top?.closest('.integration-menu'));
+    });
+    assert(adminMenuAbovePage,'Admin dropdown must remain above the destination and galaxy panels');
+    await page.locator('.integration-dropdown summary').click();
+    const layout=await page.evaluate(()=>{
+      const box=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();
+      const worlds=document.querySelector('#worlds');
+      const summary=[...document.querySelectorAll('.gate-summary p>span')].map(item=>item.getBoundingClientRect().toJSON());
+      const glyphBoxes=[...document.querySelectorAll('.glyph-box')].map(item=>item.getBoundingClientRect().toJSON());
+      return {brand:box('.brand'),brandMark:document.querySelector('.brand-mark').getAttribute('src'),nav:box('#integration-nav'),gateName:box('.installed-gate'),gateNameText:document.querySelector('.installed-gate').textContent.trim(),catalogue:box('.catalogue'),chart:box('.star-chart'),destination:box('.destination'),planetScene:box('.planet-scene'),planet:box('#planet'),console:box('.address-console'),consoleTitle:box('.console-title'),glyphArea:box('.glyph-area'),glyphBoxes,seal:box('.seal'),sealMark:document.querySelector('.seal>img').getAttribute('src'),selection:box('.selection'),viewport:box('#archive-viewport'),summary,worldsScrollable:worlds.scrollHeight>worlds.clientHeight,bodyScroll:{width:document.body.scrollWidth,height:document.body.scrollHeight}};
+    });
+    assert(layout.brand.right<=layout.nav.left+1,'scaled masthead brand must not overlap right-side navigation');
+    assert(layout.gateName.bottom<=layout.nav.top+1,'installed gate name must appear above navigation buttons');
+    assert(layout.catalogue.right<=layout.chart.left+1&&layout.chart.right<=layout.destination.left+1,'three primary panels must remain in one row');
+    assert(layout.planet.left>=layout.planetScene.left-1&&layout.planet.right<=layout.planetScene.right+1&&layout.planet.top>=layout.planetScene.top-1&&layout.planet.bottom<=layout.planetScene.bottom+1,`planet image must shrink fully inside its scene: ${JSON.stringify({planet:layout.planet,scene:layout.planetScene})}`);
+    assert(layout.summary.every((row,index)=>index===0||row.top>=layout.summary[index-1].bottom-1),'each gate-status colour must occupy its own line');
+    assert.strictEqual(layout.brandMark,'assets/sgc-emblem-stellar-v1.png');
+    assert.strictEqual(layout.sealMark,'assets/sgc-emblem-stellar-v1.png');
+    assert.strictEqual(layout.gateNameText,'TEST GATE ');
+    assert(layout.glyphBoxes.every(glyph=>glyph.width>20&&glyph.height>35&&glyph.top>=layout.glyphArea.top-1&&glyph.bottom<=layout.glyphArea.bottom+1),'all glyph buttons must remain visible in the upper half of the compact console');
+    assert(layout.glyphArea.bottom<=layout.selection.top+1&&layout.glyphArea.bottom<=layout.seal.top+1,'compact console must place glyphs above the lower controls');
+    assert(layout.selection.width<=150&&layout.selection.height<=54,'compact DIAL button must not remain oversized');
+    assert(layout.console.bottom<=768+1,`complete destination address must remain visible: ${JSON.stringify({console:layout.console,viewport:layout.viewport,body:layout.bodyScroll})}`);
+    assert(layout.consoleTitle.top>=layout.console.top&&layout.consoleTitle.bottom<=layout.console.bottom,'lower-frame heading must not be clipped');
+    assert(layout.viewport.width<=1256+1&&layout.viewport.height<=768+1,'scaled archive must fit the window');
+    assert(layout.worldsScrollable,'planet list must retain internal scrolling');
+    assert(layout.bodyScroll.width<=1256+1&&layout.bodyScroll.height<=768+1,'page itself must not become a long scrolling document');
+    await page.screenshot({path:path.join(__dirname,'validation-header-small.png'),fullPage:false});
+    await page.setViewportSize({width:980,height:700});
+    await page.waitForFunction(()=>Math.abs(Number(document.querySelector('#archive-shell').dataset.scale)-.7)<.002);
+    assert.strictEqual(await page.locator('#archive-shell').getAttribute('data-scale'),'0.7000');
+    const compact=await page.evaluate(()=>{
+      const box=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();
+      return {console:box('.address-console'),glyphArea:box('.glyph-area'),glyphs:[...document.querySelectorAll('.glyph-box')].map(item=>item.getBoundingClientRect().toJSON()),seal:box('.seal'),selection:box('.selection'),body:{width:document.body.scrollWidth,height:document.body.scrollHeight}};
+    });
+    assert(compact.glyphs.every(glyph=>glyph.width>20&&glyph.height>35&&glyph.top>=compact.glyphArea.top-1&&glyph.bottom<=compact.glyphArea.bottom+1),'all glyphs must remain visible at 980 px');
+    assert(compact.glyphArea.bottom<=compact.seal.top+1&&compact.glyphArea.bottom<=compact.selection.top+1,'980 px console must retain the upper/lower split');
+    assert(compact.console.bottom<=701&&compact.body.width<=981&&compact.body.height<=701,'980 px archive must remain inside the browser viewport');
+    await page.screenshot({path:path.join(__dirname,'validation-console-compact.png'),fullPage:false});
+    await page.setViewportSize({width:1408,height:1783});
+    await page.waitForFunction(()=>document.querySelector('#archive-shell').dataset.scale==='1.0000');
+    const tall=await page.evaluate(()=>{
+      const box=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();
+      const worlds=document.querySelector('#worlds');
+      return {brand:box('.brand'),nav:box('#integration-nav'),workspace:box('.workspace'),planetScene:box('.planet-scene'),planet:box('#planet'),console:box('.address-console'),worldsScrollable:worlds.scrollHeight>worlds.clientHeight,bodyHeight:document.body.scrollHeight};
+    });
+    assert(tall.brand.right<=tall.nav.left+1,'tall-window masthead must stay in one non-overlapping row');
+    assert(tall.workspace.height>1200,'main panels must expand to use tall-window space');
+    assert(tall.planet.left>=tall.planetScene.left-1&&tall.planet.right<=tall.planetScene.right+1&&tall.planet.top>=tall.planetScene.top-1&&tall.planet.bottom<=tall.planetScene.bottom+1,'tall-window planet must stay fully inside its scene');
+    assert(tall.console.bottom>=1770&&tall.console.bottom<=1783,'complete address must stay attached to the bottom of a tall window');
+    assert(tall.worldsScrollable,'planet list must remain internally scrollable in a tall window');
+    assert(tall.bodyHeight<=1783+1,'tall window must not create a long document below the interface');
+    await page.screenshot({path:path.join(__dirname,'validation-tall.png'),fullPage:false});
+    await page.screenshot({path:path.join(__dirname,'validation-header.png'),fullPage:false});
+
+    const longer=await page.evaluate(()=>{
+      const world=window.STELLAR_ARCHIVE_DATA.worlds.find(item=>item.name==='Seed Ship#1');
+      document.querySelector(`[data-id="${world.id}"]`).click();
+      return {address:world.storedAddress.join('-'),length:world.storedAddress.length,href:document.querySelector('#select-address').getAttribute('href'),consoleName:document.querySelector('#console-destination-name').textContent};
+    });
+    assert.strictEqual(longer.length,8);
+    assert.strictEqual(longer.href,`/retro/dial9.html?address=${longer.address}`);
+    assert.strictEqual(longer.consoleName,'SEED SHIP#1');
+    assert(!longer.href.includes('-1&')&&!longer.href.endsWith('-1'),'display-only origin must not be appended');
+
+    await page.goto(`http://127.0.0.1:${port}/stellar-archive/`);
+    await page.waitForSelector('#select-address');
+    const standalone=await page.getAttribute('#select-address','href');
+    assert(standalone.startsWith('/retro/dial.html?address='));
+    const standaloneSeed=await page.evaluate(()=>{
+      const world=window.STELLAR_ARCHIVE_DATA.worlds.find(item=>item.name==='Seed Ship#1');
+      document.querySelector(`[data-id="${world.id}"]`).click();
+      return document.querySelector('#select-address').getAttribute('href');
+    });
+    assert.strictEqual(standaloneSeed,'/retro/dial9.html?address=3-7-11-19-22-30-34-36');
+
+    console.log('browser integration tests: PASS');
+  } finally {
+    await browser.close();
+    await new Promise(resolve=>server.close(resolve));
+  }
+})().catch(error=>{console.error(error);process.exitCode=1});

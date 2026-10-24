@@ -1,0 +1,168 @@
+.visual-standard-001-abydos{--planet-light:hsl(2 65% 73%);--planet-mid:hsl(327 52% 42%);--planet-dark:hsl(20 44% 17%);--seed:14;--planet-image:url('assets/standard-abydos-v1.png');--planet-shift:0deg}.position-standard-001-abydos{left:42%;top:74%}
+.visual-standard-002-apophis-s-base{--planet-light:hsl(139 65% 73%);--planet-mid:hsl(104 52% 42%);--planet-dark:hsl(157 44% 17%);--seed:6;--planet-image:url('assets/standard-apophis-base-v1.png');--planet-shift:0deg}.position-standard-002-apophis-s-base{left:83%;top:78%}
+.visual-standard-003-castiana-or-sahal{--planet-light:hsl(342 65% 73%);--planet-mid:hsl(307 52% 42%);--planet-dark:hsl(0 44% 17%);--seed:5;--planet-image:url('assets/standard-castiana-sahal-v1.png');--planet-shift:0deg}.position-standard-003-castiana-or-sahal{left:66%;top:40%}
+.visual-standard-004-sahal-or-castiana{--planet-light:hsl(276 65% 73%);--planet-mid:hsl(241 52% 42%);--planet-dark:hsl(294 44% 17%);--seed:3;--planet-image:url('assets/standard-sahal-castiana-v1.png');--planet-shift:0deg}.position-standard-004-sahal-or-castiana{left:56%;top:51%}
+.visual-standard-005-chulak{--planet-light:hsl(284 65% 73%);--planet-mid:hsl(249 52% 42%);--planet-dark:hsl(302 44% 17%);--seed:7;--planet-image:url('assets/standard-chulak-v1.png');--planet-shift:0deg}.position-standard-005-chulak{left:80%;top:36%}
+.visual-standard-006-clava-thessara-infinitas{--planet-light:hsl(359 65% 73%);--planet-mid:hsl(324 52% 42%);--planet-dark:hsl(17 44% 17%);--seed:10;--planet-image:url('assets/standard-clava-memory-v1.png');--planet-shift:0deg}.position-standard-006-clava-thessara-infinitas{left:87%;top:13%}
+.visual-standard-007-clava-thessara-infinitas2{--planet-light:hsl(103 65% 73%);--planet-mid:hsl(68 52% 42%);--planet-dark:hsl(121 44% 17%);--seed:5;--planet-image:url('assets/standard-clava-trap-v1.png');--planet-shift:0deg}.position-standard-007-clava-thessara-infinitas2{left:35%;top:45%}
+.visual-standard-008-destroyers{--planet-light:hsl(276 65% 73%);--planet-mid:hsl(241 52% 42%);--planet-dark:hsl(294 44% 17%);--seed:4;--planet-image:url('assets/standard-stargate-destroyer-device-v2.png');--planet-shift:0deg}.position-standard-008-destroyers{left:84%;top:83%}
+.visual-standard-009-earth{--planet-light:hsl(2 65% 73%);--planet-mid:hsl(327 52% 42%);--planet-dark:hsl(20 44% 17%);--seed:2;--planet-image:url('assets/standard-earth-v1.png');--planet-shift:0deg}.position-standard-009-earth{left:78%;top:47%}
+.visual-standard-010-edora{--planet-light:hsl(229 65% 73%);--planet-mid:hsl(194 52% 42%);--planet-dark:hsl(247 44% 17%);--seed:0;--planet-image:url('assets/standard-edora-v1.png');--planet-shift:0deg}.position-standard-010-edora{left:53%;top:29%}
+.visual-standard-011-euronda{--planet-light:hsl(156 65% 73%);--planet-mid:hsl(121 52% 42%);--planet-dark:hsl(174 44% 17%);--seed:7;--planet-image:url('assets/standard-euronda-v1.png');--planet-shift:0deg}.position-standard-011-euronda{left:60%;top:21%}
+.visual-standard-012-juna{--planet-light:hsl(98 65% 73%);--planet-mid:hsl(63 52% 42%);--planet-dark:hsl(116 44% 17%);--seed:15;--planet-image:url('assets/standard-juna-v1.png');--planet-shift:0deg}.position-standard-012-juna{left:50%;top:20%}
+.visual-standard-013-kallana{--planet-light:hsl(108 65% 73%);--planet-mid:hsl(73 52% 42%);--planet-dark:hsl(126 44% 17%);--seed:10;--planet-image:url('assets/standard-kallana-v1.png');--planet-shift:0deg}.position-standard-013-kallana{left:68%;top:82%}
+.visual-standard-014-kheb{--planet-light:hsl(46 65% 73%);--planet-mid:hsl(11 52% 42%);--planet-dark:hsl(64 44% 17%);--seed:14;--planet-image:url('assets/standard-kheb-v1.png');--planet-shift:0deg}.position-standard-014-kheb{left:26%;top:81%}
+.visual-standard-015-k-tau{--planet-light:hsl(310 65% 73%);--planet-mid:hsl(275 52% 42%);--planet-dark:hsl(328 44% 17%);--seed:11;--planet-image:url('assets/standard-ktau-v1.png');--planet-shift:0deg}.position-standard-015-k-tau{left:34%;top:52%}
+.visual-standard-016-martin-lloyd-s-homeworld{--planet-light:hsl(118 65% 73%);--planet-mid:hsl(83 52% 42%);--planet-dark:hsl(136 44% 17%);--seed:7;--planet-image:url('assets/standard-martin-homeworld-v1.png');--planet-shift:0deg}.position-standard-016-martin-lloyd-s-homeworld{left:50%;top:73%}
+.visual-standard-017-nid-off-world-base{--planet-light:hsl(30 65% 73%);--planet-mid:hsl(355 52% 42%);--planet-dark:hsl(48 44% 17%);--seed:11;--planet-image:url('assets/standard-nid-base-v1.png');--planet-shift:0deg}.position-standard-017-nid-off-world-base{left:38%;top:27%}
+.visual-standard-018-othala{--planet-light:hsl(273 65% 73%);--planet-mid:hsl(238 52% 42%);--planet-dark:hsl(291 44% 17%);--seed:12;--planet-image:url('assets/standard-othala-v1.png');--planet-shift:0deg}.position-standard-018-othala{left:29%;top:17%}
+.visual-standard-019-p2x-555{--planet-light:hsl(148 65% 73%);--planet-mid:hsl(113 52% 42%);--planet-dark:hsl(166 44% 17%);--seed:9;--planet-image:url('assets/standard-p2x-555-v1.png');--planet-shift:0deg}.position-standard-019-p2x-555{left:20%;top:58%}
+.visual-standard-020-p34-353j{--planet-light:hsl(197 65% 73%);--planet-mid:hsl(162 52% 42%);--planet-dark:hsl(215 44% 17%);--seed:16;--planet-image:url('assets/standard-p34-353j-v1.png');--planet-shift:0deg}.position-standard-020-p34-353j{left:53%;top:74%}
+.visual-standard-021-p3w-451{--planet-light:#05070a;--planet-mid:#070a0e;--planet-dark:#000;--seed:0;--planet-image:url('assets/standard-p3w-451-v1.png');--planet-shift:0deg}.position-standard-021-p3w-451{left:63%;top:27%}
+.visual-standard-022-p3x-118{--planet-light:hsl(38 65% 73%);--planet-mid:hsl(3 52% 42%);--planet-dark:hsl(56 44% 17%);--seed:4;--planet-image:url('assets/standard-p3x-118-v1.png');--planet-shift:0deg}.position-standard-022-p3x-118{left:38%;top:24%}
+.visual-standard-023-p3x-562{--planet-light:hsl(287 65% 73%);--planet-mid:hsl(252 52% 42%);--planet-dark:hsl(305 44% 17%);--seed:1;--planet-image:url('assets/standard-p3x-562-v1.png');--planet-shift:0deg}.position-standard-023-p3x-562{left:83%;top:34%}
+.visual-standard-024-p9c-372{--planet-light:hsl(275 65% 73%);--planet-mid:hsl(240 52% 42%);--planet-dark:hsl(293 44% 17%);--seed:6;--planet-image:url('assets/standard-p9c-372-v1.png');--planet-shift:0deg}.position-standard-024-p9c-372{left:55%;top:17%}
+.visual-standard-025-pb5-926{--planet-light:hsl(185 65% 73%);--planet-mid:hsl(150 52% 42%);--planet-dark:hsl(203 44% 17%);--seed:12;--planet-image:url('assets/standard-pb5-926-v1.png');--planet-shift:0deg}.position-standard-025-pb5-926{left:41%;top:16%}
+.visual-standard-026-px1-767{--planet-light:hsl(204 65% 73%);--planet-mid:hsl(169 52% 42%);--planet-dark:hsl(222 44% 17%);--seed:7;--planet-image:url('assets/standard-px1-767-v1.png');--planet-shift:0deg}.position-standard-026-px1-767{left:60%;top:27%}
+.visual-standard-027-praclarush-taonas{--planet-light:hsl(225 65% 73%);--planet-mid:hsl(190 52% 42%);--planet-dark:hsl(243 44% 17%);--seed:2;--planet-image:url('assets/standard-praclarush-taonas-v1.png');--planet-shift:0deg}.position-standard-027-praclarush-taonas{left:29%;top:39%}
+.visual-standard-028-sangreal-planet{--planet-light:hsl(5 65% 73%);--planet-mid:hsl(330 52% 42%);--planet-dark:hsl(23 44% 17%);--seed:9;--planet-image:url('assets/standard-sangreal-v1.png');--planet-shift:0deg}.position-standard-028-sangreal-planet{left:21%;top:45%}
+.visual-standard-029-tartarus{--planet-light:hsl(48 65% 73%);--planet-mid:hsl(13 52% 42%);--planet-dark:hsl(66 44% 17%);--seed:0;--planet-image:url('assets/standard-tartarus-v1.png');--planet-shift:0deg}.position-standard-029-tartarus{left:44%;top:71%}
+.visual-standard-030-tollan{--planet-light:hsl(152 65% 73%);--planet-mid:hsl(117 52% 42%);--planet-dark:hsl(170 44% 17%);--seed:0;--planet-image:url('assets/standard-tollan-v1.png');--planet-shift:0deg}.position-standard-030-tollan{left:84%;top:83%}
+.visual-standard-031-tollana{--planet-light:hsl(323 65% 73%);--planet-mid:hsl(288 52% 42%);--planet-dark:hsl(341 44% 17%);--seed:13;--planet-image:url('assets/standard-tollana-v1.png');--planet-shift:0deg}.position-standard-031-tollana{left:47%;top:70%}
+.visual-standard-032-vagon-brei{--planet-light:hsl(101 65% 73%);--planet-mid:hsl(66 52% 42%);--planet-dark:hsl(119 44% 17%);--seed:3;--planet-image:url('assets/standard-vagon-brei-v1.png');--planet-shift:0deg}.position-standard-032-vagon-brei{left:21%;top:67%}
+.visual-standard-033-final-destination{--planet-light:hsl(346 65% 73%);--planet-mid:hsl(311 52% 42%);--planet-dark:hsl(4 44% 17%);--seed:10;--planet-image:url('assets/standard-final-destination-v1.png');--planet-shift:0deg}.position-standard-033-final-destination{left:30%;top:77%}
+.visual-standard-034-lantia{--planet-light:hsl(313 65% 73%);--planet-mid:hsl(278 52% 42%);--planet-dark:hsl(331 44% 17%);--seed:8;--planet-image:url('assets/standard-lantea-v1.png');--planet-shift:0deg}.position-standard-034-lantia{left:17%;top:73%}
+.visual-standard-035-destiny{--planet-light:hsl(296 65% 73%);--planet-mid:hsl(261 52% 42%);--planet-dark:hsl(314 44% 17%);--seed:4;--planet-image:url('assets/standard-destiny-solo-v3.png');--planet-shift:0deg}.position-standard-035-destiny{left:48%;top:63%}
+.visual-fan-001-kristian-tysse{--planet-light:hsl(233 65% 73%);--planet-mid:hsl(198 52% 42%);--planet-dark:hsl(251 44% 17%);--seed:11;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:14deg}.position-fan-001-kristian-tysse{left:53%;top:47%}
+.visual-fan-002-tesseract{--planet-light:hsl(150 65% 73%);--planet-mid:hsl(115 52% 42%);--planet-dark:hsl(168 44% 17%);--seed:1;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:-2deg}.position-fan-002-tesseract{left:38%;top:70%}
+.visual-fan-003-tython{--planet-light:hsl(54 65% 73%);--planet-mid:hsl(19 52% 42%);--planet-dark:hsl(72 44% 17%);--seed:1;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-6deg}.position-fan-003-tython{left:18%;top:53%}
+.visual-fan-004-jon-moyes{--planet-light:hsl(128 65% 73%);--planet-mid:hsl(93 52% 42%);--planet-dark:hsl(146 44% 17%);--seed:15;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-10deg}.position-fan-004-jon-moyes{left:52%;top:40%}
+.visual-fan-005-estros{--planet-light:hsl(152 65% 73%);--planet-mid:hsl(117 52% 42%);--planet-dark:hsl(170 44% 17%);--seed:0;--planet-image:url('assets/planet-volcanic-v1.png');--planet-shift:9deg}.position-fan-005-estros{left:24%;top:75%}
+.visual-fan-006-exos{--planet-light:hsl(199 65% 73%);--planet-mid:hsl(164 52% 42%);--planet-dark:hsl(217 44% 17%);--seed:6;--planet-image:url('assets/desert-planet.png');--planet-shift:14deg}.position-fan-006-exos{left:15%;top:30%}
+.visual-fan-007-sepa-s-sanctum{--planet-light:hsl(116 65% 73%);--planet-mid:hsl(81 52% 42%);--planet-dark:hsl(134 44% 17%);--seed:6;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:11deg}.position-fan-007-sepa-s-sanctum{left:28%;top:69%}
+.visual-fan-008-px1-482-jonathans-gate{--planet-light:hsl(41 65% 73%);--planet-mid:hsl(6 52% 42%);--planet-dark:hsl(59 44% 17%);--seed:6;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:-3deg}.position-fan-008-px1-482-jonathans-gate{left:29%;top:37%}
+.visual-fan-009-proxima-centauri-b{--planet-light:hsl(229 65% 73%);--planet-mid:hsl(194 52% 42%);--planet-dark:hsl(247 44% 17%);--seed:14;--planet-image:url('assets/desert-planet.png');--planet-shift:7deg}.position-fan-009-proxima-centauri-b{left:21%;top:52%}
+.visual-fan-010-fras-alpha-gate{--planet-light:hsl(171 65% 73%);--planet-mid:hsl(136 52% 42%);--planet-dark:hsl(189 44% 17%);--seed:13;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-10deg}.position-fan-010-fras-alpha-gate{left:47%;top:75%}
+.visual-fan-011-serenity{--planet-light:hsl(231 65% 73%);--planet-mid:hsl(196 52% 42%);--planet-dark:hsl(249 44% 17%);--seed:10;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-3deg}.position-fan-011-serenity{left:47%;top:58%}
+.visual-fan-012-cyathea{--planet-light:hsl(317 65% 73%);--planet-mid:hsl(282 52% 42%);--planet-dark:hsl(335 44% 17%);--seed:0;--planet-image:url('assets/desert-planet.png');--planet-shift:10deg}.position-fan-012-cyathea{left:37%;top:76%}
+.visual-fan-013-cassidy{--planet-light:hsl(78 65% 73%);--planet-mid:hsl(43 52% 42%);--planet-dark:hsl(96 44% 17%);--seed:2;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:2deg}.position-fan-013-cassidy{left:26%;top:26%}
+.visual-fan-014-vasut-s-gate{--planet-light:hsl(238 65% 73%);--planet-mid:hsl(203 52% 42%);--planet-dark:hsl(256 44% 17%);--seed:16;--planet-image:url('assets/desert-planet.png');--planet-shift:14deg}.position-fan-014-vasut-s-gate{left:86%;top:76%}
+.visual-fan-015-new-horizon{--planet-light:hsl(85 65% 73%);--planet-mid:hsl(50 52% 42%);--planet-dark:hsl(103 44% 17%);--seed:10;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:15deg}.position-fan-015-new-horizon{left:29%;top:21%}
+.visual-fan-016-vasut-s-second-gate{--planet-light:hsl(308 65% 73%);--planet-mid:hsl(273 52% 42%);--planet-dark:hsl(326 44% 17%);--seed:0;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:-4deg}.position-fan-016-vasut-s-second-gate{left:44%;top:60%}
+.visual-fan-017-abythres{--planet-light:hsl(172 65% 73%);--planet-mid:hsl(137 52% 42%);--planet-dark:hsl(190 44% 17%);--seed:5;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:14deg}.position-fan-017-abythres{left:52%;top:70%}
+.visual-fan-018-the-continuum{--planet-light:hsl(97 65% 73%);--planet-mid:hsl(62 52% 42%);--planet-dark:hsl(115 44% 17%);--seed:16;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:14deg}.position-fan-018-the-continuum{left:17%;top:59%}
+.visual-fan-019-centauri-prime{--planet-light:hsl(154 65% 73%);--planet-mid:hsl(119 52% 42%);--planet-dark:hsl(172 44% 17%);--seed:7;--planet-image:url('assets/desert-planet.png');--planet-shift:-14deg}.position-fan-019-centauri-prime{left:54%;top:30%}
+.visual-fan-020-nab-yloo{--planet-light:hsl(183 65% 73%);--planet-mid:hsl(148 52% 42%);--planet-dark:hsl(201 44% 17%);--seed:0;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-6deg}.position-fan-020-nab-yloo{left:63%;top:44%}
+.visual-fan-021-jon-s-gate-2{--planet-light:hsl(53 65% 73%);--planet-mid:hsl(18 52% 42%);--planet-dark:hsl(71 44% 17%);--seed:7;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:7deg}.position-fan-021-jon-s-gate-2{left:85%;top:38%}
+.visual-fan-022-jon-s-test-gate{--planet-light:hsl(90 65% 73%);--planet-mid:hsl(55 52% 42%);--planet-dark:hsl(108 44% 17%);--seed:1;--planet-image:url('assets/planet-volcanic-v1.png');--planet-shift:15deg}.position-fan-022-jon-s-test-gate{left:74%;top:74%}
+.visual-fan-023-abythres2{--planet-light:hsl(330 65% 73%);--planet-mid:hsl(295 52% 42%);--planet-dark:hsl(348 44% 17%);--seed:5;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:3deg}.position-fan-023-abythres2{left:70%;top:18%}
+.visual-fan-024-jon-s-staging-gate{--planet-light:hsl(15 65% 73%);--planet-mid:hsl(340 52% 42%);--planet-dark:hsl(33 44% 17%);--seed:3;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:-1deg}.position-fan-024-jon-s-staging-gate{left:67%;top:24%}
+.visual-fan-025-cassiopeia{--planet-light:hsl(183 65% 73%);--planet-mid:hsl(148 52% 42%);--planet-dark:hsl(201 44% 17%);--seed:15;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-14deg}.position-fan-025-cassiopeia{left:39%;top:79%}
+.visual-fan-026-patitan{--planet-light:hsl(23 65% 73%);--planet-mid:hsl(348 52% 42%);--planet-dark:hsl(41 44% 17%);--seed:9;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:12deg}.position-fan-026-patitan{left:59%;top:79%}
+.visual-fan-027-ailurus-fulgens{--planet-light:hsl(169 65% 73%);--planet-mid:hsl(134 52% 42%);--planet-dark:hsl(187 44% 17%);--seed:6;--planet-image:url('assets/desert-planet.png');--planet-shift:14deg}.position-fan-027-ailurus-fulgens{left:57%;top:74%}
+.visual-fan-028-hundoozelfra{--planet-light:hsl(209 65% 73%);--planet-mid:hsl(174 52% 42%);--planet-dark:hsl(227 44% 17%);--seed:15;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-9deg}.position-fan-028-hundoozelfra{left:61%;top:53%}
+.visual-fan-029-velma{--planet-light:hsl(49 65% 73%);--planet-mid:hsl(14 52% 42%);--planet-dark:hsl(67 44% 17%);--seed:6;--planet-image:url('assets/desert-planet.png');--planet-shift:-1deg}.position-fan-029-velma{left:81%;top:48%}
+.visual-fan-030-dochia{--planet-light:hsl(0 65% 73%);--planet-mid:hsl(325 52% 42%);--planet-dark:hsl(18 44% 17%);--seed:16;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:-15deg}.position-fan-030-dochia{left:56%;top:52%}
+.visual-fan-031-roverius{--planet-light:hsl(7 65% 73%);--planet-mid:hsl(332 52% 42%);--planet-dark:hsl(25 44% 17%);--seed:13;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-11deg}.position-fan-031-roverius{left:67%;top:76%}
+.visual-fan-032-benzaar-primary{--planet-light:hsl(217 65% 73%);--planet-mid:hsl(182 52% 42%);--planet-dark:hsl(235 44% 17%);--seed:15;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:-9deg}.position-fan-032-benzaar-primary{left:81%;top:74%}
+.visual-fan-033-gaia-designated-p3x-774{--planet-light:hsl(176 65% 73%);--planet-mid:hsl(141 52% 42%);--planet-dark:hsl(194 44% 17%);--seed:7;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:0deg}.position-fan-033-gaia-designated-p3x-774{left:20%;top:39%}
+.visual-fan-034-boanet{--planet-light:hsl(17 65% 73%);--planet-mid:hsl(342 52% 42%);--planet-dark:hsl(35 44% 17%);--seed:11;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-13deg}.position-fan-034-boanet{left:57%;top:20%}
+.visual-fan-035-corot-7b{--planet-light:hsl(120 65% 73%);--planet-mid:hsl(85 52% 42%);--planet-dark:hsl(138 44% 17%);--seed:14;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:-3deg}.position-fan-035-corot-7b{left:40%;top:19%}
+.visual-fan-036-pbh-403{--planet-light:hsl(46 65% 73%);--planet-mid:hsl(11 52% 42%);--planet-dark:hsl(64 44% 17%);--seed:7;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:15deg}.position-fan-036-pbh-403{left:74%;top:35%}
+.visual-fan-037-terra-nova{--planet-light:hsl(268 65% 73%);--planet-mid:hsl(233 52% 42%);--planet-dark:hsl(286 44% 17%);--seed:3;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:0deg}.position-fan-037-terra-nova{left:44%;top:66%}
+.visual-fan-038-gallifrey{--planet-light:hsl(81 65% 73%);--planet-mid:hsl(46 52% 42%);--planet-dark:hsl(99 44% 17%);--seed:0;--planet-image:url('assets/planet-volcanic-v1.png');--planet-shift:13deg}.position-fan-038-gallifrey{left:65%;top:77%}
+.visual-fan-039-rubito-prime{--planet-light:hsl(318 65% 73%);--planet-mid:hsl(283 52% 42%);--planet-dark:hsl(336 44% 17%);--seed:14;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-15deg}.position-fan-039-rubito-prime{left:22%;top:38%}
+.visual-fan-040-phoenix-planet-phoenix-site{--planet-light:hsl(132 65% 73%);--planet-mid:hsl(97 52% 42%);--planet-dark:hsl(150 44% 17%);--seed:6;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:4deg}.position-fan-040-phoenix-planet-phoenix-site{left:84%;top:66%}
+.visual-fan-041-exodus-n7{--planet-light:hsl(190 65% 73%);--planet-mid:hsl(155 52% 42%);--planet-dark:hsl(208 44% 17%);--seed:10;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:14deg}.position-fan-041-exodus-n7{left:42%;top:75%}
+.visual-fan-042-alpha-site{--planet-light:hsl(96 65% 73%);--planet-mid:hsl(61 52% 42%);--planet-dark:hsl(114 44% 17%);--seed:10;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:-10deg}.position-fan-042-alpha-site{left:12%;top:30%}
+.visual-fan-043-sgc{--planet-light:hsl(331 65% 73%);--planet-mid:hsl(296 52% 42%);--planet-dark:hsl(349 44% 17%);--seed:15;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:1deg}.position-fan-043-sgc{left:79%;top:83%}
+.visual-fan-044-martin-x-treme{--planet-light:hsl(281 65% 73%);--planet-mid:hsl(246 52% 42%);--planet-dark:hsl(299 44% 17%);--seed:11;--planet-image:url('assets/planet-volcanic-v1.png');--planet-shift:-13deg}.position-fan-044-martin-x-treme{left:53%;top:77%}
+.visual-fan-045-celestys{--planet-light:hsl(152 65% 73%);--planet-mid:hsl(117 52% 42%);--planet-dark:hsl(170 44% 17%);--seed:7;--planet-image:url('assets/desert-planet.png');--planet-shift:-8deg}.position-fan-045-celestys{left:60%;top:28%}
+.visual-fan-046-tolodam{--planet-light:hsl(150 65% 73%);--planet-mid:hsl(115 52% 42%);--planet-dark:hsl(168 44% 17%);--seed:8;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:12deg}.position-fan-046-tolodam{left:58%;top:18%}
+.visual-fan-047-echelon{--planet-light:hsl(216 65% 73%);--planet-mid:hsl(181 52% 42%);--planet-dark:hsl(234 44% 17%);--seed:14;--planet-image:url('assets/desert-planet.png');--planet-shift:-7deg}.position-fan-047-echelon{left:72%;top:29%}
+.visual-fan-048-netu{--planet-light:hsl(354 65% 73%);--planet-mid:hsl(319 52% 42%);--planet-dark:hsl(12 44% 17%);--seed:10;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-5deg}.position-fan-048-netu{left:42%;top:41%}
+.visual-fan-049-new-hope{--planet-light:hsl(132 65% 73%);--planet-mid:hsl(97 52% 42%);--planet-dark:hsl(150 44% 17%);--seed:13;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:7deg}.position-fan-049-new-hope{left:64%;top:68%}
+.visual-fan-050-peridea{--planet-light:hsl(68 65% 73%);--planet-mid:hsl(33 52% 42%);--planet-dark:hsl(86 44% 17%);--seed:13;--planet-image:url('assets/planet-volcanic-v1.png');--planet-shift:1deg}.position-fan-050-peridea{left:60%;top:59%}
+.visual-fan-051-mercury-one{--planet-light:hsl(29 65% 73%);--planet-mid:hsl(354 52% 42%);--planet-dark:hsl(47 44% 17%);--seed:1;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:13deg}.position-fan-051-mercury-one{left:29%;top:44%}
+.visual-fan-052-outlook{--planet-light:hsl(119 65% 73%);--planet-mid:hsl(84 52% 42%);--planet-dark:hsl(137 44% 17%);--seed:4;--planet-image:url('assets/desert-planet.png');--planet-shift:-6deg}.position-fan-052-outlook{left:87%;top:65%}
+.visual-fan-053-bavaria{--planet-light:hsl(140 65% 73%);--planet-mid:hsl(105 52% 42%);--planet-dark:hsl(158 44% 17%);--seed:11;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:-1deg}.position-fan-053-bavaria{left:16%;top:53%}
+.visual-fan-054-kobalt-7-outpost{--planet-light:hsl(212 65% 73%);--planet-mid:hsl(177 52% 42%);--planet-dark:hsl(230 44% 17%);--seed:10;--planet-image:url('assets/desert-planet.png');--planet-shift:-13deg}.position-fan-054-kobalt-7-outpost{left:64%;top:74%}
+.visual-fan-055-atlostest{--planet-light:hsl(45 65% 73%);--planet-mid:hsl(10 52% 42%);--planet-dark:hsl(63 44% 17%);--seed:11;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:2deg}.position-fan-055-atlostest{left:37%;top:49%}
+.visual-fan-056-valhalla{--planet-light:hsl(63 65% 73%);--planet-mid:hsl(28 52% 42%);--planet-dark:hsl(81 44% 17%);--seed:11;--planet-image:url('assets/planet-volcanic-v1.png');--planet-shift:9deg}.position-fan-056-valhalla{left:83%;top:64%}
+.visual-fan-057-dos{--planet-light:hsl(70 65% 73%);--planet-mid:hsl(35 52% 42%);--planet-dark:hsl(88 44% 17%);--seed:3;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:-11deg}.position-fan-057-dos{left:66%;top:63%}
+.visual-fan-058-turtle{--planet-light:hsl(354 65% 73%);--planet-mid:hsl(319 52% 42%);--planet-dark:hsl(12 44% 17%);--seed:12;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:-10deg}.position-fan-058-turtle{left:66%;top:32%}
+.visual-fan-059-arrakis{--planet-light:hsl(179 65% 73%);--planet-mid:hsl(144 52% 42%);--planet-dark:hsl(197 44% 17%);--seed:12;--planet-image:url('assets/planet-volcanic-v1.png');--planet-shift:-4deg}.position-fan-059-arrakis{left:67%;top:42%}
+.visual-fan-060-zulu-site{--planet-light:hsl(225 65% 73%);--planet-mid:hsl(190 52% 42%);--planet-dark:hsl(243 44% 17%);--seed:11;--planet-image:url('assets/planet-volcanic-v1.png');--planet-shift:7deg}.position-fan-060-zulu-site{left:49%;top:60%}
+.visual-fan-061-shambhala{--planet-light:hsl(45 65% 73%);--planet-mid:hsl(10 52% 42%);--planet-dark:hsl(63 44% 17%);--seed:0;--planet-image:url('assets/desert-planet.png');--planet-shift:5deg}.position-fan-061-shambhala{left:25%;top:24%}
+.visual-fan-062-typosia{--planet-light:hsl(57 65% 73%);--planet-mid:hsl(22 52% 42%);--planet-dark:hsl(75 44% 17%);--seed:3;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:1deg}.position-fan-062-typosia{left:57%;top:19%}
+.visual-fan-063-rhythmkraken{--planet-light:hsl(86 65% 73%);--planet-mid:hsl(51 52% 42%);--planet-dark:hsl(104 44% 17%);--seed:16;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:6deg}.position-fan-063-rhythmkraken{left:50%;top:71%}
+.visual-fan-064-simeral{--planet-light:hsl(185 65% 73%);--planet-mid:hsl(150 52% 42%);--planet-dark:hsl(203 44% 17%);--seed:11;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-13deg}.position-fan-064-simeral{left:81%;top:26%}
+.visual-fan-065-hendryx{--planet-light:hsl(108 65% 73%);--planet-mid:hsl(73 52% 42%);--planet-dark:hsl(126 44% 17%);--seed:0;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:1deg}.position-fan-065-hendryx{left:76%;top:51%}
+.visual-fan-066-exidos{--planet-light:hsl(234 65% 73%);--planet-mid:hsl(199 52% 42%);--planet-dark:hsl(252 44% 17%);--seed:4;--planet-image:url('assets/desert-planet.png');--planet-shift:-8deg}.position-fan-066-exidos{left:18%;top:78%}
+.visual-fan-067-lhs-2520{--planet-light:hsl(35 65% 73%);--planet-mid:hsl(0 52% 42%);--planet-dark:hsl(53 44% 17%);--seed:5;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:15deg}.position-fan-067-lhs-2520{left:39%;top:68%}
+.visual-fan-068-yggdrasil{--planet-light:hsl(350 65% 73%);--planet-mid:hsl(315 52% 42%);--planet-dark:hsl(8 44% 17%);--seed:10;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:0deg}.position-fan-068-yggdrasil{left:18%;top:79%}
+.visual-fan-069-nibiru{--planet-light:hsl(161 65% 73%);--planet-mid:hsl(126 52% 42%);--planet-dark:hsl(179 44% 17%);--seed:3;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:8deg}.position-fan-069-nibiru{left:17%;top:63%}
+.visual-fan-070-smithgard{--planet-light:hsl(249 65% 73%);--planet-mid:hsl(214 52% 42%);--planet-dark:hsl(267 44% 17%);--seed:13;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:-7deg}.position-fan-070-smithgard{left:77%;top:66%}
+.visual-fan-071-highlander{--planet-light:hsl(170 65% 73%);--planet-mid:hsl(135 52% 42%);--planet-dark:hsl(188 44% 17%);--seed:14;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:6deg}.position-fan-071-highlander{left:26%;top:17%}
+.visual-fan-072-astroguy{--planet-light:hsl(314 65% 73%);--planet-mid:hsl(279 52% 42%);--planet-dark:hsl(332 44% 17%);--seed:6;--planet-image:url('assets/desert-planet.png');--planet-shift:4deg}.position-fan-072-astroguy{left:26%;top:44%}
+.visual-fan-073-keilara{--planet-light:hsl(149 65% 73%);--planet-mid:hsl(114 52% 42%);--planet-dark:hsl(167 44% 17%);--seed:8;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:9deg}.position-fan-073-keilara{left:17%;top:15%}
+.visual-fan-074-p1x-118{--planet-light:hsl(150 65% 73%);--planet-mid:hsl(115 52% 42%);--planet-dark:hsl(168 44% 17%);--seed:7;--planet-image:url('assets/desert-planet.png');--planet-shift:-8deg}.position-fan-074-p1x-118{left:18%;top:69%}
+.visual-fan-075-minas-morgul{--planet-light:hsl(14 65% 73%);--planet-mid:hsl(339 52% 42%);--planet-dark:hsl(32 44% 17%);--seed:10;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:-8deg}.position-fan-075-minas-morgul{left:82%;top:21%}
+.visual-fan-076-minas-tirith{--planet-light:hsl(210 65% 73%);--planet-mid:hsl(175 52% 42%);--planet-dark:hsl(228 44% 17%);--seed:3;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:-7deg}.position-fan-076-minas-tirith{left:22%;top:52%}
+.visual-fan-077-blackomega{--planet-light:hsl(250 65% 73%);--planet-mid:hsl(215 52% 42%);--planet-dark:hsl(268 44% 17%);--seed:4;--planet-image:url('assets/desert-planet.png');--planet-shift:-2deg}.position-fan-077-blackomega{left:74%;top:47%}
+.visual-fan-078-pjc-619{--planet-light:hsl(286 65% 73%);--planet-mid:hsl(251 52% 42%);--planet-dark:hsl(304 44% 17%);--seed:1;--planet-image:url('assets/desert-planet.png');--planet-shift:-7deg}.position-fan-078-pjc-619{left:34%;top:42%}
+.visual-fan-079-sivryn{--planet-light:hsl(175 65% 73%);--planet-mid:hsl(140 52% 42%);--planet-dark:hsl(193 44% 17%);--seed:14;--planet-image:url('assets/desert-planet.png');--planet-shift:-8deg}.position-fan-079-sivryn{left:87%;top:17%}
+.visual-fan-080-super-earth{--planet-light:hsl(171 65% 73%);--planet-mid:hsl(136 52% 42%);--planet-dark:hsl(189 44% 17%);--seed:16;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:5deg}.position-fan-080-super-earth{left:79%;top:53%}
+.visual-fan-081-algashatoli{--planet-light:hsl(51 65% 73%);--planet-mid:hsl(16 52% 42%);--planet-dark:hsl(69 44% 17%);--seed:7;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-12deg}.position-fan-081-algashatoli{left:79%;top:29%}
+.visual-fan-082-andromoth{--planet-light:hsl(162 65% 73%);--planet-mid:hsl(127 52% 42%);--planet-dark:hsl(180 44% 17%);--seed:10;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:-13deg}.position-fan-082-andromoth{left:82%;top:83%}
+.visual-fan-083-arrakeen{--planet-light:hsl(309 65% 73%);--planet-mid:hsl(274 52% 42%);--planet-dark:hsl(327 44% 17%);--seed:6;--planet-image:url('assets/planet-volcanic-v1.png');--planet-shift:4deg}.position-fan-083-arrakeen{left:61%;top:37%}
+.visual-fan-084-arcadia{--planet-light:hsl(151 65% 73%);--planet-mid:hsl(116 52% 42%);--planet-dark:hsl(169 44% 17%);--seed:10;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-1deg}.position-fan-084-arcadia{left:55%;top:38%}
+.visual-fan-085-paulgate98{--planet-light:hsl(76 65% 73%);--planet-mid:hsl(41 52% 42%);--planet-dark:hsl(94 44% 17%);--seed:13;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-3deg}.position-fan-085-paulgate98{left:40%;top:54%}
+.visual-fan-086-normandy{--planet-light:hsl(26 65% 73%);--planet-mid:hsl(351 52% 42%);--planet-dark:hsl(44 44% 17%);--seed:8;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:2deg}.position-fan-086-normandy{left:46%;top:42%}
+.visual-fan-087-eltar{--planet-light:hsl(120 65% 73%);--planet-mid:hsl(85 52% 42%);--planet-dark:hsl(138 44% 17%);--seed:0;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-1deg}.position-fan-087-eltar{left:60%;top:66%}
+.visual-fan-088-land-of-light{--planet-light:hsl(250 65% 73%);--planet-mid:hsl(215 52% 42%);--planet-dark:hsl(268 44% 17%);--seed:6;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:7deg}.position-fan-088-land-of-light{left:82%;top:20%}
+.visual-fan-089-bdj-045{--planet-light:hsl(70 65% 73%);--planet-mid:hsl(35 52% 42%);--planet-dark:hsl(88 44% 17%);--seed:10;--planet-image:url('assets/planet-ocean-v1.png');--planet-shift:10deg}.position-fan-089-bdj-045{left:46%;top:39%}
+.visual-fan-090-gottwaldov{--planet-light:hsl(311 65% 73%);--planet-mid:hsl(276 52% 42%);--planet-dark:hsl(329 44% 17%);--seed:4;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:14deg}.position-fan-090-gottwaldov{left:59%;top:51%}
+.visual-fan-091-the-gate2{--planet-light:hsl(334 65% 73%);--planet-mid:hsl(299 52% 42%);--planet-dark:hsl(352 44% 17%);--seed:11;--planet-image:url('assets/planet-volcanic-v1.png');--planet-shift:9deg}.position-fan-091-the-gate2{left:30%;top:52%}
+.visual-fan-092-redstone-city{--planet-light:hsl(51 65% 73%);--planet-mid:hsl(16 52% 42%);--planet-dark:hsl(69 44% 17%);--seed:14;--planet-image:url('assets/planet-forest-v1.png');--planet-shift:-11deg}.position-fan-092-redstone-city{left:63%;top:45%}
+.visual-fan-093-aggnott-s-reach{--planet-light:hsl(3 65% 73%);--planet-mid:hsl(328 52% 42%);--planet-dark:hsl(21 44% 17%);--seed:5;--planet-image:url('assets/planet-ice-v1.png');--planet-shift:12deg}.position-fan-093-aggnott-s-reach{left:67%;top:33%}
+.visual-lan-001-seed-ship-1{--planet-light:hsl(311 65% 73%);--planet-mid:hsl(276 52% 42%);--planet-dark:hsl(329 44% 17%);--seed:14;--planet-image:url('assets/lan-seed-ship-1-v1.png');--planet-shift:0deg}.position-lan-001-seed-ship-1{left:59%;top:73%}
+.glyph-position-1{left:50%;top:11%}
+.glyph-position-2{left:51%;top:45%}
+.glyph-position-3{left:87%;top:70%}
+.glyph-position-4{left:37%;top:35%}
+.glyph-position-5{left:73%;top:55%}
+.glyph-position-6{left:23%;top:20%}
+.glyph-position-7{left:64%;top:45%}
+.glyph-position-8{left:9%;top:82%}
+.glyph-position-9{left:50%;top:35%}
+.glyph-position-10{left:86%;top:55%}
+.glyph-position-11{left:36%;top:20%}
+.glyph-position-12{left:77%;top:45%}
+.glyph-position-13{left:22%;top:82%}
+.glyph-position-14{left:63%;top:35%}
+.glyph-position-15{left:8%;top:67%}
+.glyph-position-16{left:10%;top:20%}
+.glyph-position-17{left:90%;top:45%}
+.glyph-position-18{left:35%;top:82%}
+.glyph-position-19{left:76%;top:35%}
+.glyph-position-20{left:21%;top:67%}
+.glyph-position-21{left:62%;top:20%}
+.glyph-position-22{left:12%;top:57%}
+.glyph-position-23{left:48%;top:82%}
+.glyph-position-24{left:89%;top:35%}
+.glyph-position-25{left:34%;top:67%}
+.glyph-position-26{left:75%;top:20%}
+.glyph-position-27{left:25%;top:57%}
+.glyph-position-28{left:61%;top:82%}
+.glyph-position-29{left:11%;top:47%}
+.glyph-position-30{left:47%;top:67%}
+.glyph-position-31{left:88%;top:20%}
+.glyph-position-32{left:38%;top:57%}
+.glyph-position-33{left:74%;top:82%}
+.glyph-position-34{left:24%;top:47%}
+.glyph-position-35{left:60%;top:67%}
+.glyph-position-36{left:10%;top:32%}
+.glyph-position-37{left:51%;top:57%}
+.glyph-position-38{left:87%;top:82%}
+.glyph-position-39{left:37%;top:47%}

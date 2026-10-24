@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+import hashlib
+import json
+import shutil
+import tempfile
+import time
+import unittest
+import zipfile
+from pathlib import Path
+
+from stellar_archive_maintenance import StellarArchiveMaintenance
+
+
+class Headers(dict):
+    def get(self, key, default=None):
+        return super().get(key, default)
+
+
+class Handler:
+    def __init__(self, same_origin=True):
+        self.headers = Headers({"Host": "gate.local"})
+        if same_origin:
+            self.headers["Origin"] = "http://gate.local"
+
+
+class TestController(StellarArchiveMaintenance):
+    def __init__(self, config_path, release, assets):
+        super().__init__(config_path)
+        self.release = release
+        self.assets = assets
+
+    def latest_release(self):
+        return dict(self.release)
+
+    def _download(self, url, destination):
+        shutil.copy2(self.assets[url], destination)
+
+
+class MaintenanceTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.marker = self.root / "args.txt"
+        package = self.root / "package"
+        package.mkdir()
+        installer = package / "install.sh"
+        installer.write_text("#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > '{}'\n".format(self.marker), encoding="utf-8")
+        installer.chmod(0o755)
+        self.zip_path = self.root / "release.zip"
+        with zipfile.ZipFile(self.zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.write(installer, "sg1-v3-v4-stellar-archive-universal-v1.3.0/install.sh")
+        digest = hashlib.sha256(self.zip_path.read_bytes()).hexdigest()
+        self.sha_path = self.root / "release.zip.sha256"
+        self.sha_path.write_text("{}  release.zip\n".format(digest), encoding="utf-8")
+        self.cached = self.root / "cached-install.sh"
+        self.cached.write_text("#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > '{}'\n".format(self.root / "uninstall.txt"), encoding="utf-8")
+        self.cached.chmod(0o755)
+        self.config_path = self.root / "config.json"
+        self.config_path.write_text(json.dumps({
+            "version": "1.2.9",
+            "platform": "v4",
+            "target": "/tmp/example-web",
+            "mode": "standalone",
+            "repository": "example/archive",
+            "installer": str(self.cached),
+        }), encoding="utf-8")
+        release = {"version": "1.3.0", "zip_name": "release.zip", "zip_url": "zip", "sha_url": "sha", "release_url": "https://example.invalid"}
+        self.controller = TestController(self.config_path, release, {"zip": self.zip_path, "sha": self.sha_path})
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def wait(self):
+        for _ in range(100):
+            if self.controller.task.get("state") != "running":
+                return
+            time.sleep(0.02)
+        self.fail("maintenance task did not complete")
+
+    def test_verified_update_runs_platform_installer(self):
+        result = self.controller.start_update(Handler())
+        self.assertTrue(result["success"])
+        self.wait()
+        self.assertEqual(self.controller.task["state"], "complete")
+        args = self.marker.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(args, ["--platform", "v4", "--target", "/tmp/example-web", "--replace", "standalone"])
+
+    def test_uninstall_uses_cached_installer(self):
+        result = self.controller.start_uninstall(Handler())
+        self.assertTrue(result["success"])
+        self.wait()
+        args = (self.root / "uninstall.txt").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(args, ["--platform", "v4", "--target", "/tmp/example-web", "--uninstall"])
+
+    def test_cross_origin_is_rejected(self):
+        result = self.controller.start_update(Handler(False))
+        self.assertFalse(result["success"])
+
+
+if __name__ == "__main__":
+    unittest.main()

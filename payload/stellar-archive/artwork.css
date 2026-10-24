@@ -1,0 +1,6 @@
+/* Clean illustrations: all lettering, coordinates and interactions remain HTML/SVG. */
+.chart-art{background-image:url('assets/galaxy.png');background-size:cover;background-position:center;opacity:.86}
+.planet{background-image:url('assets/desert-planet.png');background-size:112% 112%;background-position:center;box-shadow:inset -12px -5px 25px #020b1450,0 0 32px #d5c28d22}
+.chart-shade{background:linear-gradient(#02111bd9,transparent 32%,transparent 65%,#03131ced)}
+.chart-heading h1{font-family:Georgia,serif;color:#b9dce8}
+.network{background:repeating-radial-gradient(circle at 50% 50%,transparent 0,transparent 63px,#9fcad50b 64px,transparent 65px)}
