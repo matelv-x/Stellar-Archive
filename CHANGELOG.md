@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.8
+
+- Adds a bounded legacy migration for add-ons installed before 1.5.7. Only
+  integration files explicitly declared by a detected, recorded Matelv-x
+  add-on are adopted, allowing Retro Visuals users to update Archive without
+  weakening validation of backend or unrelated files.
+
 ## 1.5.7
 
 - Preserves verified add-on edits to Archive-managed navigation pages by

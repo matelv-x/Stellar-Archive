@@ -80,6 +80,7 @@
       "repository": "matelv-x/Retro-Visuals",
       "platforms": ["v4"],
       "detect": {"all": [{"path": "web/retro/js/retro_visuals.js"}, {"path": "web/retro/visual_settings.html"}]},
+      "archive_integration_files": ["web/retro/address_book.html", "web/retro/js/navigation.js"],
       "install": {"argv": ["./install-retro-visuals.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
       "uninstall": {"argv": ["./restore-retro-visuals.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
       "restart_required": true
