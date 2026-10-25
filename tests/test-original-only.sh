@@ -39,7 +39,7 @@ grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/retro/js/navigation.js"
 [[ -f "$TARGET/.stellar-archive-addon/originals/retro-address_book.html" ]]
 grep -q '"dialTarget":"retro"' "$TARGET/stellar-archive/data/integration-nav.js"
 grep -q 'STELLAR_ARCHIVE_EXTENDED_ADDRESS_ROUTE' "$TARGET/js/address_book.js"
-grep -q 'address_book.js?v=stellar-archive-1.5.9-extended-route' "$TARGET/address_book.htm"
+grep -q 'address_book.js?v=stellar-archive-1.5.10-extended-route' "$TARGET/address_book.htm"
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace original >/dev/null
 grep -q 'mode=original' "$TARGET/address_book.htm"

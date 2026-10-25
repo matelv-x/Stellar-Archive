@@ -16,6 +16,7 @@ SNAPSHOTS = {
     "web/retro/js/navigation.js": "retro-navigation.js",
     "web/js/address_book.js": "address_book.js",
 }
+OVERLAY_FILES = {"classes/web_server.py", "web/retro/js/navigation.js"}
 
 
 def digest(path):
@@ -50,6 +51,7 @@ def main():
     parser.add_argument("--managed", required=True, type=Path)
     parser.add_argument("--state", required=True, type=Path)
     parser.add_argument("--registry", required=True, type=Path)
+    parser.add_argument("--overlay", type=Path)
     args = parser.parse_args()
 
     target = args.target.resolve()
@@ -67,6 +69,23 @@ def main():
         for relative in manifest.get("archive_integration_files", []):
             if relative in SNAPSHOTS:
                 allowed.add(relative)
+
+    if args.overlay:
+        overlay = args.overlay.resolve()
+        state_root = args.managed.resolve().parent
+        if overlay.parent != state_root:
+            raise ValueError("unsafe add-on overlay path")
+        if overlay.exists():
+            shutil.rmtree(str(overlay))
+        overlay.mkdir()
+        for relative in sorted(allowed & OVERLAY_FILES):
+            source = root / relative
+            if not source.is_file():
+                continue
+            destination = overlay / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(str(source), str(destination))
+            print("Preserved installed add-on overlay: {}".format(relative))
 
     for relative in sorted(allowed):
         source = root / relative

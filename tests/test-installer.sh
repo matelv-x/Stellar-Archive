@@ -63,17 +63,30 @@ grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/index.htm"
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/retro/js/navigation.js"
 grep -q '"dialTarget":"retro"' "$TARGET/stellar-archive/data/integration-nav.js"
 grep -q 'symbolCount > 6 ? "/retro/dial9.html" : "/retro/dial.html"' "$TARGET/js/address_book.js"
-grep -q 'address_book.js?v=stellar-archive-1.5.9-extended-route' "$TARGET/address_book.htm"
+grep -q 'address_book.js?v=stellar-archive-1.5.10-extended-route' "$TARGET/address_book.htm"
+
+# A managed add-on installed after Archive may legitimately extend the shared
+# backend and Retro navigation. A later Archive update must preserve those
+# declared files while retaining strict validation for everything else.
+touch "$TARGET/retro/js/retro_visuals.js" "$TARGET/retro/visual_settings.html"
+printf '\n# RETRO_VISUALS_TEST_BACKEND\n' >> "$TEST_ROOT/sg1_v4/classes/web_server.py"
+printf '\nconst retroVisualsTest = `<a href="/retro/visual_settings.html">Visuals</a>`;\n' >> "$TARGET/retro/js/navigation.js"
+printf '%s\n' '{"retro-visuals":{"repository":"matelv-x/Retro-Visuals","revision":"491a406144d3c119145fa9fe476ab10d9af06e35"}}' > "$TEST_ROOT/sg1_v4/classes/.matelv-addon-state.json"
+addon_update_output="$("$PACKAGE_DIR/install.sh" --target "$TARGET" --replace both)"
+grep -q 'Accepted installed add-on integration: classes/web_server.py' <<<"$addon_update_output"
+grep -q 'RETRO_VISUALS_TEST_BACKEND' "$TEST_ROOT/sg1_v4/classes/web_server.py"
+grep -q 'retroVisualsTest' "$TARGET/retro/js/navigation.js"
+grep -q '"label":"VISUALS"' "$TARGET/stellar-archive/data/integration-nav.js"
 
 # Reproduce the exact interrupted 1.3.0 validation state reported by ***:
 # new Archive/API files are present, while state and managed snapshots still
 # describe 1.2.8. The repair release must recover without manual deletion.
 printf '1.2.8\n' > "$TARGET/.stellar-archive-addon/version"
-perl -pi -e 's/sg1-universal-1\.5\.9/sg1-universal-1.3.0/g' "$TARGET/stellar-archive/index.html"
-perl -pi -e 's/stellar-archive-1\.5\.9-extended-route/stellar-archive-1.3.0-extended-route/g' "$TARGET/address_book.htm" "$TARGET/js/address_book.js"
+perl -pi -e 's/sg1-universal-1\.5\.10/sg1-universal-1.3.0/g' "$TARGET/stellar-archive/index.html"
+perl -pi -e 's/stellar-archive-1\.5\.10-extended-route/stellar-archive-1.3.0-extended-route/g' "$TARGET/address_book.htm" "$TARGET/js/address_book.js"
 recovery_output="$("$PACKAGE_DIR/install.sh" --target "$TARGET" --replace both)"
 grep -q 'recover the interrupted 1.3.0 validation run' <<<"$recovery_output"
-grep -q '^1.5.9$' "$TARGET/.stellar-archive-addon/version"
+grep -q '^1.5.10$' "$TARGET/.stellar-archive-addon/version"
 grep -q 'mode=original' "$TARGET/address_book.htm"
 grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 

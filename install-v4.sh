@@ -9,7 +9,7 @@ UNINSTALL=0
 
 usage() {
   cat <<'EOF'
-SG1_v4 adapter — Stellar Archive universal installer 1.5.9
+SG1_v4 adapter — Stellar Archive universal installer 1.5.10
 
 Usage:
   ./install.sh [--replace original|retro|both|standalone] [--target PATH] [--dry-run]
@@ -66,6 +66,7 @@ MAINTENANCE_CONFIG="$SG1_ROOT/classes/.stellar-archive-maintenance.json"
 ADDON_MANAGER="$SG1_ROOT/classes/matelv_addon_manager.py"
 ADDON_REGISTRY="$SG1_ROOT/classes/matelv_addons.json"
 ADDON_STATE="$SG1_ROOT/classes/.matelv-addon-state.json"
+ADDON_OVERLAY="$STATE/addon-overlay"
 RESTART_SERVICE=""
 for unit_path in /etc/systemd/system/*.service; do
   [[ -f "$unit_path" ]] || continue
@@ -225,7 +226,7 @@ if [[ -d "$STATE" ]]; then
     note 'Detected and will recover the interrupted 1.3.0 validation run.'
   else
     command -v python3 >/dev/null 2>&1 || die 'python3 is required to validate installed add-on integration'
-    python3 "$SCRIPT_DIR/adopt_managed_addon_changes.py" --target "$TARGET" --managed "$MANAGED" --state "$ADDON_STATE" --registry "$SCRIPT_DIR/matelv_addons.json"
+    python3 "$SCRIPT_DIR/adopt_managed_addon_changes.py" --target "$TARGET" --managed "$MANAGED" --state "$ADDON_STATE" --registry "$SCRIPT_DIR/matelv_addons.json" --overlay "$ADDON_OVERLAY"
     validate_managed_pages
   fi
 elif ((UNINSTALL)); then
@@ -337,8 +338,13 @@ done
 if ((HAS_RETRO)); then run_copy "$ORIGINALS/retro-navigation.js" "$RETRO_NAV"; fi
 if [[ -f "$ORIGINALS/address_book.js" ]]; then run_copy "$ORIGINALS/address_book.js" "$ORIGINAL_ADDRESS_JS"; fi
 run_copy "$ORIGINALS/web_server.py" "$WEB_SERVER"
+if [[ -f "$ADDON_OVERLAY/classes/web_server.py" ]]; then run_copy "$ADDON_OVERLAY/classes/web_server.py" "$WEB_SERVER"; fi
+if ((HAS_RETRO)) && [[ -f "$ADDON_OVERLAY/web/retro/js/navigation.js" ]]; then run_copy "$ADDON_OVERLAY/web/retro/js/navigation.js" "$RETRO_NAV"; fi
 
 if ((UNINSTALL)); then
+  if ((HAS_RETRO)) && grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$RETRO_NAV"; then
+    python3 "$SCRIPT_DIR/patch_navigation_links.py" --kind retro --file "$RETRO_NAV" --remove
+  fi
   had_archive="$(<"$STATE/had-archive")"
   had_maintenance="$(<"$STATE/had-maintenance")"
   had_maintenance_config="$(<"$STATE/had-maintenance-config")"
@@ -404,7 +410,11 @@ fi
 run_copy "$SCRIPT_DIR/stellar_archive_maintenance.py" "$MAINTENANCE"
 run_copy "$SCRIPT_DIR/matelv_addon_manager.py" "$ADDON_MANAGER"
 run_copy "$SCRIPT_DIR/matelv_addons.json" "$ADDON_REGISTRY"
-python3 "$SCRIPT_DIR/patch_v4_web_server.py" --file "$WEB_SERVER"
+if grep -q 'STELLAR_ARCHIVE_MAINTENANCE_IMPORT_BEGIN' "$WEB_SERVER"; then
+  note 'Preserved combined add-on and Stellar Archive web-server integration.'
+else
+  python3 "$SCRIPT_DIR/patch_v4_web_server.py" --file "$WEB_SERVER"
+fi
 python3 "$SCRIPT_DIR/validate_python_sources.py" "$WEB_SERVER" "$MAINTENANCE" "$ADDON_MANAGER"
 chmod 644 "$ORIGINAL_PAGE"
 if ((HAS_RETRO)); then chmod 644 "$RETRO_PAGE"; fi
@@ -425,7 +435,7 @@ run_copy "$MAINTENANCE" "$MANAGED/stellar_archive_maintenance.py"
 run_copy "$ADDON_MANAGER" "$MANAGED/matelv_addon_manager.py"
 run_copy "$ADDON_REGISTRY" "$MANAGED/matelv_addons.json"
 printf '%s\n' "$MODE" > "$STATE/current-mode"
-printf '1.5.9\n' > "$STATE/version"
+printf '1.5.10\n' > "$STATE/version"
 
 updater="$STATE/updater"
 mkdir -p "$updater/payload"
@@ -435,11 +445,11 @@ done
 run_copy "$INTEGRATION_PAYLOAD" "$updater/payload/integration"
 chmod 755 "$updater/install.sh" "$updater/install-v3.sh" "$updater/install-v4.sh"
 cat > "$MAINTENANCE_CONFIG" <<EOF
-{"version":"1.5.9","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh","restart_service":"$RESTART_SERVICE"}
+{"version":"1.5.10","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh","restart_service":"$RESTART_SERVICE"}
 EOF
 chmod 644 "$MAINTENANCE_CONFIG"
 
-note "Installed Stellar Archive 1.5.9 for SG1_v4 with replacement mode: $MODE"
+note "Installed Stellar Archive 1.5.10 for SG1_v4 with replacement mode: $MODE"
 if ((HAS_RETRO)); then note 'Detected interfaces: Original + Retro'; else note 'Detected interface: Original (Retro not installed)'; fi
 if ((HAS_EXTENDED_RETRO)); then note 'Extended addresses: direct Retro dial9 routing enabled for Archive and Original address book'; fi
 note "Archive URL: /stellar-archive/"
@@ -450,3 +460,4 @@ host_ip="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
 note "Safety backup: $backup"
 note 'Run this installer again to switch modes, or use --uninstall to restore the pre-install state.'
 note 'Restart SG1_v4 once to activate the About update and uninstall controls.'
+[[ ! -d "$ADDON_OVERLAY" ]] || remove_exact_tree "$ADDON_OVERLAY" "$STATE"

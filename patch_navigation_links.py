@@ -53,13 +53,38 @@ def patch_retro(path):
     return True
 
 
+def remove_link(path, kind):
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if kind == "retro":
+        updated = re.sub(
+            r'\s*<a\b[^>]*class=["\'][^"\']*stellar-archive-standalone-link[^"\']*["\'][^>]*>.*?</a>\s*'
+            r'<!--\s*STELLAR_ARCHIVE_STANDALONE_LINK\s*-->\s*',
+            "\n",
+            text,
+            flags=re.I | re.S,
+        )
+    else:
+        updated = text.replace("\n" + ORIGINAL_LINK, "\n").replace(ORIGINAL_LINK, "")
+    if updated == text and MARKER in text:
+        raise SystemExit(f"could not safely remove {kind} navigation marker from {path}")
+    if updated != text:
+        path.write_text(updated, encoding="utf-8")
+        return True
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--kind", choices=("original", "retro"), required=True)
     parser.add_argument("--file", type=Path, required=True)
+    parser.add_argument("--remove", action="store_true")
     args = parser.parse_args()
     if not args.file.is_file():
         raise SystemExit(f"navigation file missing: {args.file}")
+    if args.remove:
+        changed = remove_link(args.file, args.kind)
+        print(f"Stellar Archive link removed: {args.file}")
+        return
     changed = patch_original(args.file) if args.kind == "original" else patch_retro(args.file)
     if not changed and MARKER not in args.file.read_text(encoding="utf-8", errors="replace"):
         raise SystemExit(f"could not locate {args.kind} navigation in {args.file}")

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.10
+
+- Preserves declared add-on overlays while Archive temporarily restores its
+  clean baseline during an update. This keeps the combined Retro Visuals and
+  Stellar Archive backend plus Retro navigation intact across updates.
+- Safely removes only Archive's own stand-alone Retro link during uninstall,
+  without removing the add-on navigation around it.
+
 ## 1.5.9
 
 - Extends the bounded Retro Visuals migration to its declared `web_server.py`
