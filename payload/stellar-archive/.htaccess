@@ -1,12 +1,6 @@
 Options -Indexes -ExecCGI
 DirectoryIndex index.html
 
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteCond %{HTTP_HOST} ^private\.example\.invalid$ [NC]
-  RewriteRule ^ https://***/retro/address_book.html [R=302,L,NE]
-</IfModule>
-
 <IfModule mod_headers.c>
   Header always set Cache-Control "no-store"
   Header always set X-Content-Type-Options "nosniff"

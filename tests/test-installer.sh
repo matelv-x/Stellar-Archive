@@ -5,6 +5,11 @@ PACKAGE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 TEST_ROOT="$(mktemp -d)"
 TARGET="$TEST_ROOT/sg1_v4/web"
 
+if grep -q 'private\.example\.invalid' "$PACKAGE_DIR/payload/stellar-archive/.htaccess"; then
+  printf 'public Archive payload contains a deployment-specific host redirect\n' >&2
+  exit 1
+fi
+
 cleanup() {
   if [[ -n "${TEST_ROOT:-}" && -d "$TEST_ROOT" ]]; then find "$TEST_ROOT" -depth -delete; fi
   return 0
