@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -56,7 +57,40 @@ class MatelvAddonManager:
             "target": target,
             "sg1_root": sg1_root,
             "home_root": sg1_root.parent,
+            "mode": config.get("mode", "standalone"),
         }
+
+    def _refresh_archive_navigation(self, context):
+        """Rebuild SG1_v4 Archive navigation after an add-on changes pages."""
+        if context["platform"] != "v4":
+            return False
+        target = context["target"]
+        state_dir = target / ".stellar-archive-addon"
+        builder = state_dir / "updater" / "build_navigation.py"
+        output = target / "stellar-archive" / "data" / "integration-nav.js"
+        mode_file = state_dir / "current-mode"
+        if not builder.is_file() or not output.parent.is_dir() or not mode_file.is_file():
+            return False
+        mode = mode_file.read_text(encoding="utf-8").strip()
+        if mode not in ("original", "retro", "both", "standalone"):
+            raise RuntimeError("Archive integration mode is invalid")
+        temporary = output.with_name(output.name + ".tmp")
+        result = self._run([
+            sys.executable,
+            str(builder),
+            "--target", str(target),
+            "--mode", mode,
+            "--output", str(temporary),
+        ], timeout=30)
+        if result.returncode:
+            try:
+                temporary.unlink()
+            except OSError:
+                pass
+            detail = (result.stderr or result.stdout).strip()[-400:]
+            raise RuntimeError("Archive navigation refresh failed: {}".format(detail or "unknown error"))
+        os.replace(str(temporary), str(output))
+        return True
 
     def _registry(self):
         payload = json.loads(self.registry_path.read_text(encoding="utf-8"))
@@ -418,13 +452,15 @@ class MatelvAddonManager:
             else:
                 state.pop(addon_id, None)
                 self._write_state(state)
+            navigation_refreshed = self._refresh_archive_navigation(context)
             restart = " Restart Stargate software once." if manifest.get("restart_required", True) else ""
+            navigation = " Archive navigation refreshed." if navigation_refreshed else ""
             self.tasks[addon_id] = {
                 "state": "complete",
                 "action": action,
                 "phase": "complete",
                 "progress": 100,
-                "message": "{} completed.{}".format(action.capitalize(), restart),
+                "message": "{} completed.{}{}".format(action.capitalize(), navigation, restart),
             }
             self.remote_cache.pop(manifest["repository"].lower(), None)
         except Exception as error:

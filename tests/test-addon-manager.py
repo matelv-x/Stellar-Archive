@@ -55,7 +55,7 @@ class AddonManagerTests(unittest.TestCase):
                 "uninstall": {"argv": ["./restore.sh", "--target", "{sg1_root}"]},
             }],
         }), encoding="utf-8")
-        config = lambda: {"platform": "v4", "target": str(self.web)}
+        config = lambda: {"platform": "v4", "target": str(self.web), "mode": "both"}
         self.manager = MatelvAddonManager(config, registry_path=self.registry)
 
     def tearDown(self):
@@ -122,6 +122,23 @@ class AddonManagerTests(unittest.TestCase):
                 "repository": "someone-else/Bad",
                 "platforms": ["v4"],
             })
+
+    def test_refreshes_archive_navigation_from_current_installed_pages(self):
+        state = self.web / ".stellar-archive-addon"
+        updater = state / "updater"
+        archive_data = self.web / "stellar-archive" / "data"
+        updater.mkdir(parents=True)
+        archive_data.mkdir(parents=True)
+        (state / "current-mode").write_text("both\n", encoding="utf-8")
+        (updater / "build_navigation.py").write_text(
+            "import argparse, pathlib\n"
+            "p=argparse.ArgumentParser(); p.add_argument('--target'); p.add_argument('--mode'); p.add_argument('--output')\n"
+            "a=p.parse_args(); pathlib.Path(a.output).write_text(a.mode + ':' + a.target, encoding='utf-8')\n",
+            encoding="utf-8",
+        )
+        self.assertTrue(self.manager._refresh_archive_navigation(self.manager.config()))
+        result = (archive_data / "integration-nav.js").read_text(encoding="utf-8")
+        self.assertEqual(result, "both:" + str(self.web.resolve()))
 
 
 if __name__ == "__main__":

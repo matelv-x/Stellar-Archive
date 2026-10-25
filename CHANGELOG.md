@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.6
+
+- Rebuilds Stellar Archive navigation automatically after a managed add-on is
+  installed, updated or uninstalled, so newly added pages such as Retro
+  Visuals appear in Archive without reinstalling Archive.
+
 ## 1.5.5
 
 - Fixed add-on actions behind reverse proxies and in Safari/WebViews that send
