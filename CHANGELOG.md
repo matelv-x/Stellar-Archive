@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.11
+
+- Fixed HOME routing when the same Archive serves multiple site identities.
+  A persisted `home-routes.json` map can now override the logo and HOME button
+  destination per hostname without changing Original/Retro DIAL routing.
+- Host overrides are validated as same-origin absolute paths and are preserved
+  by later SG1_v4 installer updates.
+
 ## 1.5.10
 
 - Preserves declared add-on overlays while Archive temporarily restores its

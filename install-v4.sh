@@ -9,7 +9,7 @@ UNINSTALL=0
 
 usage() {
   cat <<'EOF'
-SG1_v4 adapter — Stellar Archive universal installer 1.5.10
+SG1_v4 adapter — Stellar Archive universal installer 1.5.11
 
 Usage:
   ./install.sh [--replace original|retro|both|standalone] [--target PATH] [--dry-run]
@@ -51,6 +51,7 @@ PAYLOAD="$SCRIPT_DIR/payload"
 ARCHIVE_PAYLOAD="$PAYLOAD/stellar-archive"
 INTEGRATION_PAYLOAD="$PAYLOAD/integration"
 STATE="$TARGET/.stellar-archive-addon"
+SITE_HOME_ROUTES="$STATE/home-routes.json"
 ORIGINALS="$STATE/originals"
 MANAGED="$STATE/managed"
 NAV_ORIGINALS="$ORIGINALS/original-nav-pages"
@@ -374,8 +375,16 @@ staged="$TARGET/.stellar-archive-stage-$timestamp"
 old="$TARGET/.stellar-archive-old-$timestamp"
 remove_exact_tree "$staged" "$TARGET"
 run_copy "$ARCHIVE_PAYLOAD" "$staged"
+# Some SG1_v4 virtual hosts use fan113.html as DirectoryIndex for every
+# directory. Preserve the established Archive alias across updates so opening
+# /stellar-archive/ continues to resolve to index.html on those hosts.
+if [[ -L "$ARCHIVE_DIR/fan113.html" ]] && [[ "$(readlink "$ARCHIVE_DIR/fan113.html")" = 'index.html' ]]; then
+  ln -s index.html "$staged/fan113.html"
+fi
 command -v python3 >/dev/null 2>&1 || die 'python3 is required to detect installed navigation buttons'
-python3 "$SCRIPT_DIR/build_navigation.py" --target "$TARGET" --mode "$MODE" --output "$staged/data/integration-nav.js"
+navigation_args=(--target "$TARGET" --mode "$MODE" --output "$staged/data/integration-nav.js")
+[[ -f "$SITE_HOME_ROUTES" ]] && navigation_args+=(--home-routes-file "$SITE_HOME_ROUTES")
+python3 "$SCRIPT_DIR/build_navigation.py" "${navigation_args[@]}"
 find "$staged" -type d -exec chmod 755 {} +
 find "$staged" -type f -exec chmod 644 {} +
 if [[ -d "$ARCHIVE_DIR" ]]; then mv "$ARCHIVE_DIR" "$old"; fi
@@ -435,7 +444,7 @@ run_copy "$MAINTENANCE" "$MANAGED/stellar_archive_maintenance.py"
 run_copy "$ADDON_MANAGER" "$MANAGED/matelv_addon_manager.py"
 run_copy "$ADDON_REGISTRY" "$MANAGED/matelv_addons.json"
 printf '%s\n' "$MODE" > "$STATE/current-mode"
-printf '1.5.10\n' > "$STATE/version"
+printf '1.5.11\n' > "$STATE/version"
 
 updater="$STATE/updater"
 mkdir -p "$updater/payload"
@@ -445,11 +454,11 @@ done
 run_copy "$INTEGRATION_PAYLOAD" "$updater/payload/integration"
 chmod 755 "$updater/install.sh" "$updater/install-v3.sh" "$updater/install-v4.sh"
 cat > "$MAINTENANCE_CONFIG" <<EOF
-{"version":"1.5.10","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh","restart_service":"$RESTART_SERVICE"}
+{"version":"1.5.11","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh","restart_service":"$RESTART_SERVICE"}
 EOF
 chmod 644 "$MAINTENANCE_CONFIG"
 
-note "Installed Stellar Archive 1.5.10 for SG1_v4 with replacement mode: $MODE"
+note "Installed Stellar Archive 1.5.11 for SG1_v4 with replacement mode: $MODE"
 if ((HAS_RETRO)); then note 'Detected interfaces: Original + Retro'; else note 'Detected interface: Original (Retro not installed)'; fi
 if ((HAS_EXTENDED_RETRO)); then note 'Extended addresses: direct Retro dial9 routing enabled for Archive and Original address book'; fi
 note "Archive URL: /stellar-archive/"

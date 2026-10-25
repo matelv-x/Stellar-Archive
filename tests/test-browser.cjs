@@ -61,7 +61,7 @@ const server=http.createServer((request,response)=>{
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/stellar-archive\/?/,'').replace(/^\//,'');
   if(relative.startsWith('data/integration-nav.js')){
     response.writeHead(200,{'content-type':'text/javascript; charset=utf-8'});
-    response.end('window.STELLAR_ARCHIVE_NAV={"mode":"retro","dialTarget":"retro","items":[{"label":"HOME","href":"/retro/dial.html"},{"label":"SYMBOLS","href":"/retro/symbol_overview.html"},{"label":"ADMIN","children":[{"label":"CONFIGURATION","href":"/config.htm"},{"label":"RESTART SOFTWARE","action":"restart"}]},{"label":"ALARM CLOCK","href":"/alarm_clock.htm","addon":true},{"label":"HELP","href":"/help.htm"}]};');
+    response.end('window.STELLAR_ARCHIVE_NAV={"mode":"retro","dialTarget":"retro","homeByHost":{"127.0.0.1":"/fan113.html"},"items":[{"label":"HOME","href":"/retro/dial.html"},{"label":"SYMBOLS","href":"/retro/symbol_overview.html"},{"label":"ADMIN","children":[{"label":"CONFIGURATION","href":"/config.htm"},{"label":"RESTART SOFTWARE","action":"restart"}]},{"label":"ALARM CLOCK","href":"/alarm_clock.htm","addon":true},{"label":"HELP","href":"/help.htm"}]};');
     return;
   }
   const file=path.resolve(root,relative||'index.html');
@@ -86,10 +86,12 @@ const server=http.createServer((request,response)=>{
     const original=await page.evaluate(()=>({
       address:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.join('-'),
       href:document.querySelector('#select-address').getAttribute('href'),
-      home:document.querySelector('.brand').getAttribute('href')
+      home:document.querySelector('.brand').getAttribute('href'),
+      homeButton:[...document.querySelectorAll('#integration-nav a')].find(link=>link.textContent.trim()==='HOME')?.getAttribute('href')
     }));
     assert.strictEqual(original.href,`/index.htm?address=${original.address}`);
-    assert.strictEqual(original.home,'/index.htm');
+    assert.strictEqual(original.home,'/fan113.html');
+    assert.strictEqual(original.homeButton,'/fan113.html');
 
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=retro`);
     await page.waitForSelector('#select-address');
@@ -98,11 +100,13 @@ const server=http.createServer((request,response)=>{
       address:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.join('-'),
       length:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.length,
       href:document.querySelector('#select-address').getAttribute('href'),
-      home:document.querySelector('.brand').getAttribute('href')
+      home:document.querySelector('.brand').getAttribute('href'),
+      homeButton:[...document.querySelectorAll('#integration-nav a')].find(link=>link.textContent.trim()==='HOME')?.getAttribute('href')
     }));
     assert.strictEqual(six.length,6);
     assert.strictEqual(six.href,`/retro/dial.html?address=${six.address}`);
-    assert.strictEqual(six.home,'/retro/dial.html');
+    assert.strictEqual(six.home,'/fan113.html');
+    assert.strictEqual(six.homeButton,'/fan113.html');
     assert.strictEqual(await page.locator('#installed-gate-name').textContent(),'TEST GATE ');
     assert.strictEqual(await page.locator('.gaia-motion > .gaia-layer').count(),3);
     assert.strictEqual(await page.locator('.gaia-core').evaluate(element=>getComputedStyle(element).animationDuration),'75s');
@@ -126,7 +130,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.10');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.11');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));

@@ -5,6 +5,7 @@ PACKAGE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 TEST_ROOT="$(mktemp -d)"
 TARGET="$TEST_ROOT/web"
 OUTPUT="$TEST_ROOT/integration-nav.js"
+HOME_ROUTES="$TEST_ROOT/home-routes.json"
 
 cleanup() {
   if [[ -n "${TEST_ROOT:-}" && -d "$TEST_ROOT" ]]; then find "$TEST_ROOT" -depth -delete; fi
@@ -26,8 +27,10 @@ if grep -q 'ALARM CLOCK' "$OUTPUT"; then
 fi
 
 touch "$TARGET/alarm_clock.htm"
-python3 "$PACKAGE_DIR/build_navigation.py" --target "$TARGET" --mode both --output "$OUTPUT" >/dev/null
+printf '%s\n' '{"***":"/","***":"/fan113.html"}' > "$HOME_ROUTES"
+python3 "$PACKAGE_DIR/build_navigation.py" --target "$TARGET" --mode both --output "$OUTPUT" --home-routes-file "$HOME_ROUTES" >/dev/null
 grep -q 'ALARM CLOCK' "$OUTPUT"
+grep -q '"homeByHost":{"***":"/","***":"/fan113.html"}' "$OUTPUT"
 if grep -Eq 'REFRESH|FANCY MODE|FULL SCREEN|"action":"(refresh|fancy|fullscreen)"' "$OUTPUT"; then
   printf 'Excluded Retro controls leaked into Archive navigation\n' >&2
   exit 1

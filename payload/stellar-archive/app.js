@@ -4,6 +4,12 @@ const archive=window.STELLAR_ARCHIVE_DATA;
 const worlds=archive.worlds;
 const integrationMode=new URLSearchParams(window.location.search).get('mode');
 const integrationNav=window.STELLAR_ARCHIVE_NAV||{mode:'standalone',items:[]};
+function integrationHomeHref(){
+ const host=(window.location.hostname||'').toLowerCase();
+ const hostHome=integrationNav.homeByHost&&integrationNav.homeByHost[host];
+ if(typeof hostHome==='string'&&hostHome.startsWith('/'))return hostHome;
+ return integrationMode==='retro'?'/retro/dial.html':'/index.htm';
+}
 let selected=worlds[0],visible=[];
 let liveGateStatuses=new Map(),liveStatusState='checking',liveStatusSignature='';
 const motionEpoch=performance.now();
@@ -175,8 +181,7 @@ $('#select-address').addEventListener('click',async event=>{
  finally{delete button.dataset.busy}
 });
 function configureIntegration(){
- const home=integrationMode==='retro'?'/retro/dial.html':'/index.htm';
- $('.brand').href=home;
+ $('.brand').href=integrationHomeHref();
  renderIntegrationNav();
 }
 function fitMastheadContents(){
@@ -216,7 +221,7 @@ function updateInstalledGateName(value){
 }
 function renderIntegrationNav(){
  const nav=$('#integration-nav');
- const items=[...(integrationNav.items||[]),{label:'ABOUT',action:'about'}];
+ const items=[...(integrationNav.items||[]).map(item=>String(item.label||'').toUpperCase()==='HOME'?{...item,href:integrationHomeHref()}:item),{label:'ABOUT',action:'about'}];
  nav.innerHTML=items.map(item=>{
   const label=escapeHtml(item.label||'LINK');
   if(item.children?.length)return `<details class="integration-dropdown"><summary class="integration-button">${label}</summary><div class="integration-menu">${item.children.map(child=>navItemHtml(child)).join('')}</div></details>`;

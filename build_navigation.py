@@ -149,6 +149,7 @@ def main():
     parser.add_argument("--target", required=True, type=Path)
     parser.add_argument("--mode", required=True, choices=("original", "retro", "both", "standalone"))
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--home-routes-file", type=Path)
     args = parser.parse_args()
 
     originals = original_items(args.target)
@@ -170,6 +171,19 @@ def main():
     else:
         dial_target = "retro" if has_extended_retro else "original"
     payload = {"mode": args.mode, "dialTarget": dial_target, "items": items}
+    if args.home_routes_file and args.home_routes_file.is_file():
+        routes = json.loads(args.home_routes_file.read_text(encoding="utf-8"))
+        if not isinstance(routes, dict):
+            raise ValueError("home routes must be a JSON object")
+        cleaned = {}
+        for host, path in routes.items():
+            if not isinstance(host, str) or not host.strip():
+                raise ValueError("home route host must be a non-empty string")
+            if not isinstance(path, str) or not path.startswith("/") or path.startswith("//"):
+                raise ValueError("home route path must be an absolute same-origin path")
+            cleaned[host.strip().lower()] = path
+        if cleaned:
+            payload["homeByHost"] = cleaned
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         "window.STELLAR_ARCHIVE_NAV=" + json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + ";\n",

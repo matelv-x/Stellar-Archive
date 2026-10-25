@@ -1,15 +1,22 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.10 contains one entry-point installer and two isolated adapters. It
+Version 1.5.11 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
+
+For a host that needs a different HOME destination, create
+`.stellar-archive-addon/home-routes.json` in the SG1_v4 web root before running
+the installer again. The file is a hostname-to-same-origin-path object, for
+example `{"gate.example.com":"/","***":"/fan113.html"}`. The map
+changes only the Archive logo and HOME button; DIAL continues to follow the
+selected Original or Retro integration mode.
 
 ## Install
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_1.5.10.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.10
+unzip sg1_v3_v4_stellar_archive_universal_1.5.11.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.11
 ./install.sh
 ```
 
