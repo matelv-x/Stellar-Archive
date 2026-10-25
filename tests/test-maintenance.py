@@ -49,7 +49,7 @@ class MaintenanceTests(unittest.TestCase):
         installer.chmod(0o755)
         self.zip_path = self.root / "release.zip"
         with zipfile.ZipFile(self.zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
-            archive.write(installer, "sg1-v3-v4-stellar-archive-universal-v1.5.8/install.sh")
+            archive.write(installer, "sg1-v3-v4-stellar-archive-universal-v1.5.9/install.sh")
         digest = hashlib.sha256(self.zip_path.read_bytes()).hexdigest()
         self.sha_path = self.root / "release.zip.sha256"
         self.sha_path.write_text("{}  release.zip\n".format(digest), encoding="utf-8")
@@ -66,7 +66,7 @@ class MaintenanceTests(unittest.TestCase):
             "installer": str(self.cached),
             "restart_service": "stargate-test.service",
         }), encoding="utf-8")
-        release = {"version": "1.5.8", "zip_name": "release.zip", "zip_url": "zip", "sha_url": "sha", "release_url": "https://example.invalid"}
+        release = {"version": "1.5.9", "zip_name": "release.zip", "zip_url": "zip", "sha_url": "sha", "release_url": "https://example.invalid"}
         self.controller = TestController(self.config_path, release, {"zip": self.zip_path, "sha": self.sha_path})
 
     def tearDown(self):

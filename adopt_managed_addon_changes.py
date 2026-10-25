@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 SNAPSHOTS = {
+    "classes/web_server.py": "web_server.py",
     "web/address_book.htm": "address_book.htm",
     "web/retro/address_book.html": "retro-address_book.html",
     "web/retro/js/navigation.js": "retro-navigation.js",

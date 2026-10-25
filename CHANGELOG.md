@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.9
+
+- Extends the bounded Retro Visuals migration to its declared `web_server.py`
+  integration. The exception applies only to a recorded, currently detected
+  add-on and only to the files declared by that add-on; unrelated backend
+  changes remain blocked.
+
 ## 1.5.8
 
 - Adds a bounded legacy migration for add-ons installed before 1.5.7. Only

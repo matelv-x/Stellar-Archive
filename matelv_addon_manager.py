@@ -93,7 +93,7 @@ class MatelvAddonManager:
         return True
 
     @staticmethod
-    def _refresh_archive_managed_pages(context):
+    def _refresh_archive_managed_pages(context, manifest=None):
         """Accept verified add-on edits to Archive-managed navigation pages."""
         if context["platform"] != "v4":
             return 0
@@ -105,6 +105,9 @@ class MatelvAddonManager:
             (target / "retro" / "js" / "navigation.js", managed / "retro-navigation.js"),
             (target / "js" / "address_book.js", managed / "address_book.js"),
         ]
+        declared = set((manifest or {}).get("archive_integration_files", []))
+        if "classes/web_server.py" in declared:
+            pairs.append((context["sg1_root"] / "classes" / "web_server.py", managed / "web_server.py"))
         original_navigation = managed / "original-nav-pages"
         if original_navigation.is_dir():
             for snapshot in original_navigation.glob("*.htm"):
@@ -479,7 +482,7 @@ class MatelvAddonManager:
             else:
                 state.pop(addon_id, None)
                 self._write_state(state)
-            managed_pages_refreshed = self._refresh_archive_managed_pages(context)
+            managed_pages_refreshed = self._refresh_archive_managed_pages(context, manifest)
             navigation_refreshed = self._refresh_archive_navigation(context)
             restart = " Restart Stargate software once." if manifest.get("restart_required", True) else ""
             navigation = " Archive navigation refreshed." if navigation_refreshed else ""

@@ -158,6 +158,18 @@ class AddonManagerTests(unittest.TestCase):
         for source, snapshot in pairs:
             self.assertEqual(snapshot.read_text(encoding="utf-8"), source.read_text(encoding="utf-8"))
 
+    def test_refreshes_declared_backend_snapshot_only(self):
+        managed = self.web / ".stellar-archive-addon" / "managed"
+        managed.mkdir(parents=True)
+        backend = self.root / "classes" / "web_server.py"
+        backend.parent.mkdir(parents=True)
+        backend.write_text("verified add-on edit", encoding="utf-8")
+        snapshot = managed / "web_server.py"
+        snapshot.write_text("old", encoding="utf-8")
+        manifest = {"archive_integration_files": ["classes/web_server.py"]}
+        self.manager._refresh_archive_managed_pages(self.manager.config(), manifest)
+        self.assertEqual(snapshot.read_text(encoding="utf-8"), "verified add-on edit")
+
 
 if __name__ == "__main__":
     unittest.main()

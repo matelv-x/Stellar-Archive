@@ -23,13 +23,18 @@ class AdoptManagedAddonChangesTests(unittest.TestCase):
             unrelated_snapshot = managed / "address_book.htm"
             unrelated.write_text("Unrelated edit", encoding="utf-8")
             unrelated_snapshot.write_text("Original", encoding="utf-8")
+            backend = root / "classes" / "web_server.py"
+            backend.parent.mkdir(parents=True)
+            backend.write_text("Retro Visuals backend", encoding="utf-8")
+            backend_snapshot = managed / "web_server.py"
+            backend_snapshot.write_text("Archive backend", encoding="utf-8")
             state = root / "state.json"
             state.write_text(json.dumps({"retro-visuals": {"revision": "a" * 40}}), encoding="utf-8")
             registry = root / "registry.json"
             registry.write_text(json.dumps({"addons": [{
                 "id": "retro-visuals",
                 "detect": {"all": [{"path": "web/retro/js/retro_visuals.js"}]},
-                "archive_integration_files": ["web/retro/js/navigation.js"],
+                "archive_integration_files": ["classes/web_server.py", "web/retro/js/navigation.js"],
             }]}), encoding="utf-8")
             script = Path(__file__).resolve().parent.parent / "adopt_managed_addon_changes.py"
             subprocess.run([
@@ -37,6 +42,7 @@ class AdoptManagedAddonChangesTests(unittest.TestCase):
                 "--state", str(state), "--registry", str(registry),
             ], check=True)
             self.assertEqual(snapshot.read_text(encoding="utf-8"), "Visuals")
+            self.assertEqual(backend_snapshot.read_text(encoding="utf-8"), "Retro Visuals backend")
             self.assertEqual(unrelated_snapshot.read_text(encoding="utf-8"), "Original")
 
 
