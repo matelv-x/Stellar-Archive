@@ -6,10 +6,10 @@ uses only the matching adapter.
 
 For a host that needs a different HOME destination, create
 `.stellar-archive-addon/home-routes.json` in the SG1_v4 web root before running
-the installer again. The file is a hostname-to-same-origin-path object, for
-example `{"gate.example.com":"/","***":"/fan113.html"}`. The map
-changes only the Archive logo and HOME button; DIAL continues to follow the
-selected Original or Retro integration mode.
+the installer again. The file is a JSON object mapping lowercase hostnames to
+same-origin receiver paths. For a matching host, the map controls the Archive
+logo, HOME button and DIAL receiver; installations without a map continue to
+follow the selected Original or Retro integration mode.
 
 ## Install
 

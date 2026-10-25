@@ -27,10 +27,10 @@ if grep -q 'ALARM CLOCK' "$OUTPUT"; then
 fi
 
 touch "$TARGET/alarm_clock.htm"
-printf '%s\n' '{"***":"/","***":"/fan113.html"}' > "$HOME_ROUTES"
+printf '%s\n' '{"Archive.Example.Test":"/","198.51.100.10":"/receiver.html"}' > "$HOME_ROUTES"
 python3 "$PACKAGE_DIR/build_navigation.py" --target "$TARGET" --mode both --output "$OUTPUT" --home-routes-file "$HOME_ROUTES" >/dev/null
 grep -q 'ALARM CLOCK' "$OUTPUT"
-grep -q '"homeByHost":{"***":"/","***":"/fan113.html"}' "$OUTPUT"
+grep -q '"homeByHost":{"archive.example.test":"/","198.51.100.10":"/receiver.html"}' "$OUTPUT"
 if grep -Eq 'REFRESH|FANCY MODE|FULL SCREEN|"action":"(refresh|fancy|fullscreen)"' "$OUTPUT"; then
   printf 'Excluded Retro controls leaked into Archive navigation\n' >&2
   exit 1

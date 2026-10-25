@@ -61,7 +61,7 @@ const server=http.createServer((request,response)=>{
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/stellar-archive\/?/,'').replace(/^\//,'');
   if(relative.startsWith('data/integration-nav.js')){
     response.writeHead(200,{'content-type':'text/javascript; charset=utf-8'});
-    response.end('window.STELLAR_ARCHIVE_NAV={"mode":"retro","dialTarget":"retro","homeByHost":{"127.0.0.1":"/fan113.html","***":"/"},"items":[{"label":"HOME","href":"/retro/dial.html"},{"label":"SYMBOLS","href":"/retro/symbol_overview.html"},{"label":"ADMIN","children":[{"label":"CONFIGURATION","href":"/config.htm"},{"label":"RESTART SOFTWARE","action":"restart"}]},{"label":"ALARM CLOCK","href":"/alarm_clock.htm","addon":true},{"label":"HELP","href":"/help.htm"}]};');
+    response.end('window.STELLAR_ARCHIVE_NAV={"mode":"retro","dialTarget":"retro","homeByHost":{"127.0.0.1":"/receiver.html","archive.example.test":"/"},"items":[{"label":"HOME","href":"/retro/dial.html"},{"label":"SYMBOLS","href":"/retro/symbol_overview.html"},{"label":"ADMIN","children":[{"label":"CONFIGURATION","href":"/config.htm"},{"label":"RESTART SOFTWARE","action":"restart"}]},{"label":"ALARM CLOCK","href":"/alarm_clock.htm","addon":true},{"label":"HELP","href":"/help.htm"}]};');
     return;
   }
   const file=path.resolve(root,relative||'index.html');
@@ -78,7 +78,7 @@ const server=http.createServer((request,response)=>{
 (async()=>{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const port=server.address().port;
-  const browser=await chromium.launch({headless:true,args:['--host-resolver-rules=MAP *** 127.0.0.1']});
+  const browser=await chromium.launch({headless:true,args:['--host-resolver-rules=MAP archive.example.test 127.0.0.1']});
   const page=await browser.newPage({viewport:{width:1728,height:900}});
   try{
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=original`);
@@ -89,9 +89,9 @@ const server=http.createServer((request,response)=>{
       home:document.querySelector('.brand').getAttribute('href'),
       homeButton:[...document.querySelectorAll('#integration-nav a')].find(link=>link.textContent.trim()==='HOME')?.getAttribute('href')
     }));
-    assert.strictEqual(original.href,`/fan113.html?address=${original.address}&source=stellar-archive`);
-    assert.strictEqual(original.home,'/fan113.html');
-    assert.strictEqual(original.homeButton,'/fan113.html');
+    assert.strictEqual(original.href,`/receiver.html?address=${original.address}&source=stellar-archive`);
+    assert.strictEqual(original.home,'/receiver.html');
+    assert.strictEqual(original.homeButton,'/receiver.html');
 
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=retro`);
     await page.waitForSelector('#select-address');
@@ -104,11 +104,11 @@ const server=http.createServer((request,response)=>{
       homeButton:[...document.querySelectorAll('#integration-nav a')].find(link=>link.textContent.trim()==='HOME')?.getAttribute('href')
     }));
     assert.strictEqual(six.length,6);
-    assert.strictEqual(six.href,`/fan113.html?address=${six.address}&source=stellar-archive`);
-    assert.strictEqual(six.home,'/fan113.html');
-    assert.strictEqual(six.homeButton,'/fan113.html');
+    assert.strictEqual(six.href,`/receiver.html?address=${six.address}&source=stellar-archive`);
+    assert.strictEqual(six.home,'/receiver.html');
+    assert.strictEqual(six.homeButton,'/receiver.html');
 
-    await page.goto(`http://***:${port}/stellar-archive/?mode=retro`);
+    await page.goto(`http://archive.example.test:${port}/stellar-archive/?mode=retro`);
     await page.waitForSelector('#select-address');
     const ll=await page.evaluate(()=>({
       address:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.join('-'),
@@ -253,20 +253,20 @@ const server=http.createServer((request,response)=>{
       return {address:world.storedAddress.join('-'),length:world.storedAddress.length,href:document.querySelector('#select-address').getAttribute('href'),consoleName:document.querySelector('#console-destination-name').textContent};
     });
     assert.strictEqual(longer.length,8);
-    assert.strictEqual(longer.href,`/fan113.html?address=${longer.address}&source=stellar-archive`);
+    assert.strictEqual(longer.href,`/receiver.html?address=${longer.address}&source=stellar-archive`);
     assert.strictEqual(longer.consoleName,'SEED SHIP#1');
     assert(!longer.href.includes('-1&')&&!longer.href.endsWith('-1'),'display-only origin must not be appended');
 
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/`);
     await page.waitForSelector('#select-address');
     const standalone=await page.getAttribute('#select-address','href');
-    assert(standalone.startsWith('/fan113.html?address='));
+    assert(standalone.startsWith('/receiver.html?address='));
     const standaloneSeed=await page.evaluate(()=>{
       const world=window.STELLAR_ARCHIVE_DATA.worlds.find(item=>item.name==='Seed Ship#1');
       document.querySelector(`[data-id="${world.id}"]`).click();
       return document.querySelector('#select-address').getAttribute('href');
     });
-    assert.strictEqual(standaloneSeed,'/fan113.html?address=3-7-11-19-22-30-34-36&source=stellar-archive');
+    assert.strictEqual(standaloneSeed,'/receiver.html?address=3-7-11-19-22-30-34-36&source=stellar-archive');
 
     aquilaInstalled=false;
     addonTask={state:'idle',message:'Ready'};

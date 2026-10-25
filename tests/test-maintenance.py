@@ -114,7 +114,7 @@ class MaintenanceTests(unittest.TestCase):
     def test_proxy_mismatched_origin_accepts_marked_same_origin_json(self):
         handler = Handler(False)
         handler.headers["Host"] = "localhost:8080"
-        handler.headers["Origin"] = "http://***"
+        handler.headers["Origin"] = "http://198.51.100.20"
         handler.headers["Content-Type"] = "application/json"
         handler.headers["X-Stellar-Archive-Request"] = "same-origin"
         handler.headers["Sec-Fetch-Site"] = "same-origin"

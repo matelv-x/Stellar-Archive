@@ -2,17 +2,16 @@
 
 ## 1.5.13
 
-- Removed a deployment-specific `***` redirect from the
-  universal Archive payload. It could create a redirect loop when the Retro
-  address-book wrapper was configured to open Stellar Archive.
+- Removed a deployment-specific public-host redirect from the universal
+  Archive payload. It could create a redirect loop when the Retro address-book
+  wrapper was configured to open Stellar Archive.
 
 ## 1.5.12
 
 - Routes DIAL through the configured host receiver when a host-specific HOME
-  route exists. LL now sends the selected address to `/`, and the LAN host
-  sends it to `/fan113.html`; both include the stored address and
-  `source=stellar-archive` while preserving fallback Original/Retro behavior on
-  other installations.
+  route exists. The receiver gets the stored address and
+  `source=stellar-archive`, while installations without a host route preserve
+  fallback Original/Retro behavior.
 
 ## 1.5.11
 
