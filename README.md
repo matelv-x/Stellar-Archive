@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.3.1 contains one entry-point installer and two isolated adapters. It
+Version 1.4.0 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -8,8 +8,8 @@ uses only the matching adapter.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_v1.3.1.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.3.1
+unzip sg1_v3_v4_stellar_archive_universal_v1.4.0.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.4.0
 ./install.sh
 ```
 
@@ -119,3 +119,39 @@ The updater selects the already detected platform and preserves the active v4
 replacement mode. After an update or web-triggered uninstall, restart the
 Stargate software once so the running Python process loads or removes the
 maintenance endpoint.
+
+## Installed matelv-x add-ons
+
+The same About dialog scans the current Raspberry Pi for supported add-ons from
+the `matelv-x` GitHub organization. Detection uses each add-on's installed files
+and, when present, its local Git checkout. It is not tied to ***, a Pi
+model, a host name or an IP address.
+
+For each detected add-on the dialog shows its local revision, the current
+GitHub revision, update status, `CHECK FOR UPDATES`, and a surgical `UNINSTALL`
+button when that repository provides a safe rollback. Supported public add-ons
+are Alarm Clock, Connection History, LAN Discovery, Lamp Mode, Retro Visuals,
+Retro Wormhole Animation, SG1 Iris, Silence Mode, Stargate Ring Symbols and
+Switch To Retro. Alarm Clock can be updated while preserving its selected page
+and background, but automatic uninstall is disabled because its old rollback
+restores the complete SG1 application tree.
+
+Before running downloaded code the manager verifies all of the following:
+
+- the repository belongs to `matelv-x`;
+- the remote repository contains `stargate-addon.json` with maintenance
+  contract version 1;
+- the manifest identity matches the selected add-on;
+- the requested command is declared in that verified manifest;
+- no Archive or other add-on maintenance operation is already active.
+
+Managed procedures run with `STARGATE_ADDON_NO_RESTART=1`. They can update web
+files but do not restart Stargate software or reboot the Pi. Private repositories
+are supported only when the Pi already has Git credentials for them and their
+installed checkout contains the same manifest. The installer never embeds or
+stores a GitHub token.
+
+Older private or hardware-control repositories that restore an entire SG1 tree,
+change system services, or lack this contract are intentionally not exposed in
+the About dialog. They must first be converted to a bounded, reversible
+installer so removing one add-on cannot remove another.

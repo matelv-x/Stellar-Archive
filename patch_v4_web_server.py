@@ -12,6 +12,9 @@ GET_BLOCK = """            # STELLAR_ARCHIVE_MAINTENANCE_GET_BEGIN
             if request_path == "/get/stellar_archive_update":
                 self.send_json_response(get_maintenance_controller().check())
                 return
+            if request_path == "/get/stellar_archive_addons":
+                self.send_json_response(get_maintenance_controller().list_addons())
+                return
             # STELLAR_ARCHIVE_MAINTENANCE_GET_END
 
 """
@@ -21,6 +24,12 @@ POST_BLOCK = """            # STELLAR_ARCHIVE_MAINTENANCE_POST_BEGIN
                 return
             if self.path == '/do/stellar_archive_uninstall':
                 self.send_json_response(get_maintenance_controller().start_uninstall(self))
+                return
+            if self.path == '/do/stellar_archive_addon_update':
+                self.send_json_response(get_maintenance_controller().start_addon_update(self))
+                return
+            if self.path == '/do/stellar_archive_addon_uninstall':
+                self.send_json_response(get_maintenance_controller().start_addon_uninstall(self))
                 return
             # STELLAR_ARCHIVE_MAINTENANCE_POST_END
 

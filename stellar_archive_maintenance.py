@@ -14,6 +14,8 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+from matelv_addon_manager import MatelvAddonManager
+
 
 VERSION_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 SHA_RE = re.compile(r"\b([0-9a-fA-F]{64})\b")
@@ -25,7 +27,9 @@ class StellarArchiveMaintenance:
     def __init__(self, config_path=None):
         self.config_path = Path(config_path or Path(__file__).with_name(".stellar-archive-maintenance.json"))
         self.lock = threading.Lock()
+        self.operation_lock = threading.Lock()
         self.task = {"state": "idle", "message": "Ready"}
+        self.addons = MatelvAddonManager(self.config, self.operation_lock)
 
     def config(self):
         data = json.loads(self.config_path.read_text(encoding="utf-8"))
@@ -46,7 +50,7 @@ class StellarArchiveMaintenance:
     def github_json(self, url):
         request = urllib.request.Request(url, headers={
             "Accept": "application/vnd.github+json",
-            "User-Agent": "Stellar-Archive-Updater/1.3",
+            "User-Agent": "Stellar-Archive-Updater/1.4",
         })
         with urllib.request.urlopen(request, timeout=15) as response:
             return json.loads(response.read().decode("utf-8"))
@@ -123,8 +127,20 @@ class StellarArchiveMaintenance:
             thread.start()
             return {"success": True, "message": "Uninstall started", "task": dict(self.task)}
 
+    def list_addons(self):
+        try:
+            return self.addons.list_addons(check_remote=True)
+        except Exception as error:
+            return {"success": False, "message": str(error), "addons": []}
+
+    def start_addon_update(self, handler):
+        return self.addons.start(handler, "update", self.same_origin)
+
+    def start_addon_uninstall(self, handler):
+        return self.addons.start(handler, "uninstall", self.same_origin)
+
     def _download(self, url, destination):
-        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.3"})
+        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.4"})
         total = 0
         with urllib.request.urlopen(request, timeout=30) as response, open(destination, "wb") as output:
             while True:
@@ -164,7 +180,11 @@ class StellarArchiveMaintenance:
 
     def _run_update(self, config, release):
         temp = tempfile.mkdtemp(prefix="stellar-archive-update-")
+        acquired = False
         try:
+            acquired = self.operation_lock.acquire(timeout=1)
+            if not acquired:
+                raise RuntimeError("another maintenance operation is already running")
             zip_path = os.path.join(temp, release["zip_name"])
             sha_path = zip_path + ".sha256"
             self._download(release["zip_url"], zip_path)
@@ -187,10 +207,16 @@ class StellarArchiveMaintenance:
         except Exception as error:
             self.task = {"state": "failed", "action": "update", "message": str(error)}
         finally:
+            if acquired:
+                self.operation_lock.release()
             shutil.rmtree(temp, ignore_errors=True)
 
     def _run_uninstall(self, config):
+        acquired = False
         try:
+            acquired = self.operation_lock.acquire(timeout=1)
+            if not acquired:
+                raise RuntimeError("another maintenance operation is already running")
             installer = Path(config["installer"])
             if not installer.is_file():
                 raise ValueError("cached uninstaller is missing")
@@ -200,6 +226,9 @@ class StellarArchiveMaintenance:
             self.task = {"state": "complete", "action": "uninstall", "message": "Uninstalled. Restart the Stargate software once."}
         except Exception as error:
             self.task = {"state": "failed", "action": "uninstall", "message": str(error)}
+        finally:
+            if acquired:
+                self.operation_lock.release()
 
 
 def get_maintenance_controller():

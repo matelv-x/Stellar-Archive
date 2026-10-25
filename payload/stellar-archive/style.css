@@ -169,6 +169,18 @@ dialog p{font-size:14px;line-height:1.9}
 .dialog-maintenance button:hover{border-color:#73d5e8;color:#fff}
 .dialog-maintenance button.danger{border-color:#a65a5f;color:#ffb9bc}
 .dialog-maintenance button:disabled{opacity:.45;cursor:wait}
+.addon-manager{margin-top:16px;padding-top:14px;border-top:1px solid #31515c}
+.addon-manager-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.addon-manager-heading h3{margin:0}
+.addon-manager-heading #refresh-addons{padding:6px 9px;font-size:7px}
+.addon-list{display:grid;gap:8px;margin-top:10px}
+.addon-row{padding:10px;border:1px solid #294751;background:#031019b8}
+.addon-row-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.addon-row-name{color:#e8d8b5;font:600 11px Georgia,serif;letter-spacing:.08em}
+.addon-row-meta{margin-top:3px;color:#7195a0;font-size:7px;letter-spacing:.08em}
+.addon-row-meta.error{color:#e5a1a4}
+.addon-row .dialog-actions{margin-top:8px}
+.addon-row .dialog-actions button{padding:7px 9px;font-size:7px}
 #dial-address{display:inline-block;padding:13px 18px;border:1px solid #edc47d;background:linear-gradient(120deg,#7a5b2c88,#a0773170,#342a1d);color:#fff0d2;text-decoration:none;letter-spacing:.14em;font-size:11px;box-shadow:inset 0 0 15px #ffcf7450,0 0 13px #ffd79c25}
 #dial-address:hover{background:#8e6b36;box-shadow:0 0 24px #ffd79c60}
 #dial-address[hidden]{display:none}

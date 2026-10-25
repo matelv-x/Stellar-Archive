@@ -43,6 +43,9 @@ ARCHIVE_DIR="$TARGET/stellar-archive"
 BRIDGE="$TARGET/stellar_archive_bridge.py"
 MAINTENANCE="$TARGET/stellar_archive_maintenance.py"
 MAINTENANCE_CONFIG="$TARGET/.stellar-archive-maintenance.json"
+ADDON_MANAGER="$TARGET/matelv_addon_manager.py"
+ADDON_REGISTRY="$TARGET/matelv_addons.json"
+ADDON_STATE="$TARGET/.matelv-addon-state.json"
 STATE="$TARGET/.stellar-archive-addon-v3"
 ORIGINALS="$STATE/originals"
 MANAGED="$STATE/managed"
@@ -71,6 +74,8 @@ if [[ -d "$STATE" ]]; then
   matches "$MAIN" "$MANAGED/main.py" || die 'managed SG1_v3 main.py was changed; preserve it manually before continuing'
   matches "$BRIDGE" "$MANAGED/stellar_archive_bridge.py" || die 'managed SG1_v3 bridge was changed; preserve it manually before continuing'
   matches "$MAINTENANCE" "$MANAGED/stellar_archive_maintenance.py" || die 'managed SG1_v3 maintenance module was changed; preserve it manually before continuing'
+  [[ ! -f "$MANAGED/matelv_addon_manager.py" ]] || matches "$ADDON_MANAGER" "$MANAGED/matelv_addon_manager.py" || die 'managed matelv-x add-on manager was changed; preserve it manually before continuing'
+  [[ ! -f "$MANAGED/matelv_addons.json" ]] || matches "$ADDON_REGISTRY" "$MANAGED/matelv_addons.json" || die 'managed matelv-x add-on registry was changed; preserve it manually before continuing'
 elif ((UNINSTALL)); then
   die 'Stellar Archive v3 bridge is not installed by this installer'
 fi
@@ -100,6 +105,13 @@ if [[ ! -d "$STATE" ]]; then
   if [[ -d "$ARCHIVE_DIR" ]]; then cp -a "$ARCHIVE_DIR" "$ORIGINALS/stellar-archive"; printf '1\n' > "$STATE/had-archive"; else printf '0\n' > "$STATE/had-archive"; fi
 fi
 
+if [[ ! -f "$STATE/addon-manager-baseline-captured" ]]; then
+  if [[ -f "$ADDON_MANAGER" ]]; then cp -a "$ADDON_MANAGER" "$ORIGINALS/matelv_addon_manager.py"; printf '1\n' > "$STATE/had-addon-manager"; else printf '0\n' > "$STATE/had-addon-manager"; fi
+  if [[ -f "$ADDON_REGISTRY" ]]; then cp -a "$ADDON_REGISTRY" "$ORIGINALS/matelv_addons.json"; printf '1\n' > "$STATE/had-addon-registry"; else printf '0\n' > "$STATE/had-addon-registry"; fi
+  if [[ -f "$ADDON_STATE" ]]; then cp -a "$ADDON_STATE" "$ORIGINALS/matelv-addon-state.json"; printf '1\n' > "$STATE/had-addon-state"; else printf '0\n' > "$STATE/had-addon-state"; fi
+  printf '1\n' > "$STATE/addon-manager-baseline-captured"
+fi
+
 cp -a "$ORIGINALS/main.py" "$MAIN"
 
 if ((UNINSTALL)); then
@@ -107,13 +119,22 @@ if ((UNINSTALL)); then
   had_maintenance="$(<"$STATE/had-maintenance")"
   had_maintenance_config="$(<"$STATE/had-maintenance-config")"
   had_archive="$(<"$STATE/had-archive")"
+  had_addon_manager="$(<"$STATE/had-addon-manager")"
+  had_addon_registry="$(<"$STATE/had-addon-registry")"
+  had_addon_state="$(<"$STATE/had-addon-state")"
   [[ ! -f "$BRIDGE" ]] || find "$BRIDGE" -delete
   [[ ! -f "$MAINTENANCE" ]] || find "$MAINTENANCE" -delete
   [[ ! -f "$MAINTENANCE_CONFIG" ]] || find "$MAINTENANCE_CONFIG" -delete
+  [[ ! -f "$ADDON_MANAGER" ]] || find "$ADDON_MANAGER" -delete
+  [[ ! -f "$ADDON_REGISTRY" ]] || find "$ADDON_REGISTRY" -delete
+  [[ ! -f "$ADDON_STATE" ]] || find "$ADDON_STATE" -delete
   remove_exact_tree "$ARCHIVE_DIR" "$TARGET"
   if [[ "$had_bridge" = 1 ]]; then cp -a "$ORIGINALS/stellar_archive_bridge.py" "$BRIDGE"; fi
   if [[ "$had_maintenance" = 1 ]]; then cp -a "$ORIGINALS/stellar_archive_maintenance.py" "$MAINTENANCE"; fi
   if [[ "$had_maintenance_config" = 1 ]]; then cp -a "$ORIGINALS/maintenance-config.json" "$MAINTENANCE_CONFIG"; fi
+  if [[ "$had_addon_manager" = 1 ]]; then cp -a "$ORIGINALS/matelv_addon_manager.py" "$ADDON_MANAGER"; fi
+  if [[ "$had_addon_registry" = 1 ]]; then cp -a "$ORIGINALS/matelv_addons.json" "$ADDON_REGISTRY"; fi
+  if [[ "$had_addon_state" = 1 ]]; then cp -a "$ORIGINALS/matelv-addon-state.json" "$ADDON_STATE"; fi
   if [[ "$had_archive" = 1 ]]; then cp -a "$ORIGINALS/stellar-archive" "$ARCHIVE_DIR"; fi
   remove_exact_tree "$STATE" "$TARGET"
   note 'Uninstalled. The captured SG1_v3 main.py and pre-existing Archive files were restored.'
@@ -132,15 +153,17 @@ remove_exact_tree "$ARCHIVE_DIR" "$TARGET"
 mv "$staged" "$ARCHIVE_DIR"
 cp -a "$SCRIPT_DIR/stellar_archive_bridge.py" "$BRIDGE"
 cp -a "$SCRIPT_DIR/stellar_archive_maintenance.py" "$MAINTENANCE"
+cp -a "$SCRIPT_DIR/matelv_addon_manager.py" "$ADDON_MANAGER"
+cp -a "$SCRIPT_DIR/matelv_addons.json" "$ADDON_REGISTRY"
 python3 "$SCRIPT_DIR/patch_v3_main.py" --file "$MAIN"
-python3 "$SCRIPT_DIR/validate_python_sources.py" "$MAIN" "$BRIDGE" "$MAINTENANCE"
+python3 "$SCRIPT_DIR/validate_python_sources.py" "$MAIN" "$BRIDGE" "$MAINTENANCE" "$ADDON_MANAGER"
 
 find "$ARCHIVE_DIR" -type d -exec chmod 755 {} +
 find "$ARCHIVE_DIR" -type f -exec chmod 644 {} +
-chmod 644 "$MAIN" "$BRIDGE" "$MAINTENANCE"
+chmod 644 "$MAIN" "$BRIDGE" "$MAINTENANCE" "$ADDON_MANAGER" "$ADDON_REGISTRY"
 if [[ -e "$TARGET" ]]; then
   owner="$(stat -c '%u:%g' "$TARGET" 2>/dev/null || true)"
-  [[ -z "$owner" ]] || chown -R "$owner" "$ARCHIVE_DIR" "$BRIDGE" "$MAINTENANCE" "$STATE"
+  [[ -z "$owner" ]] || chown -R "$owner" "$ARCHIVE_DIR" "$BRIDGE" "$MAINTENANCE" "$ADDON_MANAGER" "$ADDON_REGISTRY" "$STATE"
 fi
 
 remove_exact_tree "$MANAGED" "$STATE"
@@ -148,21 +171,23 @@ mkdir -p "$MANAGED"
 cp -a "$MAIN" "$MANAGED/main.py"
 cp -a "$BRIDGE" "$MANAGED/stellar_archive_bridge.py"
 cp -a "$MAINTENANCE" "$MANAGED/stellar_archive_maintenance.py"
+cp -a "$ADDON_MANAGER" "$MANAGED/matelv_addon_manager.py"
+cp -a "$ADDON_REGISTRY" "$MANAGED/matelv_addons.json"
 updater="$STATE/updater"
 mkdir -p "$updater"
-for file in install.sh install-v3.sh install-v4.sh patch_v3_main.py patch_v4_web_server.py patch_address_book_routes.py patch_navigation_links.py build_navigation.py stellar_archive_bridge.py stellar_archive_maintenance.py validate_python_sources.py; do
+for file in install.sh install-v3.sh install-v4.sh patch_v3_main.py patch_v4_web_server.py patch_address_book_routes.py patch_navigation_links.py build_navigation.py stellar_archive_bridge.py stellar_archive_maintenance.py matelv_addon_manager.py matelv_addons.json validate_python_sources.py; do
   [[ -f "$SCRIPT_DIR/$file" ]] && cp -a "$SCRIPT_DIR/$file" "$updater/$file"
 done
 chmod 755 "$updater/install.sh" "$updater/install-v3.sh" "$updater/install-v4.sh"
 cat > "$MAINTENANCE_CONFIG" <<EOF
-{"version":"1.3.1","platform":"v3","target":"$TARGET","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh"}
+{"version":"1.4.0","platform":"v3","target":"$TARGET","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh"}
 EOF
 chmod 644 "$MAINTENANCE_CONFIG"
-printf '1.3.1\n' > "$STATE/version"
+printf '1.4.0\n' > "$STATE/version"
 
 host_name="$(hostname -s 2>/dev/null || true)"
 host_ip="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
-note 'Installed Stellar Archive 1.3.1 for SG1_v3.'
+note 'Installed Stellar Archive 1.4.0 for SG1_v3.'
 [[ -n "$host_ip" ]] && note "LAN URL after restart: http://$host_ip/stellar-archive/"
 [[ -n "$host_name" ]] && note "Local-name URL after restart: http://$host_name.local/stellar-archive/"
 note "Safety backup: $backup"

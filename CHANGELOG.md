@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.4.0
+
+- Added a universal About-panel manager for installed `matelv-x` SG1 add-ons.
+- Detects add-ons by their real files and repository identity on SG1_v3 and
+  SG1_v4 instead of using a device-specific list.
+- Added verified update actions and, where safe, surgical uninstall actions for
+  ten public add-ons.
+- Requires the repository's maintenance contract before running any downloaded
+  installer and suppresses service restarts during web-managed operations.
+- Supports private `matelv-x` add-ons when their installed checkout contains the
+  same contract and the Pi already has GitHub access; no credentials are stored.
+- Disabled automatic Alarm Clock uninstall because its legacy rollback restores
+  the whole SG1 tree and could erase later add-ons.
+- Added exact preservation and restoration of manager metadata on Archive
+  uninstall.
+
 ## 1.3.1
 
 - Fixed installation when an existing root-owned `classes/__pycache__` blocks

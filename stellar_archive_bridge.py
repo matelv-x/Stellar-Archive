@@ -35,7 +35,7 @@ class StellarArchiveBridge:
         bridge = self
 
         class Handler(BaseHTTPRequestHandler):
-            server_version = "StellarArchiveV3/1.3"
+            server_version = "StellarArchiveV3/1.4"
 
             def log_message(self, fmt, *args):
                 logger = getattr(bridge.stargate, "log", None)
@@ -72,6 +72,9 @@ class StellarArchiveBridge:
                 if parsed.path == "/stargate/get/stellar_archive_update":
                     self.send_json(200, get_maintenance_controller().check())
                     return
+                if parsed.path == "/stargate/get/stellar_archive_addons":
+                    self.send_json(200, get_maintenance_controller().list_addons())
+                    return
                 if parsed.path == "/stellar-archive":
                     self.redirect("/stellar-archive/")
                     return
@@ -94,6 +97,12 @@ class StellarArchiveBridge:
                     return
                 if parsed.path == "/stargate/do/stellar_archive_uninstall":
                     self.send_json(200, get_maintenance_controller().start_uninstall(self))
+                    return
+                if parsed.path == "/stargate/do/stellar_archive_addon_update":
+                    self.send_json(200, get_maintenance_controller().start_addon_update(self))
+                    return
+                if parsed.path == "/stargate/do/stellar_archive_addon_uninstall":
+                    self.send_json(200, get_maintenance_controller().start_addon_uninstall(self))
                     return
                 if parsed.path != "/stellar-archive/api/dial":
                     self.send_error(404)

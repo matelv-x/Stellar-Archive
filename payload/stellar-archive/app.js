@@ -269,6 +269,7 @@ function showAboutDialog(){
  links.hidden=false;
  $('#dialog-maintenance').hidden=false;
  $('#details').showModal();
+ loadInstalledAddons();
 }
 async function maintenanceRequest(url,options={}){
  const response=await fetch(url,{cache:'no-store',credentials:'same-origin',...options});
@@ -281,6 +282,74 @@ function setMaintenanceBusy(busy,message){
  $('#uninstall-archive').disabled=busy;
  if(message)$('#maintenance-status').textContent=message;
 }
+let installedAddons=[];
+function addonRevision(value){return value?escapeHtml(value):'UNKNOWN'}
+function renderInstalledAddons(addons){
+ installedAddons=addons||[];
+ const host=$('#addon-list');
+ if(!installedAddons.length){host.innerHTML='';$('#addon-manager-status').textContent='No supported installed matelv-x add-ons were detected.';return}
+ $('#addon-manager-status').textContent=`${installedAddons.length} supported installed add-on${installedAddons.length===1?'':'s'} detected.`;
+ host.innerHTML=installedAddons.map(addon=>{
+  const task=addon.task||{};
+  const running=task.state==='running';
+  let state=addon.check_error?`Update check unavailable: ${addon.check_error}`:(addon.update_available===true?'UPDATE AVAILABLE':(addon.update_available===false?'UP TO DATE':'INSTALLED VERSION UNKNOWN'));
+  if(!addon.can_uninstall)state+=` · SAFE AUTOMATIC UNINSTALL UNAVAILABLE`;
+  if(task.message&&task.state!=='idle')state=task.message;
+  const updateDisabled=running||!addon.can_update;
+  const uninstallDisabled=running||!addon.can_uninstall;
+  return `<article class="addon-row" data-addon-id="${escapeHtml(addon.id)}"><div class="addon-row-head"><div><a class="addon-row-name" href="${escapeHtml(addon.repository_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(addon.name)} ↗</a><div class="addon-row-meta${addon.check_error?' error':''}">${escapeHtml(state)} · LOCAL ${addonRevision(addon.current_revision)} · GITHUB ${addonRevision(addon.latest_revision)}</div></div></div><div class="dialog-actions"><button type="button" data-addon-action="update" ${updateDisabled?'disabled':''}>CHECK FOR UPDATES</button><button type="button" class="danger" data-addon-action="uninstall" ${uninstallDisabled?'disabled':''}>UNINSTALL</button></div></article>`
+ }).join('');
+}
+async function loadInstalledAddons(){
+ $('#refresh-addons').disabled=true;
+ $('#addon-manager-status').textContent='Detecting installed add-ons and checking GitHub…';
+ try{
+  const payload=await maintenanceRequest('/stargate/get/stellar_archive_addons');
+  renderInstalledAddons(payload.addons||[]);
+ }catch(error){
+  $('#addon-manager-status').textContent=`Add-on detection failed: ${error.message}`;
+ }finally{$('#refresh-addons').disabled=false}
+}
+async function pollAddonMaintenance(addonId){
+ for(let attempt=0;attempt<300;attempt++){
+  await new Promise(resolve=>window.setTimeout(resolve,2000));
+  try{
+   const payload=await maintenanceRequest('/stargate/get/stellar_archive_addons');
+   renderInstalledAddons(payload.addons||[]);
+   const addon=(payload.addons||[]).find(item=>item.id===addonId);
+   if(!addon||['complete','failed'].includes(addon.task?.state))return;
+  }catch(error){$('#addon-manager-status').textContent=`Add-on status unavailable: ${error.message}`;return}
+ }
+ $('#addon-manager-status').textContent='The add-on operation is still running. Refresh in a moment.';
+}
+$('#refresh-addons').addEventListener('click',loadInstalledAddons);
+$('#addon-list').addEventListener('click',async event=>{
+ const button=event.target.closest('button[data-addon-action]');
+ if(!button)return;
+ const row=button.closest('[data-addon-id]');
+ const addonId=row?.dataset.addonId;
+ const action=button.dataset.addonAction;
+ let addon=installedAddons.find(item=>item.id===addonId);
+ if(!addon)return;
+ if(action==='update'){
+  await loadInstalledAddons();
+  addon=installedAddons.find(item=>item.id===addonId);
+  if(!addon)return;
+  if(addon.check_error){$('#addon-manager-status').textContent=`${addon.name}: ${addon.check_error}`;return}
+  if(addon.update_available===false){$('#addon-manager-status').textContent=`${addon.name} is up to date.`;return}
+  const question=addon.update_available===true
+   ?`Update ${addon.name} from ${addon.current_revision||'unknown'} to ${addon.latest_revision||'latest'}?`
+   :`The installed ${addon.name} revision is unknown. Install the latest GitHub revision ${addon.latest_revision||''}?`;
+  if(!window.confirm(question))return;
+ }else if(!window.confirm(`Uninstall ${addon.name} using its verified restore procedure?`))return;
+ button.disabled=true;
+ $('#addon-manager-status').textContent=`Starting ${action} for ${addon.name}…`;
+ try{
+  const payload=await maintenanceRequest(`/stargate/do/stellar_archive_addon_${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:addonId})});
+  $('#addon-manager-status').textContent=payload.message||`${action} started.`;
+  pollAddonMaintenance(addonId);
+ }catch(error){$('#addon-manager-status').textContent=`${addon.name}: ${error.message}`;button.disabled=false}
+});
 async function pollMaintenance(){
  for(let attempt=0;attempt<180;attempt++){
   await new Promise(resolve=>window.setTimeout(resolve,2000));

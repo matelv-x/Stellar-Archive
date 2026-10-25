@@ -9,7 +9,7 @@ UNINSTALL=0
 
 usage() {
   cat <<'EOF'
-SG1_v4 adapter — Stellar Archive universal installer 1.3.1
+SG1_v4 adapter — Stellar Archive universal installer 1.4.0
 
 Usage:
   ./install.sh [--replace original|retro|both|standalone] [--target PATH] [--dry-run]
@@ -63,6 +63,9 @@ SG1_ROOT="$(dirname -- "$TARGET")"
 WEB_SERVER="$SG1_ROOT/classes/web_server.py"
 MAINTENANCE="$SG1_ROOT/classes/stellar_archive_maintenance.py"
 MAINTENANCE_CONFIG="$SG1_ROOT/classes/.stellar-archive-maintenance.json"
+ADDON_MANAGER="$SG1_ROOT/classes/matelv_addon_manager.py"
+ADDON_REGISTRY="$SG1_ROOT/classes/matelv_addons.json"
+ADDON_STATE="$SG1_ROOT/classes/.matelv-addon-state.json"
 HAS_RETRO=0
 if [[ -f "$RETRO_PAGE" && -f "$RETRO_NAV" ]]; then HAS_RETRO=1; fi
 HAS_EXTENDED_RETRO=0
@@ -186,6 +189,12 @@ validate_managed_pages() {
   if [[ -f "$MANAGED/stellar_archive_maintenance.py" ]]; then
     matches_wrapper "$MAINTENANCE" "$MANAGED/stellar_archive_maintenance.py" || die 'managed SG1_v4 maintenance module was changed; preserve it manually before continuing'
   fi
+  if [[ -f "$MANAGED/matelv_addon_manager.py" ]]; then
+    matches_wrapper "$ADDON_MANAGER" "$MANAGED/matelv_addon_manager.py" || die 'managed matelv-x add-on manager was changed; preserve it manually before continuing'
+  fi
+  if [[ -f "$MANAGED/matelv_addons.json" ]]; then
+    matches_wrapper "$ADDON_REGISTRY" "$MANAGED/matelv_addons.json" || die 'managed matelv-x add-on registry was changed; preserve it manually before continuing'
+  fi
 }
 
 INTERRUPTED_UNIVERSAL_130=0
@@ -236,6 +245,8 @@ mkdir -p "$backup/classes"
 run_copy "$WEB_SERVER" "$backup/classes/web_server.py"
 [[ -f "$MAINTENANCE" ]] && run_copy "$MAINTENANCE" "$backup/classes/stellar_archive_maintenance.py"
 [[ -f "$MAINTENANCE_CONFIG" ]] && run_copy "$MAINTENANCE_CONFIG" "$backup/classes/maintenance-config.json"
+[[ -f "$ADDON_MANAGER" ]] && run_copy "$ADDON_MANAGER" "$backup/classes/matelv_addon_manager.py"
+[[ -f "$ADDON_REGISTRY" ]] && run_copy "$ADDON_REGISTRY" "$backup/classes/matelv_addons.json"
 for page in "$TARGET"/*.htm; do
   [[ -f "$page" ]] || continue
   if grep -q 'navbar-nav' "$page"; then run_copy "$page" "$backup/original-nav/$(basename -- "$page")"; fi
@@ -256,6 +267,15 @@ if [[ ! -d "$STATE" ]]; then
   run_copy "$WEB_SERVER" "$ORIGINALS/web_server.py"
   if [[ -f "$MAINTENANCE" ]]; then run_copy "$MAINTENANCE" "$ORIGINALS/stellar_archive_maintenance.py"; printf '1\n' > "$STATE/had-maintenance"; else printf '0\n' > "$STATE/had-maintenance"; fi
   if [[ -f "$MAINTENANCE_CONFIG" ]]; then run_copy "$MAINTENANCE_CONFIG" "$ORIGINALS/maintenance-config.json"; printf '1\n' > "$STATE/had-maintenance-config"; else printf '0\n' > "$STATE/had-maintenance-config"; fi
+fi
+
+# v1.4 introduces the common matelv-x add-on manager. Capture any pre-existing
+# files exactly once so uninstall can restore the pre-Archive state.
+if [[ ! -f "$STATE/addon-manager-baseline-captured" ]]; then
+  if [[ -f "$ADDON_MANAGER" ]]; then run_copy "$ADDON_MANAGER" "$ORIGINALS/matelv_addon_manager.py"; printf '1\n' > "$STATE/had-addon-manager"; else printf '0\n' > "$STATE/had-addon-manager"; fi
+  if [[ -f "$ADDON_REGISTRY" ]]; then run_copy "$ADDON_REGISTRY" "$ORIGINALS/matelv_addons.json"; printf '1\n' > "$STATE/had-addon-registry"; else printf '0\n' > "$STATE/had-addon-registry"; fi
+  if [[ -f "$ADDON_STATE" ]]; then run_copy "$ADDON_STATE" "$ORIGINALS/matelv-addon-state.json"; printf '1\n' > "$STATE/had-addon-state"; else printf '0\n' > "$STATE/had-addon-state"; fi
+  printf '1\n' > "$STATE/addon-manager-baseline-captured"
 fi
 
 # Upgrade from a pre-universal Archive state: capture the untouched API server
@@ -307,12 +327,21 @@ if ((UNINSTALL)); then
   had_archive="$(<"$STATE/had-archive")"
   had_maintenance="$(<"$STATE/had-maintenance")"
   had_maintenance_config="$(<"$STATE/had-maintenance-config")"
+  had_addon_manager="$(<"$STATE/had-addon-manager")"
+  had_addon_registry="$(<"$STATE/had-addon-registry")"
+  had_addon_state="$(<"$STATE/had-addon-state")"
   remove_exact_tree "$ARCHIVE_DIR" "$TARGET"
   if [[ "$had_archive" = '1' ]]; then run_copy "$ORIGINALS/stellar-archive" "$ARCHIVE_DIR"; fi
   [[ ! -f "$MAINTENANCE" ]] || find "$MAINTENANCE" -delete
   [[ ! -f "$MAINTENANCE_CONFIG" ]] || find "$MAINTENANCE_CONFIG" -delete
+  [[ ! -f "$ADDON_MANAGER" ]] || find "$ADDON_MANAGER" -delete
+  [[ ! -f "$ADDON_REGISTRY" ]] || find "$ADDON_REGISTRY" -delete
+  [[ ! -f "$ADDON_STATE" ]] || find "$ADDON_STATE" -delete
   if [[ "$had_maintenance" = '1' ]]; then run_copy "$ORIGINALS/stellar_archive_maintenance.py" "$MAINTENANCE"; fi
   if [[ "$had_maintenance_config" = '1' ]]; then run_copy "$ORIGINALS/maintenance-config.json" "$MAINTENANCE_CONFIG"; fi
+  if [[ "$had_addon_manager" = '1' ]]; then run_copy "$ORIGINALS/matelv_addon_manager.py" "$ADDON_MANAGER"; fi
+  if [[ "$had_addon_registry" = '1' ]]; then run_copy "$ORIGINALS/matelv_addons.json" "$ADDON_REGISTRY"; fi
+  if [[ "$had_addon_state" = '1' ]]; then run_copy "$ORIGINALS/matelv-addon-state.json" "$ADDON_STATE"; fi
   remove_exact_tree "$STATE" "$TARGET"
   note "Uninstalled. Pre-install pages and Archive state were restored."
   note "Safety backup: $backup"
@@ -358,12 +387,14 @@ if ((HAS_EXTENDED_RETRO)) && [[ -f "$ORIGINAL_ADDRESS_JS" ]]; then
   python3 "$SCRIPT_DIR/patch_address_book_routes.py" --file "$ORIGINAL_ADDRESS_JS" --html-file "$ORIGINAL_PAGE"
 fi
 run_copy "$SCRIPT_DIR/stellar_archive_maintenance.py" "$MAINTENANCE"
+run_copy "$SCRIPT_DIR/matelv_addon_manager.py" "$ADDON_MANAGER"
+run_copy "$SCRIPT_DIR/matelv_addons.json" "$ADDON_REGISTRY"
 python3 "$SCRIPT_DIR/patch_v4_web_server.py" --file "$WEB_SERVER"
-python3 "$SCRIPT_DIR/validate_python_sources.py" "$WEB_SERVER" "$MAINTENANCE"
+python3 "$SCRIPT_DIR/validate_python_sources.py" "$WEB_SERVER" "$MAINTENANCE" "$ADDON_MANAGER"
 chmod 644 "$ORIGINAL_PAGE"
 if ((HAS_RETRO)); then chmod 644 "$RETRO_PAGE"; fi
 if [[ -f "$ORIGINAL_ADDRESS_JS" ]]; then chmod 644 "$ORIGINAL_ADDRESS_JS"; fi
-chmod 644 "$WEB_SERVER" "$MAINTENANCE"
+chmod 644 "$WEB_SERVER" "$MAINTENANCE" "$ADDON_MANAGER" "$ADDON_REGISTRY"
 remove_exact_tree "$MANAGED" "$STATE"
 mkdir -p "$MANAGED/original-nav-pages"
 run_copy "$ORIGINAL_PAGE" "$MANAGED/address_book.htm"
@@ -376,22 +407,24 @@ if ((HAS_RETRO)); then run_copy "$RETRO_NAV" "$MANAGED/retro-navigation.js"; fi
 if [[ -f "$ORIGINAL_ADDRESS_JS" ]]; then run_copy "$ORIGINAL_ADDRESS_JS" "$MANAGED/address_book.js"; fi
 run_copy "$WEB_SERVER" "$MANAGED/web_server.py"
 run_copy "$MAINTENANCE" "$MANAGED/stellar_archive_maintenance.py"
+run_copy "$ADDON_MANAGER" "$MANAGED/matelv_addon_manager.py"
+run_copy "$ADDON_REGISTRY" "$MANAGED/matelv_addons.json"
 printf '%s\n' "$MODE" > "$STATE/current-mode"
-printf '1.3.1\n' > "$STATE/version"
+printf '1.4.0\n' > "$STATE/version"
 
 updater="$STATE/updater"
 mkdir -p "$updater/payload"
-for file in install.sh install-v3.sh install-v4.sh patch_v3_main.py patch_v4_web_server.py patch_address_book_routes.py patch_navigation_links.py build_navigation.py stellar_archive_bridge.py stellar_archive_maintenance.py validate_python_sources.py; do
+for file in install.sh install-v3.sh install-v4.sh patch_v3_main.py patch_v4_web_server.py patch_address_book_routes.py patch_navigation_links.py build_navigation.py stellar_archive_bridge.py stellar_archive_maintenance.py matelv_addon_manager.py matelv_addons.json validate_python_sources.py; do
   [[ -f "$SCRIPT_DIR/$file" ]] && run_copy "$SCRIPT_DIR/$file" "$updater/$file"
 done
 run_copy "$INTEGRATION_PAYLOAD" "$updater/payload/integration"
 chmod 755 "$updater/install.sh" "$updater/install-v3.sh" "$updater/install-v4.sh"
 cat > "$MAINTENANCE_CONFIG" <<EOF
-{"version":"1.3.1","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh"}
+{"version":"1.4.0","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh"}
 EOF
 chmod 644 "$MAINTENANCE_CONFIG"
 
-note "Installed Stellar Archive 1.3.1 for SG1_v4 with replacement mode: $MODE"
+note "Installed Stellar Archive 1.4.0 for SG1_v4 with replacement mode: $MODE"
 if ((HAS_RETRO)); then note 'Detected interfaces: Original + Retro'; else note 'Detected interface: Original (Retro not installed)'; fi
 if ((HAS_EXTENDED_RETRO)); then note 'Extended addresses: direct Retro dial9 routing enabled for Archive and Original address book'; fi
 note "Archive URL: /stellar-archive/"
