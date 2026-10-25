@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.1
+
+- Fixed update, uninstall and add-on maintenance POST requests in Safari and
+  embedded WebViews which omit both `Origin` and `Referer` on a same-origin
+  request.
+- Added a dedicated `X-Stellar-Archive-Request` header and a JSON-content
+  compatibility fallback. Explicit foreign origins remain rejected and the
+  local server does not grant cross-origin preflight requests.
+
 ## 1.5.0
 
 - Replaced the flat maintenance area with expandable `INSTALLATIONS` and

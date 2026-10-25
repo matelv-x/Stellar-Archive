@@ -91,12 +91,26 @@ class StellarArchiveMaintenance:
 
     @staticmethod
     def same_origin(handler):
-        source = handler.headers.get("Origin") or handler.headers.get("Referer")
         host = handler.headers.get("Host", "")
-        if not source or not host:
+        if not host:
             return False
         from urllib.parse import urlparse
-        return urlparse(source).netloc.lower() == host.lower()
+        source = handler.headers.get("Origin") or handler.headers.get("Referer")
+        if source:
+            return urlparse(source).netloc.lower() == host.lower()
+
+        # Safari and some embedded WebViews omit Origin and Referer for a
+        # same-origin JSON POST. A custom request header is the preferred proof;
+        # application/json is the compatibility fallback. A cross-origin page
+        # cannot send either without a successful CORS preflight, which this
+        # local server does not grant.
+        marker = handler.headers.get("X-Stellar-Archive-Request", "")
+        if marker == "same-origin":
+            return True
+        if handler.headers.get("Sec-Fetch-Site", "").lower() == "same-origin":
+            return True
+        content_type = handler.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+        return content_type == "application/json"
 
     def start_update(self, handler):
         if not self.same_origin(handler):
@@ -143,7 +157,7 @@ class StellarArchiveMaintenance:
         return self.addons.start(handler, "uninstall", self.same_origin)
 
     def _download(self, url, destination):
-        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.4"})
+        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.1"})
         total = 0
         with urllib.request.urlopen(request, timeout=30) as response, open(destination, "wb") as output:
             while True:

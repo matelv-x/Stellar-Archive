@@ -272,7 +272,8 @@ function showAboutDialog(){
  loadInstalledAddons();
 }
 async function maintenanceRequest(url,options={}){
- const response=await fetch(url,{cache:'no-store',credentials:'same-origin',...options});
+ const headers={...(options.headers||{}),'X-Stellar-Archive-Request':'same-origin'};
+ const response=await fetch(url,{cache:'no-store',credentials:'same-origin',...options,headers});
  const payload=await response.json().catch(()=>({success:false,message:`HTTP ${response.status}`}));
  if(!response.ok||payload.success===false)throw new Error(payload.message||`HTTP ${response.status}`);
  return payload;

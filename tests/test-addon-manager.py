@@ -10,12 +10,14 @@ from matelv_addon_manager import MatelvAddonManager
 
 
 class Handler:
-    def __init__(self, addon_id, origin=True):
+    def __init__(self, addon_id, origin=True, content_type=False):
         body = json.dumps({"id": addon_id}).encode("utf-8")
         self.rfile = io.BytesIO(body)
         self.headers = {"Host": "gate.local", "Content-Length": str(len(body))}
         if origin:
             self.headers["Origin"] = "http://gate.local"
+        if content_type:
+            self.headers["Content-Type"] = "application/json"
 
 
 class AddonManagerTests(unittest.TestCase):
