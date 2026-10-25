@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.2
+
+- Fixed add-on actions on SG1_v4 by passing the JSON body already parsed by the
+  web server instead of attempting to read the request stream a second time.
+- Corrected Dynamic Wormhole detection to match its installed active manager
+  and pattern-manager implementation.
+- Removed Visual Volume Meter from the installable catalogue because it is a
+  standard component of the SG1_v4 image.
+
 ## 1.5.1
 
 - Fixed update, uninstall and add-on maintenance POST requests in Safari and

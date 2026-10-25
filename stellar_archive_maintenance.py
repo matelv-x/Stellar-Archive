@@ -147,17 +147,17 @@ class StellarArchiveMaintenance:
         except Exception as error:
             return {"success": False, "message": str(error), "addons": [], "available": []}
 
-    def start_addon_update(self, handler):
-        return self.addons.start(handler, "update", self.same_origin)
+    def start_addon_update(self, handler, payload=None):
+        return self.addons.start(handler, "update", self.same_origin, payload)
 
-    def start_addon_install(self, handler):
-        return self.addons.start(handler, "install", self.same_origin)
+    def start_addon_install(self, handler, payload=None):
+        return self.addons.start(handler, "install", self.same_origin, payload)
 
-    def start_addon_uninstall(self, handler):
-        return self.addons.start(handler, "uninstall", self.same_origin)
+    def start_addon_uninstall(self, handler, payload=None):
+        return self.addons.start(handler, "uninstall", self.same_origin, payload)
 
     def _download(self, url, destination):
-        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.1"})
+        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.2"})
         total = 0
         with urllib.request.urlopen(request, timeout=30) as response, open(destination, "wb") as output:
             while True:

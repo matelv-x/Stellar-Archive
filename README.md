@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.1 contains one entry-point installer and two isolated adapters. It
+Version 1.5.2 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -8,8 +8,8 @@ uses only the matching adapter.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_v1.5.1.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.1
+unzip sg1_v3_v4_stellar_archive_universal_v1.5.2.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.2
 ./install.sh
 ```
 
@@ -136,7 +136,8 @@ button opens the repository, allowing the user to review the add-on first.
 The public catalogue currently includes Alarm Clock, Aquila Symbol Patch,
 Connection History, DHD LED Test, Dynamic Wormhole, LAN Discovery, Lamp Mode,
 Retro Visuals, Retro Wormhole Animation, SG1 Iris, Silence Mode, Stargate Ring
-Symbols, Switch To Retro and Visual Volume Meter. Alarm Clock now has a bounded
+Symbols and Switch To Retro. Visual Volume Meter is not offered because it is
+already part of the SG1_v4 image. Alarm Clock now has a bounded
 uninstall which removes only its owned files and exact integration blocks; it
 does not restore the complete SG1 tree.
 

@@ -296,13 +296,18 @@ class MatelvAddonManager:
             raise ValueError("invalid add-on id")
         return addon_id
 
-    def start(self, handler, action, same_origin):
+    def start(self, handler, action, same_origin, payload=None):
         if not same_origin(handler):
             return {"success": False, "message": "same-origin request required"}
         if action not in ("install", "update", "uninstall"):
             return {"success": False, "message": "unsupported add-on action"}
         try:
-            addon_id = self._read_request(handler)
+            if payload is None:
+                addon_id = self._read_request(handler)
+            else:
+                addon_id = payload.get("id") if isinstance(payload, dict) else None
+                if not isinstance(addon_id, str) or not ADDON_ID_RE.fullmatch(addon_id):
+                    raise ValueError("invalid add-on id")
             context = self.config()
             checkouts = self._checkout_map(context["home_root"])
             manifest = self._manifests(checkouts).get(addon_id)

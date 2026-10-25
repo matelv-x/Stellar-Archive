@@ -26,13 +26,13 @@ POST_BLOCK = """            # STELLAR_ARCHIVE_MAINTENANCE_POST_BEGIN
                 self.send_json_response(get_maintenance_controller().start_uninstall(self))
                 return
             if self.path == '/do/stellar_archive_addon_update':
-                self.send_json_response(get_maintenance_controller().start_addon_update(self))
+                self.send_json_response(get_maintenance_controller().start_addon_update(self, data))
                 return
             if self.path == '/do/stellar_archive_addon_install':
-                self.send_json_response(get_maintenance_controller().start_addon_install(self))
+                self.send_json_response(get_maintenance_controller().start_addon_install(self, data))
                 return
             if self.path == '/do/stellar_archive_addon_uninstall':
-                self.send_json_response(get_maintenance_controller().start_addon_uninstall(self))
+                self.send_json_response(get_maintenance_controller().start_addon_uninstall(self, data))
                 return
             # STELLAR_ARCHIVE_MAINTENANCE_POST_END
 

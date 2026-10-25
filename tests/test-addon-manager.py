@@ -102,6 +102,18 @@ class AddonManagerTests(unittest.TestCase):
         result = self.manager.start(Handler("example-addon", origin=False), "uninstall", lambda _handler: False)
         self.assertFalse(result["success"])
 
+    def test_already_parsed_payload_does_not_read_request_stream_twice(self):
+        handler = Handler("wrong-addon")
+        handler.rfile = io.BytesIO(b"")
+        result = self.manager.start(
+            handler,
+            "uninstall",
+            lambda _handler: True,
+            {"id": "missing-addon"},
+        )
+        self.assertFalse(result["success"])
+        self.assertEqual(result["message"], "unknown add-on")
+
     def test_unsafe_manifest_repository_is_rejected(self):
         with self.assertRaises(ValueError):
             self.manager._validate_manifest({

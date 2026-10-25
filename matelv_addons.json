@@ -46,7 +46,10 @@
       "name": "Dynamic Wormhole",
       "repository": "matelv-x/Dynamic-Wormhole",
       "platforms": ["v4"],
-      "detect": {"all": [{"path": "classes/StargateMilkyWay/dynamic_wormhole_runtime.py"}]},
+      "detect": {"all": [
+        {"path": "classes/StargateMilkyWay/wormhole_manager.py", "contains": "DYNAMIC_WORMHOLE_FRAME_SECONDS"},
+        {"path": "classes/StargateMilkyWay/wormhole_pattern_manager.py", "contains": "def dynamic_wormhole_step"}
+      ]},
       "install": {"argv": ["./install.sh", "{sg1_root}"], "timeout": 1200},
       "uninstall": {"argv": ["./restore.sh", "{sg1_root}"], "timeout": 900},
       "restart_required": true
@@ -120,16 +123,6 @@
       "install": {"argv": ["./apply-ring-symbols-upgrade.sh", "{web_root}"], "timeout": 900},
       "uninstall": {"argv": ["./restore.sh", "{web_root}"], "timeout": 900},
       "restart_required": true
-    },
-    {
-      "id": "visual-volume-meter",
-      "name": "Visual Volume Meter",
-      "repository": "matelv-x/Visual-Volume-Meter",
-      "platforms": ["v4"],
-      "detect": {"all": [{"path": "web/debug.htm", "contains": "BEGIN STARGATE VISUAL VOLUME METER ADD-ON"}]},
-      "install": {"argv": ["./install.sh", "{web_root}/debug.htm"], "timeout": 900},
-      "uninstall": {"argv": ["./restore.sh", "{web_root}/debug.htm"], "timeout": 900},
-      "restart_required": false
     },
     {
       "id": "switch-to-retro",

@@ -28,7 +28,7 @@ printf 'standalone\n' > "$STATE/current-mode"
 printf '1.1.2\n' > "$STATE/version"
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace standalone >/dev/null
-grep -q '^1.5.1$' "$STATE/version"
+grep -q '^1.5.2$' "$STATE/version"
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/address_book.htm"
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/index.htm"
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/retro/js/navigation.js"
