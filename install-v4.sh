@@ -9,7 +9,7 @@ UNINSTALL=0
 
 usage() {
   cat <<'EOF'
-SG1_v4 adapter — Stellar Archive universal installer 1.5.2
+SG1_v4 adapter — Stellar Archive universal installer 1.5.3
 
 Usage:
   ./install.sh [--replace original|retro|both|standalone] [--target PATH] [--dry-run]
@@ -66,6 +66,19 @@ MAINTENANCE_CONFIG="$SG1_ROOT/classes/.stellar-archive-maintenance.json"
 ADDON_MANAGER="$SG1_ROOT/classes/matelv_addon_manager.py"
 ADDON_REGISTRY="$SG1_ROOT/classes/matelv_addons.json"
 ADDON_STATE="$SG1_ROOT/classes/.matelv-addon-state.json"
+RESTART_SERVICE=""
+for unit_path in /etc/systemd/system/*.service; do
+  [[ -f "$unit_path" ]] || continue
+  if grep -Fq -- "$SG1_ROOT/main.py" "$unit_path"; then
+    unit_name="$(basename -- "$unit_path")"
+    [[ "$unit_name" =~ ^[A-Za-z0-9_.@-]+\.service$ ]] || continue
+    if [[ -n "$RESTART_SERVICE" && "$RESTART_SERVICE" != "$unit_name" ]]; then
+      RESTART_SERVICE=""
+      break
+    fi
+    RESTART_SERVICE="$unit_name"
+  fi
+done
 HAS_RETRO=0
 if [[ -f "$RETRO_PAGE" && -f "$RETRO_NAV" ]]; then HAS_RETRO=1; fi
 HAS_EXTENDED_RETRO=0
@@ -410,7 +423,7 @@ run_copy "$MAINTENANCE" "$MANAGED/stellar_archive_maintenance.py"
 run_copy "$ADDON_MANAGER" "$MANAGED/matelv_addon_manager.py"
 run_copy "$ADDON_REGISTRY" "$MANAGED/matelv_addons.json"
 printf '%s\n' "$MODE" > "$STATE/current-mode"
-printf '1.5.2\n' > "$STATE/version"
+printf '1.5.3\n' > "$STATE/version"
 
 updater="$STATE/updater"
 mkdir -p "$updater/payload"
@@ -420,11 +433,11 @@ done
 run_copy "$INTEGRATION_PAYLOAD" "$updater/payload/integration"
 chmod 755 "$updater/install.sh" "$updater/install-v3.sh" "$updater/install-v4.sh"
 cat > "$MAINTENANCE_CONFIG" <<EOF
-{"version":"1.5.2","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh"}
+{"version":"1.5.3","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh","restart_service":"$RESTART_SERVICE"}
 EOF
 chmod 644 "$MAINTENANCE_CONFIG"
 
-note "Installed Stellar Archive 1.5.2 for SG1_v4 with replacement mode: $MODE"
+note "Installed Stellar Archive 1.5.3 for SG1_v4 with replacement mode: $MODE"
 if ((HAS_RETRO)); then note 'Detected interfaces: Original + Retro'; else note 'Detected interface: Original (Retro not installed)'; fi
 if ((HAS_EXTENDED_RETRO)); then note 'Extended addresses: direct Retro dial9 routing enabled for Archive and Original address book'; fi
 note "Archive URL: /stellar-archive/"

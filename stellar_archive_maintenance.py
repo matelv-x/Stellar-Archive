@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import sys
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -19,6 +20,7 @@ from matelv_addon_manager import MatelvAddonManager
 
 VERSION_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 SHA_RE = re.compile(r"\b([0-9a-fA-F]{64})\b")
+SERVICE_RE = re.compile(r"^[A-Za-z0-9_.@-]+\.service$")
 MAX_PACKAGE_BYTES = 300 * 1024 * 1024
 _controller = None
 
@@ -156,8 +158,34 @@ class StellarArchiveMaintenance:
     def start_addon_uninstall(self, handler, payload=None):
         return self.addons.start(handler, "uninstall", self.same_origin, payload)
 
+    def restart_service(self, handler):
+        if not self.same_origin(handler):
+            return {"success": False, "message": "same-origin request required"}
+        try:
+            service = str(self.config().get("restart_service", ""))
+            if not SERVICE_RE.fullmatch(service):
+                raise ValueError("a safe Stargate service was not detected during installation")
+            command = ["systemctl", "restart", service]
+            if hasattr(os, "geteuid") and os.geteuid() != 0:
+                command = ["sudo", "-n"] + command
+            helper = (
+                "import subprocess,sys,time; time.sleep(1); "
+                "raise SystemExit(subprocess.call(sys.argv[1:]))"
+            )
+            subprocess.Popen(
+                [sys.executable, "-c", helper] + command,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True,
+                start_new_session=True,
+            )
+            return {"success": True, "message": "Restart scheduled", "service": service}
+        except Exception as error:
+            return {"success": False, "message": str(error)}
+
     def _download(self, url, destination):
-        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.2"})
+        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.3"})
         total = 0
         with urllib.request.urlopen(request, timeout=30) as response, open(destination, "wb") as output:
             while True:

@@ -7,6 +7,7 @@ import time
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 from stellar_archive_maintenance import StellarArchiveMaintenance
 
@@ -48,7 +49,7 @@ class MaintenanceTests(unittest.TestCase):
         installer.chmod(0o755)
         self.zip_path = self.root / "release.zip"
         with zipfile.ZipFile(self.zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
-            archive.write(installer, "sg1-v3-v4-stellar-archive-universal-v1.5.2/install.sh")
+            archive.write(installer, "sg1-v3-v4-stellar-archive-universal-v1.5.3/install.sh")
         digest = hashlib.sha256(self.zip_path.read_bytes()).hexdigest()
         self.sha_path = self.root / "release.zip.sha256"
         self.sha_path.write_text("{}  release.zip\n".format(digest), encoding="utf-8")
@@ -63,8 +64,9 @@ class MaintenanceTests(unittest.TestCase):
             "mode": "standalone",
             "repository": "example/archive",
             "installer": str(self.cached),
+            "restart_service": "stargate-test.service",
         }), encoding="utf-8")
-        release = {"version": "1.5.2", "zip_name": "release.zip", "zip_url": "zip", "sha_url": "sha", "release_url": "https://example.invalid"}
+        release = {"version": "1.5.3", "zip_name": "release.zip", "zip_url": "zip", "sha_url": "sha", "release_url": "https://example.invalid"}
         self.controller = TestController(self.config_path, release, {"zip": self.zip_path, "sha": self.sha_path})
 
     def tearDown(self):
@@ -107,6 +109,24 @@ class MaintenanceTests(unittest.TestCase):
         handler.headers["Content-Type"] = "application/json"
         handler.headers["X-Stellar-Archive-Request"] = "same-origin"
         self.assertFalse(self.controller.same_origin(handler))
+
+    @mock.patch("stellar_archive_maintenance.subprocess.Popen")
+    def test_restart_uses_only_configured_service(self, popen):
+        result = self.controller.restart_service(Handler())
+        self.assertTrue(result["success"])
+        self.assertEqual(result["service"], "stargate-test.service")
+        argv = popen.call_args.args[0]
+        self.assertEqual(argv[-3:], ["systemctl", "restart", "stargate-test.service"])
+        self.assertTrue(popen.call_args.kwargs["start_new_session"])
+
+    @mock.patch("stellar_archive_maintenance.subprocess.Popen")
+    def test_restart_rejects_unsafe_service_name(self, popen):
+        config = json.loads(self.config_path.read_text(encoding="utf-8"))
+        config["restart_service"] = "stargate.service; reboot"
+        self.config_path.write_text(json.dumps(config), encoding="utf-8")
+        result = self.controller.restart_service(Handler())
+        self.assertFalse(result["success"])
+        popen.assert_not_called()
 
 
 if __name__ == "__main__":

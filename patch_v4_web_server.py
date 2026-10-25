@@ -34,6 +34,9 @@ POST_BLOCK = """            # STELLAR_ARCHIVE_MAINTENANCE_POST_BEGIN
             if self.path == '/do/stellar_archive_addon_uninstall':
                 self.send_json_response(get_maintenance_controller().start_addon_uninstall(self, data))
                 return
+            if self.path == '/do/stellar_archive_restart':
+                self.send_json_response(get_maintenance_controller().restart_service(self))
+                return
             # STELLAR_ARCHIVE_MAINTENANCE_POST_END
 
 """

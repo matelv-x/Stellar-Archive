@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.3
+
+- Added a prominent add-on operation window with Download, Verify, Install and
+  Complete stages, live status messages and visible failure reporting.
+- Added a post-operation restart choice and automatic reconnection status.
+- The restart endpoint is restricted to the exact systemd service detected for
+  the installed application root, preventing SG2 maintenance from restarting a
+  colocated public SG1 service.
+- Add-on tasks now publish structured phase and progress information.
+
 ## 1.5.2
 
 - Fixed add-on actions on SG1_v4 by passing the JSON body already parsed by the

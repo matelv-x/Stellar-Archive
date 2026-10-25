@@ -191,6 +191,23 @@ dialog p{font-size:14px;line-height:1.9}
 .archive-row{margin-top:10px}
 .addon-install-note{padding:10px 2px 2px;color:#9fc4ce;font-size:9px;line-height:1.5}
 .addon-info{min-width:64px;border-radius:999px!important}
+.addon-progress-overlay{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:22px;background:#000c;backdrop-filter:blur(8px)}
+.addon-progress-overlay[hidden]{display:none}
+.addon-progress-card{box-sizing:border-box;width:min(560px,100%);padding:30px;border:1px solid var(--gold);background:linear-gradient(145deg,#0c2b38,#04131c);box-shadow:0 0 80px #69d5f52b;color:#dfe7df}
+.addon-progress-card h2{margin:16px 0 6px;color:#f1dca8;font:25px Georgia,serif;letter-spacing:.13em}
+.addon-progress-card>p{margin:6px 0;color:#9fc4ce;font-size:11px;line-height:1.6;letter-spacing:.05em}
+.addon-progress-track{height:8px;margin:24px 0 14px;border:1px solid #31515c;background:#020b10;overflow:hidden}
+.addon-progress-track span{display:block;width:5%;height:100%;background:linear-gradient(90deg,#52b9cd,#9af2e3,#d9bd72);box-shadow:0 0 14px #7ce5ef;transition:width .35s ease}
+.addon-progress-overlay[data-running="true"] .addon-progress-track span:after{content:'';display:block;width:35%;height:100%;background:#fff7;animation:addon-progress-shimmer 1.1s linear infinite}
+@keyframes addon-progress-shimmer{from{transform:translateX(-100%)}to{transform:translateX(390%)}}
+.addon-progress-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:0;padding:0;list-style:none}
+.addon-progress-steps li{padding:8px 4px;border:1px solid #294751;color:#587986;text-align:center;font-size:8px;letter-spacing:.1em}
+.addon-progress-steps li.active{border-color:#72d9e8;color:#d9fbff;background:#0b3440}
+.addon-progress-steps li.done{border-color:#6bc4a3;color:#9df2cf;background:#0a2d28}
+.addon-progress-overlay[data-state="failed"] .addon-progress-track span{background:#d5656d}
+.addon-progress-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.addon-progress-actions button{border:1px solid #4d9aae;background:#071d27;color:#c9edf2;padding:10px 14px;font-size:9px;letter-spacing:.12em;cursor:pointer}
+#addon-progress-restart{border-color:#d4aa55;color:#ffe3a2}
 #dial-address{display:inline-block;padding:13px 18px;border:1px solid #edc47d;background:linear-gradient(120deg,#7a5b2c88,#a0773170,#342a1d);color:#fff0d2;text-decoration:none;letter-spacing:.14em;font-size:11px;box-shadow:inset 0 0 15px #ffcf7450,0 0 13px #ffd79c25}
 #dial-address:hover{background:#8e6b36;box-shadow:0 0 24px #ffd79c60}
 #dial-address[hidden]{display:none}

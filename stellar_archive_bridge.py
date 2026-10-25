@@ -107,6 +107,9 @@ class StellarArchiveBridge:
                 if parsed.path == "/stargate/do/stellar_archive_addon_uninstall":
                     self.send_json(200, get_maintenance_controller().start_addon_uninstall(self))
                     return
+                if parsed.path == "/stargate/do/stellar_archive_restart":
+                    self.send_json(200, get_maintenance_controller().restart_service(self))
+                    return
                 if parsed.path != "/stellar-archive/api/dial":
                     self.send_error(404)
                     return

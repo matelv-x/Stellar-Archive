@@ -323,18 +323,94 @@ async function loadInstalledAddons(){
   $('#addon-manager-status').textContent=`Add-on detection failed: ${error.message}`;
  }finally{$('#refresh-addons').disabled=false}
 }
+let addonProgressContext=null;
+const addonProgressPhases=['download','verify','install','complete'];
+function showAddonProgress(addon,action){
+ addonProgressContext={id:addon.id,name:addon.name,action,restartRequired:Boolean(addon.restart_required)};
+ const overlay=$('#addon-progress-overlay');
+ overlay.hidden=false;
+ overlay.dataset.running='true';
+ overlay.dataset.state='running';
+ $('#addon-progress-title').textContent=`${action.toUpperCase()} IN PROGRESS`;
+ $('#addon-progress-name').textContent=addon.name;
+ $('#addon-progress-status').textContent='Preparing secure operation…';
+ $('#addon-progress-bar').style.width='5%';
+ $('#addon-progress-close').hidden=true;
+ $('#addon-progress-restart').hidden=true;
+ updateAddonProgressSteps('prepare');
+}
+function updateAddonProgressSteps(phase){
+ const activeIndex=addonProgressPhases.indexOf(phase);
+ document.querySelectorAll('.addon-progress-steps li').forEach(item=>{
+  const index=addonProgressPhases.indexOf(item.dataset.phase);
+  item.classList.toggle('active',index===activeIndex);
+  item.classList.toggle('done',activeIndex>=0&&index<activeIndex);
+ });
+}
+function updateAddonProgress(task){
+ if(!addonProgressContext)return;
+ const overlay=$('#addon-progress-overlay');
+ const phase=task.phase||(task.state==='complete'?'complete':task.state==='failed'?'failed':'prepare');
+ const progress=Number.isFinite(Number(task.progress))?Math.max(5,Math.min(100,Number(task.progress))):5;
+ overlay.dataset.running=String(task.state==='running');
+ overlay.dataset.state=task.state||'running';
+ $('#addon-progress-bar').style.width=`${progress}%`;
+ $('#addon-progress-status').textContent=task.message||'Operation in progress…';
+ updateAddonProgressSteps(phase);
+ if(task.state==='complete'){
+  $('#addon-progress-title').textContent=`${addonProgressContext.action.toUpperCase()} COMPLETE`;
+  $('#addon-progress-close').textContent=addonProgressContext.restartRequired?'LATER':'CLOSE';
+  $('#addon-progress-close').hidden=false;
+  $('#addon-progress-restart').hidden=!addonProgressContext.restartRequired;
+ }else if(task.state==='failed'){
+  $('#addon-progress-title').textContent=`${addonProgressContext.action.toUpperCase()} FAILED`;
+  $('#addon-progress-close').textContent='CLOSE';
+  $('#addon-progress-close').hidden=false;
+  $('#addon-progress-restart').hidden=true;
+ }
+}
+function failAddonProgress(message){
+ updateAddonProgress({state:'failed',phase:'failed',progress:100,message});
+}
 async function pollAddonMaintenance(addonId){
  for(let attempt=0;attempt<300;attempt++){
-  await new Promise(resolve=>window.setTimeout(resolve,2000));
+  await new Promise(resolve=>window.setTimeout(resolve,1000));
   try{
    const payload=await maintenanceRequest('/stargate/get/stellar_archive_addons');
    renderAddons(payload.addons||[],payload.available||[]);
    const addon=[...(payload.addons||[]),...(payload.available||[])].find(item=>item.id===addonId);
-   if(!addon||['complete','failed'].includes(addon.task?.state))return;
-  }catch(error){$('#addon-manager-status').textContent=`Add-on status unavailable: ${error.message}`;return}
+   if(!addon){failAddonProgress('The add-on status is no longer available.');return}
+   updateAddonProgress(addon.task||{});
+   if(['complete','failed'].includes(addon.task?.state))return;
+  }catch(error){$('#addon-manager-status').textContent=`Add-on status unavailable: ${error.message}`;failAddonProgress(`Status unavailable: ${error.message}`);return}
  }
  $('#addon-manager-status').textContent='The add-on operation is still running. Refresh in a moment.';
+ failAddonProgress('The operation did not report completion. Check the installed add-on list before trying again.');
 }
+$('#addon-progress-close').addEventListener('click',()=>{$('#addon-progress-overlay').hidden=true;addonProgressContext=null;loadInstalledAddons()});
+$('#addon-progress-restart').addEventListener('click',async()=>{
+ if(!addonProgressContext||!window.confirm(`Restart the Stargate service for ${addonProgressContext.name} now?`))return;
+ $('#addon-progress-close').hidden=true;
+ $('#addon-progress-restart').hidden=true;
+ $('#addon-progress-overlay').dataset.running='true';
+ $('#addon-progress-title').textContent='RESTARTING SERVICE';
+ $('#addon-progress-status').textContent='Sending a target-specific restart request…';
+ try{
+  await maintenanceRequest('/stargate/do/stellar_archive_restart',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  $('#addon-progress-status').textContent='Restart requested. Waiting for the Stargate service…';
+  await new Promise(resolve=>window.setTimeout(resolve,1500));
+  let online=false;
+  for(let attempt=0;attempt<60;attempt++){
+   try{await maintenanceRequest('/stargate/get/stellar_archive_update');online=true;break}catch(error){await new Promise(resolve=>window.setTimeout(resolve,1000))}
+  }
+  if(!online)throw new Error('the service did not return within 60 seconds');
+  $('#addon-progress-overlay').dataset.running='false';
+  $('#addon-progress-title').textContent='SERVICE ONLINE';
+  $('#addon-progress-status').textContent='The correct Stargate service restarted successfully.';
+  $('#addon-progress-close').textContent='CLOSE';
+  $('#addon-progress-close').hidden=false;
+ }catch(error){failAddonProgress(`Restart failed: ${error.message}`)}
+});
 $('#refresh-addons').addEventListener('click',loadInstalledAddons);
 async function handleAddonAction(event){
  const button=event.target.closest('button[data-addon-action]');
@@ -370,11 +446,13 @@ async function handleAddonAction(event){
  }else if(!window.confirm(`Uninstall ${addon.name} using its verified bounded restore procedure?`))return;
  button.disabled=true;
  $('#addon-manager-status').textContent=`Starting ${action} for ${addon.name}…`;
+ showAddonProgress(addon,action);
  try{
   const payload=await maintenanceRequest(`/stargate/do/stellar_archive_addon_${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:addonId})});
   $('#addon-manager-status').textContent=payload.message||`${action} started.`;
+  updateAddonProgress(payload.task||{state:'running',phase:'prepare',progress:5,message:payload.message});
   pollAddonMaintenance(addonId);
- }catch(error){$('#addon-manager-status').textContent=`${addon.name}: ${error.message}`;button.disabled=false}
+ }catch(error){$('#addon-manager-status').textContent=`${addon.name}: ${error.message}`;button.disabled=false;failAddonProgress(error.message)}
 }
 $('#addon-list').addEventListener('click',handleAddonAction);
 $('#available-addon-list').addEventListener('click',handleAddonAction);

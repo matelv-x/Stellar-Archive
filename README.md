@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.2 contains one entry-point installer and two isolated adapters. It
+Version 1.5.3 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -8,8 +8,8 @@ uses only the matching adapter.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_v1.5.2.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.2
+unzip sg1_v3_v4_stellar_archive_universal_v1.5.3.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.3
 ./install.sh
 ```
 
@@ -152,7 +152,12 @@ Before running downloaded code the manager verifies all of the following:
 - no Archive or other add-on maintenance operation is already active.
 
 Managed procedures run with `STARGATE_ADDON_NO_RESTART=1`. They can update web
-files but do not restart Stargate software or reboot the Pi. Private repositories
+files but do not restart Stargate software or reboot the Pi. The progress window
+shows Download, Verify, Install and Complete stages. When a verified add-on
+declares that a restart is required, the user can choose `LATER` or explicitly
+authorize `RESTART SERVICE`. That action targets only the exact systemd service
+detected for the installed application root; if no unique service is found, the
+web restart remains unavailable. Private repositories
 are supported only when the Pi already has Git credentials for them and their
 installed checkout contains the same manifest. The installer never embeds or
 stores a GitHub token.

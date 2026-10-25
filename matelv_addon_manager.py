@@ -327,7 +327,13 @@ class MatelvAddonManager:
             with self.task_lock:
                 if any(task.get("state") == "running" for task in self.tasks.values()):
                     raise ValueError("another add-on maintenance task is already running")
-                self.tasks[addon_id] = {"state": "running", "action": action, "message": "Starting {}".format(action)}
+                self.tasks[addon_id] = {
+                    "state": "running",
+                    "action": action,
+                    "phase": "prepare",
+                    "progress": 5,
+                    "message": "Preparing {}".format(action),
+                }
             thread = threading.Thread(
                 target=self._run_action,
                 args=(addon_id, action, manifest, context, checkout),
@@ -347,9 +353,17 @@ class MatelvAddonManager:
                 raise RuntimeError("another maintenance operation is already running")
             origin = checkout["origin"] if checkout else "https://github.com/{}.git".format(manifest["repository"])
             clone = Path(temp) / "repository"
+            self.tasks[addon_id] = {
+                "state": "running", "action": action, "phase": "download", "progress": 20,
+                "message": "Downloading repository",
+            }
             cloned = self._run(["git", "clone", "--depth", "1", origin, str(clone)], timeout=180)
             if cloned.returncode:
                 raise RuntimeError("repository download failed: {}".format((cloned.stderr or cloned.stdout)[-600:]))
+            self.tasks[addon_id] = {
+                "state": "running", "action": action, "phase": "verify", "progress": 50,
+                "message": "Verifying maintenance contract",
+            }
             remote = self._run(["git", "-C", str(clone), "remote", "get-url", "origin"], timeout=5)
             cloned_repository = None if remote.returncode else self._repo_from_remote(remote.stdout)
             if not cloned_repository or cloned_repository.lower() != manifest["repository"].lower():
@@ -376,7 +390,10 @@ class MatelvAddonManager:
                     raise RuntimeError("manifest command is missing from the repository")
                 executable.chmod(executable.stat().st_mode | 0o100)
                 argv[0] = str(executable)
-            self.tasks[addon_id] = {"state": "running", "action": action, "message": "Running verified {} procedure".format(action)}
+            self.tasks[addon_id] = {
+                "state": "running", "action": action, "phase": "install", "progress": 75,
+                "message": "Running verified {} procedure".format(action),
+            }
             command_env = {
                 str(key): self._expand(value, context)
                 for key, value in command_spec.get("env", {}).items()
@@ -405,11 +422,16 @@ class MatelvAddonManager:
             self.tasks[addon_id] = {
                 "state": "complete",
                 "action": action,
+                "phase": "complete",
+                "progress": 100,
                 "message": "{} completed.{}".format(action.capitalize(), restart),
             }
             self.remote_cache.pop(manifest["repository"].lower(), None)
         except Exception as error:
-            self.tasks[addon_id] = {"state": "failed", "action": action, "message": str(error)}
+            self.tasks[addon_id] = {
+                "state": "failed", "action": action, "phase": "failed", "progress": 100,
+                "message": str(error),
+            }
         finally:
             if "acquired" in locals() and acquired:
                 self.operation_lock.release()
