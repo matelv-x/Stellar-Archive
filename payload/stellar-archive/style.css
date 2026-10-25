@@ -168,7 +168,7 @@ dialog p{font-size:14px;line-height:1.9}
 .dialog-maintenance button{border:1px solid #4d9aae;background:#071d27;color:#c9edf2;padding:9px 12px;font-size:9px;letter-spacing:.12em;cursor:pointer}
 .dialog-maintenance button:hover{border-color:#73d5e8;color:#fff}
 .dialog-maintenance button.danger{border-color:#a65a5f;color:#ffb9bc}
-.dialog-maintenance button:disabled{opacity:.45;cursor:wait}
+.dialog-maintenance button:disabled{opacity:.38;cursor:not-allowed}
 .addon-manager{margin-top:16px;padding-top:14px;border-top:1px solid #31515c}
 .addon-manager-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .addon-manager-heading h3{margin:0}
@@ -181,6 +181,16 @@ dialog p{font-size:14px;line-height:1.9}
 .addon-row-meta.error{color:#e5a1a4}
 .addon-row .dialog-actions{margin-top:8px}
 .addon-row .dialog-actions button{padding:7px 9px;font-size:7px}
+.maintenance-fold{margin-top:12px;border:1px solid #31515c;background:#020d14a8}
+.maintenance-fold>summary{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;color:var(--gold);font-size:9px;letter-spacing:.18em;cursor:pointer;list-style:none}
+.maintenance-fold>summary::-webkit-details-marker{display:none}
+.maintenance-fold>summary:after{content:'＋';color:#76c9d8;font-size:13px}
+.maintenance-fold[open]>summary:after{content:'−'}
+.maintenance-fold-body{padding:0 10px 10px;border-top:1px solid #203b45}
+.maintenance-fold-body>.addon-list{margin-top:8px}
+.archive-row{margin-top:10px}
+.addon-install-note{padding:10px 2px 2px;color:#9fc4ce;font-size:9px;line-height:1.5}
+.addon-info{min-width:64px;border-radius:999px!important}
 #dial-address{display:inline-block;padding:13px 18px;border:1px solid #edc47d;background:linear-gradient(120deg,#7a5b2c88,#a0773170,#342a1d);color:#fff0d2;text-decoration:none;letter-spacing:.14em;font-size:11px;box-shadow:inset 0 0 15px #ffcf7450,0 0 13px #ffd79c25}
 #dial-address:hover{background:#8e6b36;box-shadow:0 0 24px #ffd79c60}
 #dial-address[hidden]{display:none}

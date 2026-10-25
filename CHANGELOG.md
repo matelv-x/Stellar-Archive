@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.0
+
+- Replaced the flat maintenance area with expandable `INSTALLATIONS` and
+  `MATELV-X ADD-ONS` sections.
+- Added an installable public add-on catalogue. `INSTALL` remains locked until
+  the user opens that add-on's repository with the adjacent information button.
+- Blocked installation unless the verified remote maintenance contract declares
+  both an installer and an uninstall procedure.
+- Added Aquila Symbol Patch, DHD LED Test, Dynamic Wormhole and Visual Volume
+  Meter to the managed public catalogue.
+- Replaced Alarm Clock's legacy full-tree rollback with a bounded surgical
+  uninstall so later add-ons are not removed.
+
 ## 1.4.0
 
 - Added a universal About-panel manager for installed `matelv-x` SG1 add-ons.
@@ -11,8 +24,8 @@
   installer and suppresses service restarts during web-managed operations.
 - Supports private `matelv-x` add-ons when their installed checkout contains the
   same contract and the Pi already has GitHub access; no credentials are stored.
-- Disabled automatic Alarm Clock uninstall because its legacy rollback restores
-  the whole SG1 tree and could erase later add-ons.
+- Initially disabled automatic Alarm Clock uninstall because its legacy rollback
+  restored the whole SG1 tree and could erase later add-ons.
 - Added exact preservation and restoration of manager metadata on Archive
   uninstall.
 

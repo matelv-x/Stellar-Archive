@@ -65,7 +65,27 @@ class AddonManagerTests(unittest.TestCase):
         self.assertEqual([item["id"] for item in payload["addons"]], ["example-addon"])
         self.assertTrue(payload["addons"][0]["can_update"])
         self.assertTrue(payload["addons"][0]["can_uninstall"])
+        self.assertFalse(payload["addons"][0]["can_install"])
+        self.assertEqual(payload["available"], [])
         self.assertEqual(len(payload["addons"][0]["current_revision"]), 12)
+
+    def test_not_installed_safe_addon_is_available_for_install(self):
+        (self.web / "example.js").unlink()
+        payload = self.manager.list_addons(check_remote=False)
+        self.assertEqual(payload["addons"], [])
+        self.assertEqual([item["id"] for item in payload["available"]], ["example-addon"])
+        self.assertTrue(payload["available"][0]["can_install"])
+
+    def test_install_is_blocked_without_safe_uninstall(self):
+        (self.web / "example.js").unlink()
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["uninstall"] = None
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+        payload = self.manager.list_addons(check_remote=False)
+        self.assertFalse(payload["available"][0]["can_install"])
+        result = self.manager.start(Handler("example-addon"), "install", lambda _handler: True)
+        self.assertFalse(result["success"])
+        self.assertIn("safe uninstall", result["message"])
 
     def test_non_matelv_remote_is_not_a_managed_checkout(self):
         checkout = self.home / "Example-Addon"

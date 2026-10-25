@@ -226,13 +226,13 @@ class MatelvAddonManager:
         context = self.config()
         checkouts = self._checkout_map(context["home_root"])
         saved_state = self._state()
-        installed_manifests = [
+        platform_manifests = [
             manifest for manifest in self._manifests(checkouts).values()
-            if context["platform"] in manifest["platforms"] and self._is_installed(manifest, context)
+            if context["platform"] in manifest["platforms"]
         ]
         remote_results = {}
-        if check_remote and installed_manifests:
-            workers = min(4, len(installed_manifests))
+        if check_remote and platform_manifests:
+            workers = min(4, len(platform_manifests))
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 futures = {
                     executor.submit(
@@ -240,7 +240,7 @@ class MatelvAddonManager:
                         manifest["repository"],
                         checkouts.get(manifest["repository"].lower()),
                     ): manifest["repository"]
-                    for manifest in installed_manifests
+                    for manifest in platform_manifests
                 }
                 for future in as_completed(futures):
                     repository = futures[future]
@@ -248,31 +248,39 @@ class MatelvAddonManager:
                         remote_results[repository.lower()] = future.result()
                     except Exception as error:
                         remote_results[repository.lower()] = (None, str(error))
-        addons = []
-        for manifest in installed_manifests:
+        installed_addons = []
+        available_addons = []
+        for manifest in platform_manifests:
             checkout = checkouts.get(manifest["repository"].lower())
-            current = saved_state.get(manifest["id"], {}).get("revision") or self._local_revision(checkout)
+            installed = self._is_installed(manifest, context)
+            current = None
+            if installed:
+                current = saved_state.get(manifest["id"], {}).get("revision") or self._local_revision(checkout)
             latest = None
             error = ""
             if check_remote:
                 latest, error = remote_results.get(manifest["repository"].lower(), (None, "update check unavailable"))
             task = dict(self.tasks.get(manifest["id"], {"state": "idle", "message": "Ready"}))
-            addons.append({
+            item = {
                 "id": manifest["id"],
                 "name": manifest["name"],
                 "repository": manifest["repository"],
                 "repository_url": "https://github.com/{}".format(manifest["repository"]),
                 "current_revision": current[:12] if current else None,
                 "latest_revision": latest[:12] if latest else None,
-                "update_available": None if not current or not latest else current != latest,
+                "installed": installed,
+                "update_available": None if not installed or not current or not latest else current != latest,
                 "check_error": error,
-                "can_update": bool(manifest.get("install")),
-                "can_uninstall": bool(manifest.get("uninstall")),
+                "can_install": not installed and bool(manifest.get("install")) and bool(manifest.get("uninstall")),
+                "can_update": installed and bool(manifest.get("install")),
+                "can_uninstall": installed and bool(manifest.get("uninstall")),
                 "restart_required": bool(manifest.get("restart_required", True)),
                 "task": task,
-            })
-        addons.sort(key=lambda item: item["name"].lower())
-        return {"success": True, "addons": addons}
+            }
+            (installed_addons if installed else available_addons).append(item)
+        installed_addons.sort(key=lambda item: item["name"].lower())
+        available_addons.sort(key=lambda item: item["name"].lower())
+        return {"success": True, "addons": installed_addons, "available": available_addons}
 
     @staticmethod
     def _read_request(handler):
@@ -291,7 +299,7 @@ class MatelvAddonManager:
     def start(self, handler, action, same_origin):
         if not same_origin(handler):
             return {"success": False, "message": "same-origin request required"}
-        if action not in ("update", "uninstall"):
+        if action not in ("install", "update", "uninstall"):
             return {"success": False, "message": "unsupported add-on action"}
         try:
             addon_id = self._read_request(handler)
@@ -300,9 +308,14 @@ class MatelvAddonManager:
             manifest = self._manifests(checkouts).get(addon_id)
             if not manifest or context["platform"] not in manifest["platforms"]:
                 raise ValueError("unknown add-on")
-            if not self._is_installed(manifest, context):
+            installed = self._is_installed(manifest, context)
+            if action in ("update", "uninstall") and not installed:
                 raise ValueError("add-on is not installed")
-            command = manifest.get("install" if action == "update" else "uninstall")
+            if action == "install" and installed:
+                raise ValueError("add-on is already installed")
+            if action == "install" and not manifest.get("uninstall"):
+                raise ValueError("installation is blocked until a safe uninstall procedure is available")
+            command = manifest.get("install" if action in ("install", "update") else "uninstall")
             if not command:
                 raise ValueError("{} is not supported safely for this add-on".format(action))
             checkout = checkouts.get(manifest["repository"].lower())
@@ -345,7 +358,9 @@ class MatelvAddonManager:
             if remote_manifest["id"] != manifest["id"] or remote_manifest["repository"].lower() != manifest["repository"].lower():
                 raise RuntimeError("remote add-on manifest identity mismatch")
             manifest = remote_manifest
-            command_spec = manifest.get("install" if action == "update" else "uninstall")
+            if action == "install" and not remote_manifest.get("uninstall"):
+                raise RuntimeError("installation is blocked: the current repository has no safe uninstall procedure")
+            command_spec = manifest.get("install" if action in ("install", "update") else "uninstall")
             if not command_spec:
                 raise RuntimeError("the current repository does not support this action")
             argv = [self._expand(part, context) for part in command_spec["argv"]]
@@ -372,7 +387,7 @@ class MatelvAddonManager:
                 detail = (result.stderr or result.stdout)[-MAX_OUTPUT_CHARS:]
                 raise RuntimeError("{} failed: {}".format(action, detail.strip()))
             state = self._state()
-            if action == "update":
+            if action in ("install", "update"):
                 revision_result = self._run(["git", "-C", str(clone), "rev-parse", "HEAD"], timeout=5)
                 revision = revision_result.stdout.strip().lower()
                 if SHA_RE.fullmatch(revision):

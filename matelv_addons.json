@@ -8,7 +8,17 @@
       "platforms": ["v4"],
       "detect": {"any": [{"path": "classes/alarm_clock_manager.py"}, {"path": "web/alarm_clock.htm"}]},
       "install": {"argv": ["./install.sh"], "env": {"APP_DIR": "{sg1_root}", "ALARM_CLOCK_MODE": "keep"}, "timeout": 1200},
-      "uninstall": null,
+      "uninstall": {"argv": ["./restore.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
+      "restart_required": true
+    },
+    {
+      "id": "aquila-symbol-patch",
+      "name": "Aquila Symbol Patch",
+      "repository": "matelv-x/Aquila-Symbol-Patch",
+      "platforms": ["v4"],
+      "detect": {"all": [{"path": "classes/StargateMilkyWay/symbol_manager.py", "contains": "'show_on_web': True"}]},
+      "install": {"argv": ["./Aquila.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
+      "uninstall": {"argv": ["./restore-aquila.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
       "restart_required": true
     },
     {
@@ -19,6 +29,26 @@
       "detect": {"all": [{"path": "web/connection_history.htm"}, {"path": "web/js/connection_history.js"}]},
       "install": {"argv": ["./history.sh", "{sg1_root}"], "timeout": 900},
       "uninstall": {"argv": ["./restore-history.sh", "{sg1_root}"], "timeout": 900},
+      "restart_required": true
+    },
+    {
+      "id": "dhd-led-test",
+      "name": "DHD LED Test",
+      "repository": "matelv-x/DHD-LED-Test",
+      "platforms": ["v4"],
+      "detect": {"any": [{"path": "test/dhd_test_from_config.py"}, {"path": "web/debug.htm", "contains": "DHD LED TEST UNIVERSAL PATCH START"}]},
+      "install": {"argv": ["./install.sh", "{sg1_root}"], "timeout": 1200},
+      "uninstall": {"argv": ["./restore.sh", "{sg1_root}"], "timeout": 900},
+      "restart_required": true
+    },
+    {
+      "id": "dynamic-wormhole",
+      "name": "Dynamic Wormhole",
+      "repository": "matelv-x/Dynamic-Wormhole",
+      "platforms": ["v4"],
+      "detect": {"all": [{"path": "classes/StargateMilkyWay/dynamic_wormhole_runtime.py"}]},
+      "install": {"argv": ["./install.sh", "{sg1_root}"], "timeout": 1200},
+      "uninstall": {"argv": ["./restore.sh", "{sg1_root}"], "timeout": 900},
       "restart_required": true
     },
     {
@@ -90,6 +120,16 @@
       "install": {"argv": ["./apply-ring-symbols-upgrade.sh", "{web_root}"], "timeout": 900},
       "uninstall": {"argv": ["./restore.sh", "{web_root}"], "timeout": 900},
       "restart_required": true
+    },
+    {
+      "id": "visual-volume-meter",
+      "name": "Visual Volume Meter",
+      "repository": "matelv-x/Visual-Volume-Meter",
+      "platforms": ["v4"],
+      "detect": {"all": [{"path": "web/debug.htm", "contains": "BEGIN STARGATE VISUAL VOLUME METER ADD-ON"}]},
+      "install": {"argv": ["./install.sh", "{web_root}/debug.htm"], "timeout": 900},
+      "uninstall": {"argv": ["./restore.sh", "{web_root}/debug.htm"], "timeout": 900},
+      "restart_required": false
     },
     {
       "id": "switch-to-retro",

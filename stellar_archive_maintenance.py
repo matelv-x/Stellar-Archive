@@ -131,10 +131,13 @@ class StellarArchiveMaintenance:
         try:
             return self.addons.list_addons(check_remote=True)
         except Exception as error:
-            return {"success": False, "message": str(error), "addons": []}
+            return {"success": False, "message": str(error), "addons": [], "available": []}
 
     def start_addon_update(self, handler):
         return self.addons.start(handler, "update", self.same_origin)
+
+    def start_addon_install(self, handler):
+        return self.addons.start(handler, "install", self.same_origin)
 
     def start_addon_uninstall(self, handler):
         return self.addons.start(handler, "uninstall", self.same_origin)

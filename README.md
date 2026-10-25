@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.4.0 contains one entry-point installer and two isolated adapters. It
+Version 1.5.0 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -8,8 +8,8 @@ uses only the matching adapter.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_v1.4.0.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.4.0
+unzip sg1_v3_v4_stellar_archive_universal_v1.5.0.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.0
 ./install.sh
 ```
 
@@ -127,14 +127,18 @@ the `matelv-x` GitHub organization. Detection uses each add-on's installed files
 and, when present, its local Git checkout. It is not tied to ***, a Pi
 model, a host name or an IP address.
 
-For each detected add-on the dialog shows its local revision, the current
-GitHub revision, update status, `CHECK FOR UPDATES`, and a surgical `UNINSTALL`
-button when that repository provides a safe rollback. Supported public add-ons
-are Alarm Clock, Connection History, LAN Discovery, Lamp Mode, Retro Visuals,
-Retro Wormhole Animation, SG1 Iris, Silence Mode, Stargate Ring Symbols and
-Switch To Retro. Alarm Clock can be updated while preserving its selected page
-and background, but automatic uninstall is disabled because its old rollback
-restores the complete SG1 application tree.
+The About dialog contains two expandable sections. `INSTALLATIONS` shows Stellar
+Archive and every detected managed add-on with update and surgical uninstall
+controls. `MATELV-X ADD-ONS` shows compatible public add-ons which are not yet
+installed. Its `INSTALL` button remains locked until the adjacent information
+button opens the repository, allowing the user to review the add-on first.
+
+The public catalogue currently includes Alarm Clock, Aquila Symbol Patch,
+Connection History, DHD LED Test, Dynamic Wormhole, LAN Discovery, Lamp Mode,
+Retro Visuals, Retro Wormhole Animation, SG1 Iris, Silence Mode, Stargate Ring
+Symbols, Switch To Retro and Visual Volume Meter. Alarm Clock now has a bounded
+uninstall which removes only its owned files and exact integration blocks; it
+does not restore the complete SG1 tree.
 
 Before running downloaded code the manager verifies all of the following:
 
@@ -143,6 +147,7 @@ Before running downloaded code the manager verifies all of the following:
   contract version 1;
 - the manifest identity matches the selected add-on;
 - the requested command is declared in that verified manifest;
+- a new installation declares both install and uninstall procedures;
 - no Archive or other add-on maintenance operation is already active.
 
 Managed procedures run with `STARGATE_ADDON_NO_RESTART=1`. They can update web

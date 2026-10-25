@@ -101,6 +101,9 @@ class StellarArchiveBridge:
                 if parsed.path == "/stargate/do/stellar_archive_addon_update":
                     self.send_json(200, get_maintenance_controller().start_addon_update(self))
                     return
+                if parsed.path == "/stargate/do/stellar_archive_addon_install":
+                    self.send_json(200, get_maintenance_controller().start_addon_install(self))
+                    return
                 if parsed.path == "/stargate/do/stellar_archive_addon_uninstall":
                     self.send_json(200, get_maintenance_controller().start_addon_uninstall(self))
                     return

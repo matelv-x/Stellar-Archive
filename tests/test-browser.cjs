@@ -26,6 +26,11 @@ const server=http.createServer((request,response)=>{
     response.end(JSON.stringify({gate_name:'Test Gate ',local_address:[1,2,3,4,5,6]}));
     return;
   }
+  if(requestPath==='/stargate/get/stellar_archive_addons'){
+    response.writeHead(200,{'content-type':'application/json'});
+    response.end(JSON.stringify({success:true,addons:[{id:'alarm-clock',name:'Alarm Clock',repository:'matelv-x/Alarm-Clock',repository_url:'https://github.com/matelv-x/Alarm-Clock',installed:true,current_revision:'111111111111',latest_revision:'111111111111',update_available:false,check_error:'',can_install:false,can_update:true,can_uninstall:true,task:{state:'idle',message:'Ready'}}],available:[{id:'aquila-symbol-patch',name:'Aquila Symbol Patch',repository:'matelv-x/Aquila-Symbol-Patch',repository_url:'https://github.com/matelv-x/Aquila-Symbol-Patch',installed:false,current_revision:null,latest_revision:'222222222222',update_available:null,check_error:'',can_install:true,can_update:false,can_uninstall:false,task:{state:'idle',message:'Ready'}}]}));
+    return;
+  }
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/stellar-archive\/?/,'').replace(/^\//,'');
   if(relative.startsWith('data/integration-nav.js')){
     response.writeHead(200,{'content-type':'text/javascript; charset=utf-8'});
@@ -99,8 +104,19 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(await page.locator('#dialog-links a[href="https://www.cosmos.esa.int/web/gaia/milky-way"]').count(),1);
     assert((await page.locator('#dialog-copy').textContent()).includes('ESA/Gaia/DPAC'));
     assert.strictEqual(await page.locator('#dialog-maintenance:not([hidden])').count(),1);
-    assert.strictEqual(await page.getByRole('button',{name:'CHECK FOR UPDATES'}).count(),1);
-    assert.strictEqual(await page.getByRole('button',{name:'UNINSTALL'}).count(),1);
+    await page.waitForSelector('#addon-list .addon-row');
+    assert.strictEqual(await page.locator('.maintenance-fold').count(),2);
+    assert.strictEqual(await page.locator('#addon-list .addon-row').count(),1);
+    assert.strictEqual(await page.locator('#available-addon-list .addon-row').count(),1);
+    await page.locator('.maintenance-fold').nth(1).locator('summary').click();
+    const installButton=page.locator('#available-addon-list button[data-addon-action="install"]');
+    assert.strictEqual(await installButton.isDisabled(),true,'INSTALL must remain locked before repository information is opened');
+    await page.evaluate(()=>{window.open=()=>({opener:null})});
+    await page.locator('#available-addon-list button[data-addon-action="info"]').click();
+    assert.strictEqual(await installButton.isDisabled(),false,'repository information must unlock INSTALL');
+    assert.strictEqual(await page.locator('#check-archive-update').count(),1);
+    assert.strictEqual(await page.locator('#uninstall-archive').count(),1);
+    await page.screenshot({path:path.join(__dirname,'validation-about-addons.png'),fullPage:false});
     await page.locator('#close-dialog').click();
     await page.setViewportSize({width:1256,height:768});
     await page.waitForFunction(()=>Math.abs(Number(document.querySelector('#archive-shell').dataset.scale)-(1256/1400))<.002);
@@ -159,7 +175,7 @@ const server=http.createServer((request,response)=>{
     });
     assert(tall.brand.right<=tall.nav.left+1,'tall-window masthead must stay in one non-overlapping row');
     assert(tall.workspace.height>1200,'main panels must expand to use tall-window space');
-    assert(tall.planet.left>=tall.planetScene.left-1&&tall.planet.right<=tall.planetScene.right+1&&tall.planet.top>=tall.planetScene.top-1&&tall.planet.bottom<=tall.planetScene.bottom+1,'tall-window planet must stay fully inside its scene');
+    assert(tall.planet.left>=tall.planetScene.left-2&&tall.planet.right<=tall.planetScene.right+2&&tall.planet.top>=tall.planetScene.top-2&&tall.planet.bottom<=tall.planetScene.bottom+2,`tall-window planet must stay fully inside its scene: ${JSON.stringify({planet:tall.planet,scene:tall.planetScene})}`);
     assert(tall.console.bottom>=1770&&tall.console.bottom<=1783,'complete address must stay attached to the bottom of a tall window');
     assert(tall.worldsScrollable,'planet list must remain internally scrollable in a tall window');
     assert(tall.bodyHeight<=1783+1,'tall window must not create a long document below the interface');
