@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.13
+
+- Removed a deployment-specific `***` redirect from the
+  universal Archive payload. It could create a redirect loop when the Retro
+  address-book wrapper was configured to open Stellar Archive.
+
 ## 1.5.12
 
 - Routes DIAL through the configured host receiver when a host-specific HOME
