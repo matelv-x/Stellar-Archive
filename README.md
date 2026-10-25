@@ -107,6 +107,13 @@ http://DEVICE-HOSTNAME.local/stellar-archive/
 The Gaia artwork, credits and licence remain documented in
 `GAIA-ASSET-LICENCE.md`.
 
+## License
+
+Original Stellar Archive software is released under the MIT License. See
+`LICENSE`. Gaia-derived artwork and other third-party material remain governed
+by their separately documented licenses and are not relicensed by the MIT
+License.
+
 ## About maintenance controls
 
 The About dialog contains `CHECK FOR UPDATES` and `UNINSTALL`. Both controls
