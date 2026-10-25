@@ -229,6 +229,77 @@ dialog p{font-size:14px;line-height:1.9}
  .selection>a{min-height:42px;padding:9px 12px;font-size:9px}
  .selection>a span{font-size:15px}
 }
+@media(max-width:600px){
+ html,body{width:100%;height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
+ body{display:block}
+ #archive-viewport{width:100%;height:auto;min-height:100vh;overflow:visible}
+ #archive-shell{width:100%!important;height:auto!important;min-height:100vh;overflow:visible;display:block;zoom:1!important}
+ .masthead{height:auto;min-height:0;display:block;padding:14px 12px;overflow:visible}
+ .masthead-inner{display:flex;flex-direction:column;align-items:stretch;gap:10px;transform:none!important}
+ .brand{justify-content:center;gap:10px;font-size:14px;letter-spacing:.11em;white-space:normal;text-align:left}
+ .brand-mark{width:38px;height:38px}
+ .brand small{font-size:6px;letter-spacing:.24em;margin-top:7px}
+ .masthead-controls{width:100%;align-items:stretch}
+ .installed-gate{justify-content:center;padding:0 0 4px}
+ .integration-nav{width:100%;justify-content:center;flex-wrap:wrap;gap:6px;padding-top:3px;white-space:normal}
+ .integration-button{font-size:7px;padding:9px 8px}
+ .integration-menu{position:fixed;left:12px;right:12px;top:auto;min-width:0;z-index:1000}
+ .workspace{display:flex;flex-direction:column;height:auto;min-height:0;overflow:visible;padding:12px;gap:12px}
+ .catalogue{display:block;height:auto;min-height:0;overflow:hidden;padding:14px}
+ .search{margin-bottom:14px}
+ .catalogue-heading,.catalogue-footer{display:none}
+ .select-wrap{margin-bottom:12px}
+ #worlds{display:flex;min-height:0;gap:8px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 8px;scroll-snap-type:x proximity}
+ .world{box-sizing:border-box;flex:0 0 148px;min-width:148px;width:148px;min-height:76px;border:1px solid #36505b80;padding:10px;gap:9px;scroll-snap-align:start}
+ .world-name{font-size:10px}
+ .world-symbols{font-size:7px;letter-spacing:.14em;margin-top:6px}
+ .world-arrow{display:none}
+ .mini-planet{width:32px;height:32px}
+ .star-chart{height:420px;min-height:420px}
+ .chart-heading{left:18px;top:20px}
+ .chart-heading h1{font-size:11px}
+ .chart-mantra{font-size:6px;right:15px;top:20px}
+ .chart-coordinate{bottom:38px;left:15px}
+ .chart-note{font-size:5px;padding-inline:10px}
+ .node{padding:14px}
+ .node-label{left:27px;top:10px;padding:3px 5px;font-size:6px}
+ .address-node.glyph-edge-right .node-label{left:auto;right:27px}
+ .destination{display:flex;flex-direction:column;min-height:0;height:auto;max-height:none;overflow:visible;padding:20px}
+ .destination-heading h2{font-size:26px}
+ .planet-scene{height:230px;min-height:230px}
+ .profile{overflow:visible}
+ .profile>p{min-height:0}
+ .profile dl{font-size:9px}
+ .profile h3,.profile-status{font-size:9px}
+ .destination-footer{display:none}
+ .address-console{height:auto;min-height:0;margin:0 12px 12px;overflow:visible}
+ .console-title{min-height:54px;padding:9px 12px}
+ .console-title strong{font-size:14px}
+ .console-title small{font-size:6px;line-height:1.5}
+ .console-body{height:auto;display:flex;flex-direction:column;align-items:stretch;padding:12px 10px;gap:12px}
+ .glyph-area{order:1;width:100%;display:flex;min-height:0;padding:0 0 10px;border-bottom:1px solid #7ce5ef80}
+ .glyphs,.glyph-count-7,.glyph-count-8,.glyph-count-9{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:100%;gap:6px;row-gap:7px}
+ .glyph-box{min-height:61px;height:61px;padding:4px 2px}
+ .glyph-box img{height:39px;max-height:65%;max-width:45px}
+ .numeric-address{text-align:left;line-height:1.55;white-space:normal}
+ .seal{order:2;display:flex;width:100%;justify-content:center;gap:14px}
+ .seal>img{width:44px;height:44px}
+ .selection{order:3;width:100%;display:flex;justify-content:center}
+ .selection>a{width:min(100%,260px);min-height:48px;padding:13px 10px;font-size:10px}
+ dialog{box-sizing:border-box;width:calc(100% - 20px);max-width:none;max-height:94dvh;padding:20px 16px;overflow:auto}
+ dialog>.eyebrow{display:block;padding-right:34px;line-height:1.55}
+ dialog h2{font-size:22px;margin:18px 0}
+ dialog p{font-size:12px;line-height:1.65}
+ .dialog-maintenance{padding:10px}
+ .maintenance-fold>summary{font-size:7px;letter-spacing:.1em;padding:10px 8px}
+ .addon-row{padding:9px}
+ .addon-row-meta{overflow-wrap:anywhere;line-height:1.5}
+ .addon-row .dialog-actions{justify-content:flex-start}
+ .addon-progress-overlay{padding:10px}
+ .addon-progress-card{width:100%;padding:20px 14px}
+ .addon-progress-card h2{font-size:22px}
+ .addon-progress-steps{grid-template-columns:repeat(2,1fr)}
+}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}
 }
 

@@ -126,7 +126,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.4');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.5');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));
@@ -248,6 +248,44 @@ const server=http.createServer((request,response)=>{
       return document.querySelector('#select-address').getAttribute('href');
     });
     assert.strictEqual(standaloneSeed,'/retro/dial9.html?address=3-7-11-19-22-30-34-36');
+
+    aquilaInstalled=false;
+    addonTask={state:'idle',message:'Ready'};
+    addonPolls=0;
+    await page.setViewportSize({width:390,height:844});
+    await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=retro`);
+    await page.waitForSelector('#select-address');
+    await page.evaluate(()=>sessionStorage.clear());
+    await page.waitForFunction(()=>document.documentElement.classList.contains('mobile-layout'));
+    const mobile=await page.evaluate(()=>{
+      const box=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();
+      const worlds=document.querySelector('#worlds');
+      return {catalogue:box('.catalogue'),chart:box('.star-chart'),destination:box('.destination'),console:box('.address-console'),body:{width:document.body.scrollWidth,height:document.body.scrollHeight},worlds:{width:worlds.clientWidth,scrollWidth:worlds.scrollWidth},zoom:getComputedStyle(document.querySelector('#archive-shell')).zoom};
+    });
+    assert.strictEqual(mobile.zoom,'1');
+    assert(mobile.catalogue.bottom<=mobile.chart.top+1&&mobile.chart.bottom<=mobile.destination.top+1&&mobile.destination.bottom<=mobile.console.top+1,'phone layout must stack catalogue, galaxy, destination and address console');
+    assert(mobile.worlds.scrollWidth>mobile.worlds.width,'phone catalogue must remain horizontally scrollable');
+    assert(mobile.body.width<=391,'phone layout must not create horizontal page overflow');
+    assert(mobile.body.height>844,'phone layout should use readable vertical scrolling instead of shrinking the desktop canvas');
+    await page.screenshot({path:path.join(__dirname,'validation-mobile.png'),fullPage:true});
+
+    await page.getByRole('button',{name:'ABOUT'}).click();
+    await page.waitForSelector('#dialog-maintenance:not([hidden])');
+    await page.locator('.maintenance-fold').nth(1).locator('summary').click();
+    await page.evaluate(()=>{window.open=()=>null});
+    await page.locator('#available-addon-list button[data-addon-action="info"]').click();
+    assert.strictEqual(await page.locator('#available-addon-list button[data-addon-action="install"]').isDisabled(),false,'GitHub app handoff must unlock INSTALL even when window.open returns null');
+    await page.reload();
+    await page.waitForSelector('#select-address');
+    await page.getByRole('button',{name:'ABOUT'}).click();
+    await page.waitForSelector('#dialog-maintenance:not([hidden])');
+    await page.locator('.maintenance-fold').nth(1).locator('summary').click();
+    const rememberedInstall=page.locator('#available-addon-list button[data-addon-action="install"]');
+    await rememberedInstall.waitFor();
+    assert.strictEqual(await rememberedInstall.isDisabled(),false,'INFO review must survive return/reload in the same mobile browser session');
+    const mobileDialog=await page.locator('#details').evaluate(element=>element.getBoundingClientRect().toJSON());
+    assert(mobileDialog.left>=0&&mobileDialog.right<=390&&mobileDialog.top>=0&&mobileDialog.bottom<=844,'mobile maintenance dialog must fit the phone viewport');
+    await page.screenshot({path:path.join(__dirname,'validation-mobile-maintenance.png'),fullPage:false});
 
     console.log('browser integration tests: PASS');
   } finally {

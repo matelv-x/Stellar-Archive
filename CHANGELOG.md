@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.5
+
+- Fixed add-on actions behind reverse proxies and in Safari/WebViews that send
+  an opaque or proxy-mismatched Origin while preserving cross-site rejection.
+- INFO review state now survives a return from the GitHub mobile app within the
+  browser session, so INSTALL unlocks correctly on phones.
+- Added a native responsive phone layout based on the established public
+  Archive presentation: stacked panels, horizontal destination catalogue,
+  readable navigation, responsive address glyphs and mobile maintenance dialogs.
+
 ## 1.5.4
 
 - The About header now displays the installed Stellar Archive version.

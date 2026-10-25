@@ -193,6 +193,16 @@ function fitArchiveToWindow(){
  const shell=$('#archive-shell');
  const width=viewport.clientWidth;
  const height=viewport.clientHeight;
+ const mobile=window.matchMedia('(max-width:600px)').matches;
+ document.documentElement.classList.toggle('mobile-layout',mobile);
+ if(mobile){
+  shell.style.zoom='1';
+  shell.style.width='100%';
+  shell.style.height='auto';
+  shell.dataset.scale='1.0000';
+  $('.masthead-inner').style.transform='none';
+  return;
+ }
  const scale=Math.min(1,Math.max(.55,width/1400));
  shell.style.zoom=String(scale);
  shell.style.width=`${width/scale}px`;
@@ -286,6 +296,14 @@ function setMaintenanceBusy(busy,message){
 let installedAddons=[];
 let availableAddons=[];
 const reviewedAddonRepositories=new Set();
+const reviewedAddonStorageKey='stellar-archive-reviewed-addons-v1';
+try{
+ for(const id of JSON.parse(sessionStorage.getItem(reviewedAddonStorageKey)||'[]'))reviewedAddonRepositories.add(String(id));
+}catch(error){}
+function rememberReviewedAddon(id){
+ reviewedAddonRepositories.add(id);
+ try{sessionStorage.setItem(reviewedAddonStorageKey,JSON.stringify([...reviewedAddonRepositories]))}catch(error){}
+}
 function addonRevision(value){return value?escapeHtml(value):'UNKNOWN'}
 function renderAddons(addons,available){
  installedAddons=addons||[];
@@ -421,12 +439,14 @@ async function handleAddonAction(event){
  let addon=[...installedAddons,...availableAddons].find(item=>item.id===addonId);
  if(!addon)return;
  if(action==='info'){
-  const opened=window.open(addon.repository_url,'_blank');
-  if(opened===null){$('#addon-manager-status').textContent=`Allow pop-ups to open ${addon.name} information.`;return}
-  try{opened.opener=null}catch(error){}
-  reviewedAddonRepositories.add(addon.id);
+  // Record the user's explicit INFO action before leaving the browser. Mobile
+  // systems often hand the URL to the GitHub app and return null from
+  // window.open(), even though the information opened successfully.
+  rememberReviewedAddon(addon.id);
   renderAddons(installedAddons,availableAddons);
   $('#addon-manager-status').textContent=`${addon.name} information opened. INSTALL is now available.`;
+  const opened=window.open(addon.repository_url,'_blank');
+  if(opened!==null){try{opened.opener=null}catch(error){}}
   return;
  }
  if(action==='update'){

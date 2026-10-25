@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.4 contains one entry-point installer and two isolated adapters. It
+Version 1.5.5 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -8,8 +8,8 @@ uses only the matching adapter.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_v1.5.4.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.4
+unzip sg1_v3_v4_stellar_archive_universal_v1.5.5.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.5
 ./install.sh
 ```
 
@@ -161,6 +161,11 @@ web restart remains unavailable. Private repositories
 are supported only when the Pi already has Git credentials for them and their
 installed checkout contains the same manifest. The installer never embeds or
 stores a GitHub token.
+
+On phones, tapping `INFO` may open the GitHub mobile app. The browser session
+remembers that explicit review action, so returning to Stellar Archive unlocks
+`INSTALL` without requiring GitHub to remain inside the browser tab. The mobile
+Archive uses a native stacked layout instead of shrinking the desktop canvas.
 
 Older private or hardware-control repositories that restore an entire SG1 tree,
 change system services, or lack this contract are intentionally not exposed in

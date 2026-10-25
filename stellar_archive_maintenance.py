@@ -97,8 +97,21 @@ class StellarArchiveMaintenance:
         if not host:
             return False
         from urllib.parse import urlparse
+        marker = handler.headers.get("X-Stellar-Archive-Request", "")
+        fetch_site = handler.headers.get("Sec-Fetch-Site", "").lower()
+        content_type = handler.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+        # A cross-site browser request is always rejected.  The custom header
+        # plus JSON content is accepted before Host comparison because Apache
+        # reverse proxies commonly replace Host with localhost:8080, while
+        # Safari/WebViews may also report the otherwise safe Origin as null.
+        # Cross-origin pages cannot send this custom JSON request without a
+        # successful CORS preflight, which the Stargate server never grants.
+        if fetch_site == "cross-site":
+            return False
+        if marker == "same-origin" and content_type == "application/json":
+            return True
         source = handler.headers.get("Origin") or handler.headers.get("Referer")
-        if source:
+        if source and source != "null":
             return urlparse(source).netloc.lower() == host.lower()
 
         # Safari and some embedded WebViews omit Origin and Referer for a
@@ -106,12 +119,8 @@ class StellarArchiveMaintenance:
         # application/json is the compatibility fallback. A cross-origin page
         # cannot send either without a successful CORS preflight, which this
         # local server does not grant.
-        marker = handler.headers.get("X-Stellar-Archive-Request", "")
-        if marker == "same-origin":
+        if fetch_site == "same-origin":
             return True
-        if handler.headers.get("Sec-Fetch-Site", "").lower() == "same-origin":
-            return True
-        content_type = handler.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
         return content_type == "application/json"
 
     def start_update(self, handler):
@@ -185,7 +194,7 @@ class StellarArchiveMaintenance:
             return {"success": False, "message": str(error)}
 
     def _download(self, url, destination):
-        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.4"})
+        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.5"})
         total = 0
         with urllib.request.urlopen(request, timeout=30) as response, open(destination, "wb") as output:
             while True:
