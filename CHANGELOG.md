@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.12
+
+- Routes DIAL through the configured host receiver when a host-specific HOME
+  route exists. LL now sends the selected address to `/`, and the LAN host
+  sends it to `/fan113.html`; both include the stored address and
+  `source=stellar-archive` while preserving fallback Original/Retro behavior on
+  other installations.
+
 ## 1.5.11
 
 - Fixed HOME routing when the same Archive serves multiple site identities.

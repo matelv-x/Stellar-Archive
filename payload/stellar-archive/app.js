@@ -4,11 +4,13 @@ const archive=window.STELLAR_ARCHIVE_DATA;
 const worlds=archive.worlds;
 const integrationMode=new URLSearchParams(window.location.search).get('mode');
 const integrationNav=window.STELLAR_ARCHIVE_NAV||{mode:'standalone',items:[]};
-function integrationHomeHref(){
+function configuredHostHomeHref(){
  const host=(window.location.hostname||'').toLowerCase();
  const hostHome=integrationNav.homeByHost&&integrationNav.homeByHost[host];
- if(typeof hostHome==='string'&&hostHome.startsWith('/'))return hostHome;
- return integrationMode==='retro'?'/retro/dial.html':'/index.htm';
+ return typeof hostHome==='string'&&hostHome.startsWith('/')?hostHome:null;
+}
+function integrationHomeHref(){
+ return configuredHostHomeHref()||(integrationMode==='retro'?'/retro/dial.html':'/index.htm');
 }
 let selected=worlds[0],visible=[];
 let liveGateStatuses=new Map(),liveStatusState='checking',liveStatusSignature='';
@@ -154,6 +156,11 @@ $('#category').addEventListener('change',render);
 function showDialog(title,copy){$('#dialog-title').textContent=title;$('#dialog-copy').textContent=copy;$('#dialog-maintenance').hidden=true;$('#dialog-links').hidden=true;$('#dialog-links').innerHTML='';$('#details').showModal()}
 function dialHref(world){
   const address=world.storedAddress.join('-');
+  const hostReceiver=configuredHostHomeHref();
+  if(hostReceiver){
+    const separator=hostReceiver.includes('?')?'&':'?';
+    return `${hostReceiver}${separator}address=${encodeURIComponent(address)}&source=stellar-archive`;
+  }
   const dialTarget=integrationMode==='retro'?'retro':integrationMode==='original'?'original':integrationNav.dialTarget;
   if(dialTarget==='v3')return '#';
   if(dialTarget==='retro'){
