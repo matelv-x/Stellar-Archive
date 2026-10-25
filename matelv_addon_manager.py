@@ -92,6 +92,33 @@ class MatelvAddonManager:
         os.replace(str(temporary), str(output))
         return True
 
+    @staticmethod
+    def _refresh_archive_managed_pages(context):
+        """Accept verified add-on edits to Archive-managed navigation pages."""
+        if context["platform"] != "v4":
+            return 0
+        target = context["target"]
+        managed = target / ".stellar-archive-addon" / "managed"
+        pairs = [
+            (target / "address_book.htm", managed / "address_book.htm"),
+            (target / "retro" / "address_book.html", managed / "retro-address_book.html"),
+            (target / "retro" / "js" / "navigation.js", managed / "retro-navigation.js"),
+            (target / "js" / "address_book.js", managed / "address_book.js"),
+        ]
+        original_navigation = managed / "original-nav-pages"
+        if original_navigation.is_dir():
+            for snapshot in original_navigation.glob("*.htm"):
+                pairs.append((target / snapshot.name, snapshot))
+        refreshed = 0
+        for source, snapshot in pairs:
+            if not source.is_file() or not snapshot.is_file():
+                continue
+            temporary = snapshot.with_name(snapshot.name + ".tmp")
+            shutil.copyfile(str(source), str(temporary))
+            os.replace(str(temporary), str(snapshot))
+            refreshed += 1
+        return refreshed
+
     def _registry(self):
         payload = json.loads(self.registry_path.read_text(encoding="utf-8"))
         if payload.get("schema") != 1 or not isinstance(payload.get("addons"), list):
@@ -452,15 +479,17 @@ class MatelvAddonManager:
             else:
                 state.pop(addon_id, None)
                 self._write_state(state)
+            managed_pages_refreshed = self._refresh_archive_managed_pages(context)
             navigation_refreshed = self._refresh_archive_navigation(context)
             restart = " Restart Stargate software once." if manifest.get("restart_required", True) else ""
             navigation = " Archive navigation refreshed." if navigation_refreshed else ""
+            snapshots = " Archive integration snapshots refreshed." if managed_pages_refreshed else ""
             self.tasks[addon_id] = {
                 "state": "complete",
                 "action": action,
                 "phase": "complete",
                 "progress": 100,
-                "message": "{} completed.{}{}".format(action.capitalize(), navigation, restart),
+                "message": "{} completed.{}{}{}".format(action.capitalize(), snapshots, navigation, restart),
             }
             self.remote_cache.pop(manifest["repository"].lower(), None)
         except Exception as error:

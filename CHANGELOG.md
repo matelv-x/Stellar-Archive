@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.7
+
+- Preserves verified add-on edits to Archive-managed navigation pages by
+  refreshing the bounded integration snapshots after each successful managed
+  add-on operation. This prevents a later Archive update from rejecting a
+  legitimate Retro Visuals menu change.
+
 ## 1.5.6
 
 - Rebuilds Stellar Archive navigation automatically after a managed add-on is

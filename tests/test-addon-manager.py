@@ -140,6 +140,24 @@ class AddonManagerTests(unittest.TestCase):
         result = (archive_data / "integration-nav.js").read_text(encoding="utf-8")
         self.assertEqual(result, "both:" + str(self.web.resolve()))
 
+    def test_refreshes_managed_snapshots_after_verified_addon_changes(self):
+        managed = self.web / ".stellar-archive-addon" / "managed"
+        (managed / "original-nav-pages").mkdir(parents=True)
+        (self.web / "retro" / "js").mkdir(parents=True)
+        pairs = [
+            (self.web / "address_book.htm", managed / "address_book.htm"),
+            (self.web / "retro" / "address_book.html", managed / "retro-address_book.html"),
+            (self.web / "retro" / "js" / "navigation.js", managed / "retro-navigation.js"),
+            (self.web / "index.htm", managed / "original-nav-pages" / "index.htm"),
+        ]
+        for source, snapshot in pairs:
+            source.write_text("ADDON EDIT " + source.name, encoding="utf-8")
+            snapshot.write_text("OLD SNAPSHOT", encoding="utf-8")
+        refreshed = self.manager._refresh_archive_managed_pages(self.manager.config())
+        self.assertEqual(refreshed, len(pairs))
+        for source, snapshot in pairs:
+            self.assertEqual(snapshot.read_text(encoding="utf-8"), source.read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()
