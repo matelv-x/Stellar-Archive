@@ -185,7 +185,7 @@ class StellarArchiveMaintenance:
             return {"success": False, "message": str(error)}
 
     def _download(self, url, destination):
-        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.3"})
+        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.4"})
         total = 0
         with urllib.request.urlopen(request, timeout=30) as response, open(destination, "wb") as output:
             while True:

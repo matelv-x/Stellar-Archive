@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.3 contains one entry-point installer and two isolated adapters. It
+Version 1.5.4 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -8,8 +8,8 @@ uses only the matching adapter.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_v1.5.3.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.3
+unzip sg1_v3_v4_stellar_archive_universal_v1.5.4.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.4
 ./install.sh
 ```
 

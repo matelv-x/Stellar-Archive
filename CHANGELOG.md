@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.4
+
+- The About header now displays the installed Stellar Archive version.
+- The maintenance heading and both software groups now explicitly identify all
+  managed entries as Matelv-x software and add-ons.
+
 ## 1.5.3
 
 - Added a prominent add-on operation window with Download, Verify, Install and
