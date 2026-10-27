@@ -16,7 +16,7 @@ cp "$PACKAGE_DIR/tests/fixtures/web_server.py" "$TEST_ROOT/sg1_v4/classes/web_se
 printf '%s\n' '<nav><ul class="navbar-nav"><li class="nav-item"><a class="nav-link" href="address_book.htm">Address Book</a></li><li class="nav-item"><a class="nav-link" href="help.htm">Help</a></li></ul></nav><script src="/js/address_book.js"></script>' > "$TARGET/address_book.htm"
 printf '%s\n' '<nav><ul class="navbar-nav"><li class="nav-item"><a class="nav-link" href="address_book.htm">Address Book</a></li><li class="nav-item"><a class="nav-link" href="help.htm">Help</a></li></ul></nav>' > "$TARGET/index.htm"
 touch "$TARGET/help.htm"
-printf '%s\n' 'function go(address_string) { window.location = '\''index.htm?address='\'' + address_string; }' > "$TARGET/js/address_book.js"
+cp "$PACKAGE_DIR/tests/fixtures/address_book.js" "$TARGET/js/address_book.js"
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace standalone >/dev/null
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/address_book.htm" "$TARGET/index.htm"
@@ -39,7 +39,7 @@ grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/retro/js/navigation.js"
 [[ -f "$TARGET/.stellar-archive-addon/originals/retro-address_book.html" ]]
 grep -q '"dialTarget":"retro"' "$TARGET/stellar-archive/data/integration-nav.js"
 grep -q 'STELLAR_ARCHIVE_EXTENDED_ADDRESS_ROUTE' "$TARGET/js/address_book.js"
-grep -q 'address_book.js?v=stellar-archive-1.5.13-extended-route' "$TARGET/address_book.htm"
+grep -q 'address_book.js?v=stellar-archive-1.5.14-status' "$TARGET/address_book.htm"
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace original >/dev/null
 grep -q 'mode=original' "$TARGET/address_book.htm"

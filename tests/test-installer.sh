@@ -24,7 +24,7 @@ printf '%s\n' '<nav><ul class="navbar-nav"><li class="nav-item"><a class="nav-li
 printf 'RETRO PAGE\n' > "$TARGET/retro/address_book.html"
 printf '%s\n' 'div.innerHTML = `<div class="navigation-menu"><a ${isActive('\''/retro/address_book.html'\'')}>Address Book</a><a href="/help.htm">Help</a></div>`;' > "$TARGET/retro/js/navigation.js"
 touch "$TARGET/retro/dial.html" "$TARGET/retro/dial9.html"
-printf '%s\n' 'function go(address_string) { window.location = '\''/stargate/dial?address='\'' + address_string; }' > "$TARGET/js/address_book.js"
+cp "$PACKAGE_DIR/tests/fixtures/address_book.js" "$TARGET/js/address_book.js"
 touch "$TARGET/help.htm"
 printf 'PREVIOUS ARCHIVE\n' > "$TARGET/stellar-archive/old.txt"
 ln -s index.html "$TARGET/stellar-archive/fan113.html"
@@ -48,6 +48,9 @@ grep -q 'stellar_archive_addons' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 grep -q 'stellar_archive_addon_install' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 grep -q 'start_addon_install(self, data)' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 grep -q 'stellar_archive_restart' "$TEST_ROOT/sg1_v4/classes/web_server.py"
+grep -q 'STELLAR_ARCHIVE_GATE_STATUS_BEGIN' "$TEST_ROOT/sg1_v4/classes/web_server.py"
+grep -q 'STELLAR_ARCHIVE_GATE_STATUS START' "$TARGET/js/address_book.js"
+grep -q "status_freshness" "$TARGET/js/address_book.js"
 grep -q 'maintenance_contract' "$TEST_ROOT/sg1_v4/classes/matelv_addon_manager.py"
 python3 -m json.tool "$TEST_ROOT/sg1_v4/classes/matelv_addons.json" >/dev/null
 python3 -c 'import json,sys; assert "restart_service" in json.load(open(sys.argv[1]))' "$TEST_ROOT/sg1_v4/classes/.stellar-archive-maintenance.json"
@@ -71,7 +74,7 @@ grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/index.htm"
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/retro/js/navigation.js"
 grep -q '"dialTarget":"retro"' "$TARGET/stellar-archive/data/integration-nav.js"
 grep -q 'symbolCount > 6 ? "/retro/dial9.html" : "/retro/dial.html"' "$TARGET/js/address_book.js"
-grep -q 'address_book.js?v=stellar-archive-1.5.13-extended-route' "$TARGET/address_book.htm"
+grep -q 'address_book.js?v=stellar-archive-1.5.14-status' "$TARGET/address_book.htm"
 
 # A managed add-on installed after Archive may legitimately extend the shared
 # backend and Retro navigation. A later Archive update must preserve those
@@ -90,11 +93,11 @@ grep -q '"label":"VISUALS"' "$TARGET/stellar-archive/data/integration-nav.js"
 # new Archive/API files are present, while state and managed snapshots still
 # describe 1.2.8. The repair release must recover without manual deletion.
 printf '1.2.8\n' > "$TARGET/.stellar-archive-addon/version"
-perl -pi -e 's/sg1-universal-1\.5\.13/sg1-universal-1.3.0/g' "$TARGET/stellar-archive/index.html"
-perl -pi -e 's/stellar-archive-1\.5\.13-extended-route/stellar-archive-1.3.0-extended-route/g' "$TARGET/address_book.htm" "$TARGET/js/address_book.js"
+perl -pi -e 's/sg1-universal-1\.5\.14/sg1-universal-1.3.0/g' "$TARGET/stellar-archive/index.html"
+perl -pi -e 's/stellar-archive-1\.5\.14-status/stellar-archive-1.3.0-extended-route/g' "$TARGET/address_book.htm" "$TARGET/js/address_book.js"
 recovery_output="$("$PACKAGE_DIR/install.sh" --target "$TARGET" --replace both)"
 grep -q 'recover the interrupted 1.3.0 validation run' <<<"$recovery_output"
-grep -q '^1.5.13$' "$TARGET/.stellar-archive-addon/version"
+grep -q '^1.5.14$' "$TARGET/.stellar-archive-addon/version"
 grep -q 'mode=original' "$TARGET/address_book.htm"
 grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 

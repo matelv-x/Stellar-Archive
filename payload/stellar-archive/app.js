@@ -34,6 +34,14 @@ function filtered(){
 }
 const visualClass=world=>`visual-${world.id}`;
 const addressKey=address=>address.join('-');
+function gateOnline(entry,localAddress,directoryFresh){
+ const address=addressKey(entry.gate_address);
+ if(address===localAddress)return true;
+ if(entry.type==='lan')return String(entry.is_gate_online)==='1';
+ if(entry.type==='standard')return directoryFresh;
+ if(entry.type==='fan')return directoryFresh&&String(entry.is_gate_online)==='1';
+ return false;
+}
 function gateStatus(world){
  const online=liveGateStatuses.get(addressKey(world.storedAddress));
  if(typeof online==='boolean')return {label:online?'ONLINE':'OFFLINE',className:online?'online':'offline'};
@@ -535,6 +543,7 @@ async function refreshGateStatuses(){
   const [payload,dialingStatus]=await Promise.all([bookResponse.json(),statusResponse.json()]);
   updateInstalledGateName(dialingStatus.gate_name);
   const entries=Object.values(payload.address_book||{});
+  const directoryFresh=payload.status_freshness?.stale===false;
   const localAddress=Array.isArray(dialingStatus.local_address)?addressKey(dialingStatus.local_address):'';
   const v3=dialingStatus.platform==='sg1_v3'||payload.platform==='sg1_v3';
   const counts={online:v3?'—':0,offline:v3?'—':0,standard:0,lan:0};
@@ -543,13 +552,14 @@ async function refreshGateStatuses(){
    if(entry.type==='standard'){counts.standard++;continue}
    if(entry.type==='lan'){counts.lan++;continue}
    if(entry.type!=='fan'||v3)continue;
-   const online=addressKey(entry.gate_address)===localAddress||String(entry.is_gate_online)==='1';
+   const online=gateOnline(entry,localAddress,directoryFresh);
    counts[online?'online':'offline']++;
   }
   const statusEntries=v3?entries.filter(entry=>Array.isArray(entry.gate_address)&&addressKey(entry.gate_address)===localAddress):entries.filter(entry=>Array.isArray(entry.gate_address));
-  const next=new Map(statusEntries.map(entry=>[
-   addressKey(entry.gate_address),addressKey(entry.gate_address)===localAddress||String(entry.is_gate_online)==='1'
-  ]));
+  const next=new Map(statusEntries.map(entry=>{
+   const address=addressKey(entry.gate_address);
+   return [address,gateOnline(entry,localAddress,directoryFresh)];
+  }));
   if(!next.size)throw new Error('empty address book');
   const signature=[...next].sort(([a],[b])=>a.localeCompare(b)).map(([address,online])=>`${address}:${online?1:0}`).join('|');
   liveGateStatuses=next;

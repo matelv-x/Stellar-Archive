@@ -16,7 +16,7 @@ const server=http.createServer((request,response)=>{
   const requestPath=new URL(request.url,'http://127.0.0.1').pathname;
   if(requestPath==='/stargate/get/address_book'){
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({address_book:{
+    response.end(JSON.stringify({status_freshness:{stale:false},address_book:{
       standard:{type:'standard',gate_address:[27,7,15,32,12,30]},
       local:{type:'fan',gate_address:[1,2,3,4,5,6],is_gate_online:0},
       remote:{type:'fan',gate_address:[2,3,4,5,6,7],is_gate_online:0},
@@ -92,6 +92,21 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(original.href,`/receiver.html?address=${original.address}&source=stellar-archive`);
     assert.strictEqual(original.home,'/receiver.html');
     assert.strictEqual(original.homeButton,'/receiver.html');
+    assert.deepStrictEqual(await page.evaluate(()=>({
+      freshStandard:gateOnline({type:'standard',gate_address:[9]},'',true),
+      staleStandard:gateOnline({type:'standard',gate_address:[9]},'',false),
+      freshFan:gateOnline({type:'fan',gate_address:[8],is_gate_online:1},'',true),
+      staleFan:gateOnline({type:'fan',gate_address:[8],is_gate_online:1},'',false),
+      staleLan:gateOnline({type:'lan',gate_address:[7],is_gate_online:1},'',false),
+      local:gateOnline({type:'fan',gate_address:[1,2,3]},'1-2-3',false)
+    })),{
+      freshStandard:true,
+      staleStandard:false,
+      freshFan:true,
+      staleFan:false,
+      staleLan:true,
+      local:true
+    });
 
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=retro`);
     await page.waitForSelector('#select-address');
@@ -145,7 +160,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.13');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.14');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));

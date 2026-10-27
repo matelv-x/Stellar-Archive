@@ -1,4 +1,5 @@
 import json
+import collections
 from http.server import SimpleHTTPRequestHandler
 
 
@@ -9,7 +10,13 @@ class StargateWebServer(SimpleHTTPRequestHandler):
     def do_GET(self):
         try:
             request_path, get_vars = self.parse_get_vars()
-            if request_path == "/dial":
+            if request_path == "/get/address_book":
+                data = {}
+                all_addr = self.stargate.addr_manager.get_book().get_all_nonlocal_addresses()
+                data['address_book'] = collections.OrderedDict(sorted(all_addr.items()))
+                data['summary'] = self.stargate.addr_manager.get_summary_from_book(data['address_book'], True)
+                data['galaxy_path'] = self.stargate.galaxy_path
+            elif request_path == "/dial":
                 self.send_response(302)
                 self.end_headers()
         except Exception:

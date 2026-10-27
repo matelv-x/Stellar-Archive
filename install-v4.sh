@@ -9,7 +9,7 @@ UNINSTALL=0
 
 usage() {
   cat <<'EOF'
-SG1_v4 adapter — Stellar Archive universal installer 1.5.13
+SG1_v4 adapter — Stellar Archive universal installer 1.5.14
 
 Usage:
   ./install.sh [--replace original|retro|both|standalone] [--target PATH] [--dry-run]
@@ -93,6 +93,7 @@ if ((UNINSTALL == 0)); then
 fi
 [[ -d "$TARGET" ]] || die "target does not exist: $TARGET"
 [[ -f "$ORIGINAL_PAGE" ]] || die "not an SG1_v4 web root (address_book.htm missing): $TARGET"
+[[ -f "$ORIGINAL_ADDRESS_JS" ]] || die "not an SG1_v4 web root (js/address_book.js missing): $TARGET"
 [[ -f "$WEB_SERVER" ]] || die "SG1_v4 API server was not found: $WEB_SERVER"
 
 if ((UNINSTALL == 0)) && [[ -z "$MODE" ]]; then
@@ -424,6 +425,10 @@ if grep -q 'STELLAR_ARCHIVE_MAINTENANCE_IMPORT_BEGIN' "$WEB_SERVER"; then
 else
   python3 "$SCRIPT_DIR/patch_v4_web_server.py" --file "$WEB_SERVER"
 fi
+python3 "$SCRIPT_DIR/patch_v4_gate_status.py" \
+  --web-server "$WEB_SERVER" \
+  --address-js "$ORIGINAL_ADDRESS_JS" \
+  --html-file "$ORIGINAL_PAGE"
 python3 "$SCRIPT_DIR/validate_python_sources.py" "$WEB_SERVER" "$MAINTENANCE" "$ADDON_MANAGER"
 chmod 644 "$ORIGINAL_PAGE"
 if ((HAS_RETRO)); then chmod 644 "$RETRO_PAGE"; fi
@@ -444,21 +449,21 @@ run_copy "$MAINTENANCE" "$MANAGED/stellar_archive_maintenance.py"
 run_copy "$ADDON_MANAGER" "$MANAGED/matelv_addon_manager.py"
 run_copy "$ADDON_REGISTRY" "$MANAGED/matelv_addons.json"
 printf '%s\n' "$MODE" > "$STATE/current-mode"
-printf '1.5.13\n' > "$STATE/version"
+printf '1.5.14\n' > "$STATE/version"
 
 updater="$STATE/updater"
 mkdir -p "$updater/payload"
-for file in install.sh install-v3.sh install-v4.sh patch_v3_main.py patch_v4_web_server.py patch_address_book_routes.py patch_navigation_links.py build_navigation.py adopt_managed_addon_changes.py stellar_archive_bridge.py stellar_archive_maintenance.py matelv_addon_manager.py matelv_addons.json validate_python_sources.py; do
+for file in install.sh install-v3.sh install-v4.sh patch_v3_main.py patch_v4_web_server.py patch_v4_gate_status.py patch_address_book_routes.py patch_navigation_links.py build_navigation.py adopt_managed_addon_changes.py stellar_archive_bridge.py stellar_archive_maintenance.py matelv_addon_manager.py matelv_addons.json validate_python_sources.py; do
   [[ -f "$SCRIPT_DIR/$file" ]] && run_copy "$SCRIPT_DIR/$file" "$updater/$file"
 done
 run_copy "$INTEGRATION_PAYLOAD" "$updater/payload/integration"
 chmod 755 "$updater/install.sh" "$updater/install-v3.sh" "$updater/install-v4.sh"
 cat > "$MAINTENANCE_CONFIG" <<EOF
-{"version":"1.5.13","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh","restart_service":"$RESTART_SERVICE"}
+{"version":"1.5.14","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh","restart_service":"$RESTART_SERVICE"}
 EOF
 chmod 644 "$MAINTENANCE_CONFIG"
 
-note "Installed Stellar Archive 1.5.13 for SG1_v4 with replacement mode: $MODE"
+note "Installed Stellar Archive 1.5.14 for SG1_v4 with replacement mode: $MODE"
 if ((HAS_RETRO)); then note 'Detected interfaces: Original + Retro'; else note 'Detected interface: Original (Retro not installed)'; fi
 if ((HAS_EXTENDED_RETRO)); then note 'Extended addresses: direct Retro dial9 routing enabled for Archive and Original address book'; fi
 note "Archive URL: /stellar-archive/"

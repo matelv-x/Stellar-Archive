@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.14
+
+- Fixed SG1_v4 Standard gate status so it follows the freshness of Kristian's
+  central directory instead of appearing permanently online because a missing
+  `is_gate_online` value was treated as truthy by the Original address book.
+- Archive and the Original address book now fail closed after the configured
+  fan-gate refresh interval plus a two-minute grace period. Local and LAN gate
+  status remains independent of the central directory.
+- Added cache-safe Original address-book integration and preserved exact
+  pre-install restoration during uninstall.
+
 ## 1.5.13
 
 - Removed a deployment-specific public-host redirect from the universal
