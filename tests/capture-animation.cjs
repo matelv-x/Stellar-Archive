@@ -21,7 +21,7 @@ const server=http.createServer((request,response)=>{
   }
   if(requestPath==='/stargate/get/dialing_status'){
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({gate_name:'Test Gate ',local_address:[27,7,15,32,12,30]}));
+    response.end(JSON.stringify({gate_name:'Test Gate',local_address:[27,7,15,32,12,30]}));
     return;
   }
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/stellar-archive\/?/,'').replace(/^\//,'');

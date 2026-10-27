@@ -26,7 +26,7 @@ const server=http.createServer((request,response)=>{
   }
   if(requestPath==='/stargate/get/dialing_status'){
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({gate_name:'Test Gate ',local_address:[1,2,3,4,5,6]}));
+    response.end(JSON.stringify({gate_name:'Test Gate',local_address:[1,2,3,4,5,6]}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_addons'){
@@ -110,7 +110,7 @@ const server=http.createServer((request,response)=>{
 
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=retro`);
     await page.waitForSelector('#select-address');
-    await page.waitForFunction(()=>document.querySelector('#installed-gate-name').textContent==='TEST GATE ');
+    await page.waitForFunction(()=>document.querySelector('#installed-gate-name').textContent==='TEST GATE');
     const six=await page.evaluate(()=>({
       address:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.join('-'),
       length:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.length,
@@ -137,7 +137,7 @@ const server=http.createServer((request,response)=>{
 
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=retro`);
     await page.waitForSelector('#select-address');
-    assert.strictEqual(await page.locator('#installed-gate-name').textContent(),'TEST GATE ');
+    assert.strictEqual(await page.locator('#installed-gate-name').textContent(),'TEST GATE');
     assert.strictEqual(await page.locator('.gaia-motion > .gaia-layer').count(),3);
     assert.strictEqual(await page.locator('.gaia-core').evaluate(element=>getComputedStyle(element).animationDuration),'75s');
     assert.strictEqual(await page.locator('.gaia-middle').evaluate(element=>getComputedStyle(element).animationDuration),'135s');
@@ -225,7 +225,7 @@ const server=http.createServer((request,response)=>{
     assert(layout.summary.every((row,index)=>index===0||row.top>=layout.summary[index-1].bottom-1),'each gate-status colour must occupy its own line');
     assert.strictEqual(layout.brandMark,'assets/sgc-emblem-stellar-v1.png');
     assert.strictEqual(layout.sealMark,'assets/sgc-emblem-stellar-v1.png');
-    assert.strictEqual(layout.gateNameText,'TEST GATE ');
+    assert.strictEqual(layout.gateNameText,'TEST GATE');
     assert(layout.glyphBoxes.every(glyph=>glyph.width>20&&glyph.height>35&&glyph.top>=layout.glyphArea.top-1&&glyph.bottom<=layout.glyphArea.bottom+1),'all glyph buttons must remain visible in the upper half of the compact console');
     assert(layout.glyphArea.bottom<=layout.selection.top+1&&layout.glyphArea.bottom<=layout.seal.top+1,'compact console must place glyphs above the lower controls');
     assert(layout.selection.width<=150&&layout.selection.height<=54,'compact DIAL button must not remain oversized');
