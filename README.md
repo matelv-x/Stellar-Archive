@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.14 contains one entry-point installer and two isolated adapters. It
+Version 1.5.15 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -15,8 +15,8 @@ follow the selected Original or Retro integration mode.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_1.5.14.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.14
+unzip sg1_v3_v4_stellar_archive_universal_1.5.15.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.15
 ./install.sh
 ```
 
@@ -61,6 +61,11 @@ The adapter supports the standard layouts from
 optional Retro, direct 9-chevron routing and exact uninstall behavior remain
 unchanged from the tested v1.2.8 release.
 
+On SG1_v4, a transient central-directory failure is retried after 2, 4, 8 and
+at most 15 minutes while the configured normal refresh interval remains
+unchanged. A valid retry updates the address book immediately. Until then,
+stale Standard and FAN records remain fail-closed rather than appearing online.
+
 ## SG1_v3 adapter
 
 SG1_v3 has no native web root or HTTP dialing API. The v3 adapter therefore:
@@ -99,7 +104,8 @@ http://DEVICE-HOSTNAME.local/stellar-archive/
 - Both adapters validate their platform before changing files.
 - The v3 adapter preserves the original `main.py`, any pre-existing bridge and
   any pre-existing Archive directory.
-- The v4 adapter preserves Original/Retro pages and navigation as before.
+- The v4 adapter preserves Original/Retro pages, navigation and the original
+  address manager for exact uninstall restoration.
 - Updates refuse to overwrite managed files that were changed outside the
   installer.
 - `--dry-run` performs detection and validation without writing.

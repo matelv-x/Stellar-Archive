@@ -18,7 +18,9 @@ trap cleanup EXIT
 
 mkdir -p "$TARGET/retro/js" "$TARGET/stellar-archive" "$TARGET/js" "$TEST_ROOT/sg1_v4/classes"
 cp "$PACKAGE_DIR/tests/fixtures/web_server.py" "$TEST_ROOT/sg1_v4/classes/web_server.py"
+cp "$PACKAGE_DIR/tests/fixtures/stargate_address_manager.py" "$TEST_ROOT/sg1_v4/classes/stargate_address_manager.py"
 web_server_hash="$(shasum -a 256 "$TEST_ROOT/sg1_v4/classes/web_server.py" | awk '{print $1}')"
+address_manager_hash="$(shasum -a 256 "$TEST_ROOT/sg1_v4/classes/stargate_address_manager.py" | awk '{print $1}')"
 printf '%s\n' '<nav><ul class="navbar-nav"><li class="nav-item"><a class="nav-link" href="address_book.htm">Address Book</a></li><li class="nav-item"><a class="nav-link" href="help.htm">Help</a></li></ul></nav><script src="/js/address_book.js"></script>' > "$TARGET/address_book.htm"
 printf '%s\n' '<nav><ul class="navbar-nav"><li class="nav-item"><a class="nav-link" href="address_book.htm">Address Book</a></li><li class="nav-item"><a class="nav-link" href="help.htm">Help</a></li></ul></nav>' > "$TARGET/index.htm"
 printf 'RETRO PAGE\n' > "$TARGET/retro/address_book.html"
@@ -49,6 +51,7 @@ grep -q 'stellar_archive_addon_install' "$TEST_ROOT/sg1_v4/classes/web_server.py
 grep -q 'start_addon_install(self, data)' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 grep -q 'stellar_archive_restart' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 grep -q 'STELLAR_ARCHIVE_GATE_STATUS_BEGIN' "$TEST_ROOT/sg1_v4/classes/web_server.py"
+grep -q 'STELLAR_ARCHIVE_DIRECTORY_RETRY_BEGIN' "$TEST_ROOT/sg1_v4/classes/stargate_address_manager.py"
 grep -q 'STELLAR_ARCHIVE_GATE_STATUS START' "$TARGET/js/address_book.js"
 grep -q "status_freshness" "$TARGET/js/address_book.js"
 grep -q 'maintenance_contract' "$TEST_ROOT/sg1_v4/classes/matelv_addon_manager.py"
@@ -74,7 +77,7 @@ grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/index.htm"
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/retro/js/navigation.js"
 grep -q '"dialTarget":"retro"' "$TARGET/stellar-archive/data/integration-nav.js"
 grep -q 'symbolCount > 6 ? "/retro/dial9.html" : "/retro/dial.html"' "$TARGET/js/address_book.js"
-grep -q 'address_book.js?v=stellar-archive-1.5.14-status' "$TARGET/address_book.htm"
+grep -q 'address_book.js?v=stellar-archive-1.5.15-status' "$TARGET/address_book.htm"
 
 # A managed add-on installed after Archive may legitimately extend the shared
 # backend and Retro navigation. A later Archive update must preserve those
@@ -93,11 +96,11 @@ grep -q '"label":"VISUALS"' "$TARGET/stellar-archive/data/integration-nav.js"
 # new Archive/API files are present, while state and managed snapshots still
 # describe 1.2.8. The repair release must recover without manual deletion.
 printf '1.2.8\n' > "$TARGET/.stellar-archive-addon/version"
-perl -pi -e 's/sg1-universal-1\.5\.14/sg1-universal-1.3.0/g' "$TARGET/stellar-archive/index.html"
-perl -pi -e 's/stellar-archive-1\.5\.14-status/stellar-archive-1.3.0-extended-route/g' "$TARGET/address_book.htm" "$TARGET/js/address_book.js"
+perl -pi -e 's/sg1-universal-1\.5\.15/sg1-universal-1.3.0/g' "$TARGET/stellar-archive/index.html"
+perl -pi -e 's/stellar-archive-1\.5\.15-status/stellar-archive-1.3.0-extended-route/g' "$TARGET/address_book.htm" "$TARGET/js/address_book.js"
 recovery_output="$("$PACKAGE_DIR/install.sh" --target "$TARGET" --replace both)"
 grep -q 'recover the interrupted 1.3.0 validation run' <<<"$recovery_output"
-grep -q '^1.5.14$' "$TARGET/.stellar-archive-addon/version"
+grep -q '^1.5.15$' "$TARGET/.stellar-archive-addon/version"
 grep -q 'mode=original' "$TARGET/address_book.htm"
 grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 
@@ -108,6 +111,7 @@ grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 [[ "$(shasum -a 256 "$TARGET/retro/address_book.html" | awk '{print $1}')" = "$retro_hash" ]]
 [[ "$(shasum -a 256 "$TARGET/js/address_book.js" | awk '{print $1}')" = "$address_js_hash" ]]
 [[ "$(shasum -a 256 "$TEST_ROOT/sg1_v4/classes/web_server.py" | awk '{print $1}')" = "$web_server_hash" ]]
+[[ "$(shasum -a 256 "$TEST_ROOT/sg1_v4/classes/stargate_address_manager.py" | awk '{print $1}')" = "$address_manager_hash" ]]
 [[ ! -e "$TEST_ROOT/sg1_v4/classes/stellar_archive_maintenance.py" ]]
 grep -q 'PREVIOUS ARCHIVE' "$TARGET/stellar-archive/old.txt"
 if grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/address_book.htm" "$TARGET/index.htm" "$TARGET/retro/js/navigation.js"; then

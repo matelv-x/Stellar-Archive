@@ -9,7 +9,7 @@ UNINSTALL=0
 
 usage() {
   cat <<'EOF'
-SG1_v4 adapter — Stellar Archive universal installer 1.5.14
+SG1_v4 adapter — Stellar Archive universal installer 1.5.15
 
 Usage:
   ./install.sh [--replace original|retro|both|standalone] [--target PATH] [--dry-run]
@@ -62,6 +62,7 @@ RETRO_PAGE="$TARGET/retro/address_book.html"
 ARCHIVE_DIR="$TARGET/stellar-archive"
 SG1_ROOT="$(dirname -- "$TARGET")"
 WEB_SERVER="$SG1_ROOT/classes/web_server.py"
+ADDRESS_MANAGER="$SG1_ROOT/classes/stargate_address_manager.py"
 MAINTENANCE="$SG1_ROOT/classes/stellar_archive_maintenance.py"
 MAINTENANCE_CONFIG="$SG1_ROOT/classes/.stellar-archive-maintenance.json"
 ADDON_MANAGER="$SG1_ROOT/classes/matelv_addon_manager.py"
@@ -95,6 +96,7 @@ fi
 [[ -f "$ORIGINAL_PAGE" ]] || die "not an SG1_v4 web root (address_book.htm missing): $TARGET"
 [[ -f "$ORIGINAL_ADDRESS_JS" ]] || die "not an SG1_v4 web root (js/address_book.js missing): $TARGET"
 [[ -f "$WEB_SERVER" ]] || die "SG1_v4 API server was not found: $WEB_SERVER"
+[[ -f "$ADDRESS_MANAGER" ]] || die "SG1_v4 address manager was not found: $ADDRESS_MANAGER"
 
 if ((UNINSTALL == 0)) && [[ -z "$MODE" ]]; then
   [[ -t 0 ]] || die 'non-interactive use requires --replace original|retro|both|standalone'
@@ -202,6 +204,9 @@ validate_managed_pages() {
   if [[ -f "$MANAGED/web_server.py" ]]; then
     matches_wrapper "$WEB_SERVER" "$MANAGED/web_server.py" || die 'managed SG1_v4 web_server.py was changed; preserve it manually before continuing'
   fi
+  if [[ -f "$MANAGED/stargate_address_manager.py" ]]; then
+    matches_wrapper "$ADDRESS_MANAGER" "$MANAGED/stargate_address_manager.py" || die 'managed SG1_v4 stargate_address_manager.py was changed; preserve it manually before continuing'
+  fi
   if [[ -f "$MANAGED/stellar_archive_maintenance.py" ]]; then
     matches_wrapper "$MAINTENANCE" "$MANAGED/stellar_archive_maintenance.py" || die 'managed SG1_v4 maintenance module was changed; preserve it manually before continuing'
   fi
@@ -261,6 +266,7 @@ mkdir -p "$backup/retro" "$backup/original-nav" "$backup/js"
 [[ -f "$ORIGINAL_ADDRESS_JS" ]] && run_copy "$ORIGINAL_ADDRESS_JS" "$backup/js/address_book.js"
 mkdir -p "$backup/classes"
 run_copy "$WEB_SERVER" "$backup/classes/web_server.py"
+run_copy "$ADDRESS_MANAGER" "$backup/classes/stargate_address_manager.py"
 [[ -f "$MAINTENANCE" ]] && run_copy "$MAINTENANCE" "$backup/classes/stellar_archive_maintenance.py"
 [[ -f "$MAINTENANCE_CONFIG" ]] && run_copy "$MAINTENANCE_CONFIG" "$backup/classes/maintenance-config.json"
 [[ -f "$ADDON_MANAGER" ]] && run_copy "$ADDON_MANAGER" "$backup/classes/matelv_addon_manager.py"
@@ -310,6 +316,12 @@ if [[ -f "$ORIGINAL_ADDRESS_JS" && ! -f "$ORIGINALS/address_book.js" ]]; then
   run_copy "$ORIGINAL_ADDRESS_JS" "$ORIGINALS/address_book.js"
 fi
 
+# v1.5.15 starts managing bounded central-directory retries. Capture the
+# existing address manager exactly once so uninstall remains lossless.
+if [[ ! -f "$ORIGINALS/stargate_address_manager.py" ]]; then
+  run_copy "$ADDRESS_MANAGER" "$ORIGINALS/stargate_address_manager.py"
+fi
+
 # If Retro was added after an Original-only Archive installation, adopt its
 # current files as the untouched baseline before managing it.
 if ((HAS_RETRO)) && [[ ! -f "$ORIGINALS/retro-address_book.html" ]]; then
@@ -340,6 +352,7 @@ done
 if ((HAS_RETRO)); then run_copy "$ORIGINALS/retro-navigation.js" "$RETRO_NAV"; fi
 if [[ -f "$ORIGINALS/address_book.js" ]]; then run_copy "$ORIGINALS/address_book.js" "$ORIGINAL_ADDRESS_JS"; fi
 run_copy "$ORIGINALS/web_server.py" "$WEB_SERVER"
+run_copy "$ORIGINALS/stargate_address_manager.py" "$ADDRESS_MANAGER"
 if [[ -f "$ADDON_OVERLAY/classes/web_server.py" ]]; then run_copy "$ADDON_OVERLAY/classes/web_server.py" "$WEB_SERVER"; fi
 if ((HAS_RETRO)) && [[ -f "$ADDON_OVERLAY/web/retro/js/navigation.js" ]]; then run_copy "$ADDON_OVERLAY/web/retro/js/navigation.js" "$RETRO_NAV"; fi
 
@@ -428,12 +441,13 @@ fi
 python3 "$SCRIPT_DIR/patch_v4_gate_status.py" \
   --web-server "$WEB_SERVER" \
   --address-js "$ORIGINAL_ADDRESS_JS" \
+  --address-manager "$ADDRESS_MANAGER" \
   --html-file "$ORIGINAL_PAGE"
-python3 "$SCRIPT_DIR/validate_python_sources.py" "$WEB_SERVER" "$MAINTENANCE" "$ADDON_MANAGER"
+python3 "$SCRIPT_DIR/validate_python_sources.py" "$WEB_SERVER" "$ADDRESS_MANAGER" "$MAINTENANCE" "$ADDON_MANAGER"
 chmod 644 "$ORIGINAL_PAGE"
 if ((HAS_RETRO)); then chmod 644 "$RETRO_PAGE"; fi
 if [[ -f "$ORIGINAL_ADDRESS_JS" ]]; then chmod 644 "$ORIGINAL_ADDRESS_JS"; fi
-chmod 644 "$WEB_SERVER" "$MAINTENANCE" "$ADDON_MANAGER" "$ADDON_REGISTRY"
+chmod 644 "$WEB_SERVER" "$ADDRESS_MANAGER" "$MAINTENANCE" "$ADDON_MANAGER" "$ADDON_REGISTRY"
 remove_exact_tree "$MANAGED" "$STATE"
 mkdir -p "$MANAGED/original-nav-pages"
 run_copy "$ORIGINAL_PAGE" "$MANAGED/address_book.htm"
@@ -445,11 +459,12 @@ done
 if ((HAS_RETRO)); then run_copy "$RETRO_NAV" "$MANAGED/retro-navigation.js"; fi
 if [[ -f "$ORIGINAL_ADDRESS_JS" ]]; then run_copy "$ORIGINAL_ADDRESS_JS" "$MANAGED/address_book.js"; fi
 run_copy "$WEB_SERVER" "$MANAGED/web_server.py"
+run_copy "$ADDRESS_MANAGER" "$MANAGED/stargate_address_manager.py"
 run_copy "$MAINTENANCE" "$MANAGED/stellar_archive_maintenance.py"
 run_copy "$ADDON_MANAGER" "$MANAGED/matelv_addon_manager.py"
 run_copy "$ADDON_REGISTRY" "$MANAGED/matelv_addons.json"
 printf '%s\n' "$MODE" > "$STATE/current-mode"
-printf '1.5.14\n' > "$STATE/version"
+printf '1.5.15\n' > "$STATE/version"
 
 updater="$STATE/updater"
 mkdir -p "$updater/payload"
@@ -459,11 +474,11 @@ done
 run_copy "$INTEGRATION_PAYLOAD" "$updater/payload/integration"
 chmod 755 "$updater/install.sh" "$updater/install-v3.sh" "$updater/install-v4.sh"
 cat > "$MAINTENANCE_CONFIG" <<EOF
-{"version":"1.5.14","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh","restart_service":"$RESTART_SERVICE"}
+{"version":"1.5.15","platform":"v4","target":"$TARGET","mode":"$MODE","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh","restart_service":"$RESTART_SERVICE"}
 EOF
 chmod 644 "$MAINTENANCE_CONFIG"
 
-note "Installed Stellar Archive 1.5.14 for SG1_v4 with replacement mode: $MODE"
+note "Installed Stellar Archive 1.5.15 for SG1_v4 with replacement mode: $MODE"
 if ((HAS_RETRO)); then note 'Detected interfaces: Original + Retro'; else note 'Detected interface: Original (Retro not installed)'; fi
 if ((HAS_EXTENDED_RETRO)); then note 'Extended addresses: direct Retro dial9 routing enabled for Archive and Original address book'; fi
 note "Archive URL: /stellar-archive/"

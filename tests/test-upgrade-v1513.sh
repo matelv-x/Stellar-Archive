@@ -15,6 +15,7 @@ trap cleanup EXIT
 
 mkdir -p "$TARGET/retro/js" "$TARGET/js" "$TEST_ROOT/home/pi/sg1_v4/classes"
 cp "$PACKAGE_DIR/tests/fixtures/web_server.py" "$TEST_ROOT/home/pi/sg1_v4/classes/web_server.py"
+cp "$PACKAGE_DIR/tests/fixtures/stargate_address_manager.py" "$TEST_ROOT/home/pi/sg1_v4/classes/stargate_address_manager.py"
 cp "$PACKAGE_DIR/tests/fixtures/address_book.js" "$TARGET/js/address_book.js"
 printf '%s\n' '<nav><ul class="navbar-nav"><li><a href="address_book.htm">Address Book</a></li></ul></nav><script src="/js/address_book.js"></script>' > "$TARGET/address_book.htm"
 printf '%s\n' '<nav><ul class="navbar-nav"><li><a href="address_book.htm">Address Book</a></li></ul></nav>' > "$TARGET/index.htm"
@@ -25,6 +26,7 @@ touch "$TARGET/retro/dial.html" "$TARGET/retro/dial9.html"
 original_page="$(shasum -a 256 "$TARGET/address_book.htm" | awk '{print $1}')"
 original_script="$(shasum -a 256 "$TARGET/js/address_book.js" | awk '{print $1}')"
 original_server="$(shasum -a 256 "$TEST_ROOT/home/pi/sg1_v4/classes/web_server.py" | awk '{print $1}')"
+original_manager="$(shasum -a 256 "$TEST_ROOT/home/pi/sg1_v4/classes/stargate_address_manager.py" | awk '{print $1}')"
 
 "$OLD_PACKAGE/install.sh" --target "$TARGET" --replace standalone >/dev/null
 grep -q '^1.5.13$' "$TARGET/.stellar-archive-addon/version"
@@ -34,14 +36,16 @@ if grep -q 'STELLAR_ARCHIVE_GATE_STATUS' "$TARGET/js/address_book.js" "$TEST_ROO
 fi
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace standalone >/dev/null
-grep -q '^1.5.14$' "$TARGET/.stellar-archive-addon/version"
+grep -q '^1.5.15$' "$TARGET/.stellar-archive-addon/version"
 grep -q 'STELLAR_ARCHIVE_GATE_STATUS START' "$TARGET/js/address_book.js"
 grep -q 'STELLAR_ARCHIVE_GATE_STATUS_BEGIN' "$TEST_ROOT/home/pi/sg1_v4/classes/web_server.py"
-grep -q 'address_book.js?v=stellar-archive-1.5.14-status' "$TARGET/address_book.htm"
+grep -q 'STELLAR_ARCHIVE_DIRECTORY_RETRY_BEGIN' "$TEST_ROOT/home/pi/sg1_v4/classes/stargate_address_manager.py"
+grep -q 'address_book.js?v=stellar-archive-1.5.15-status' "$TARGET/address_book.htm"
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --uninstall >/dev/null
 [[ "$original_page" = "$(shasum -a 256 "$TARGET/address_book.htm" | awk '{print $1}')" ]]
 [[ "$original_script" = "$(shasum -a 256 "$TARGET/js/address_book.js" | awk '{print $1}')" ]]
 [[ "$original_server" = "$(shasum -a 256 "$TEST_ROOT/home/pi/sg1_v4/classes/web_server.py" | awk '{print $1}')" ]]
+[[ "$original_manager" = "$(shasum -a 256 "$TEST_ROOT/home/pi/sg1_v4/classes/stargate_address_manager.py" | awk '{print $1}')" ]]
 
 printf 'v1.5.13 upgrade tests: PASS\n'

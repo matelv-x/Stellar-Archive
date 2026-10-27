@@ -15,6 +15,7 @@ trap cleanup EXIT
 
 mkdir -p "$TARGET/retro/js" "$TARGET/js" "$TEST_ROOT/home/pi/sg1_v4/classes"
 cp "$PACKAGE_DIR/tests/fixtures/web_server.py" "$TEST_ROOT/home/pi/sg1_v4/classes/web_server.py"
+cp "$PACKAGE_DIR/tests/fixtures/stargate_address_manager.py" "$TEST_ROOT/home/pi/sg1_v4/classes/stargate_address_manager.py"
 printf '%s\n' '<nav><ul class="navbar-nav"><li><a href="address_book.htm">Address Book</a></li></ul></nav><script src="/js/address_book.js"></script>' > "$TARGET/address_book.htm"
 printf '%s\n' '<nav><ul class="navbar-nav"><li><a href="address_book.htm">Address Book</a></li></ul></nav>' > "$TARGET/index.htm"
 printf 'RETRO PAGE\n' > "$TARGET/retro/address_book.html"
@@ -30,7 +31,7 @@ grep -q '^1.3.1$' "$TARGET/.stellar-archive-addon/version"
 [[ ! -e "$TEST_ROOT/home/pi/sg1_v4/classes/matelv_addon_manager.py" ]]
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace both >/dev/null
-grep -q '^1.5.14$' "$TARGET/.stellar-archive-addon/version"
+grep -q '^1.5.15$' "$TARGET/.stellar-archive-addon/version"
 [[ -f "$TEST_ROOT/home/pi/sg1_v4/classes/matelv_addon_manager.py" ]]
 [[ -f "$TEST_ROOT/home/pi/sg1_v4/classes/matelv_addons.json" ]]
 grep -q 'stellar_archive_addons' "$TEST_ROOT/home/pi/sg1_v4/classes/web_server.py"

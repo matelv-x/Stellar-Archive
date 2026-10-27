@@ -14,6 +14,7 @@ trap cleanup EXIT
 
 mkdir -p "$TARGET/retro/js" "$TARGET/stellar-archive" "$TARGET/js" "$STATE/originals" "$TEST_ROOT/sg1_v4/classes"
 cp "$PACKAGE_DIR/tests/fixtures/web_server.py" "$TEST_ROOT/sg1_v4/classes/web_server.py"
+cp "$PACKAGE_DIR/tests/fixtures/stargate_address_manager.py" "$TEST_ROOT/sg1_v4/classes/stargate_address_manager.py"
 cp "$PACKAGE_DIR/tests/fixtures/address_book.js" "$TARGET/js/address_book.js"
 printf '%s\n' '<nav><ul class="navbar-nav"><li class="nav-item"><a class="nav-link" href="address_book.htm">Address Book</a></li><li class="nav-item"><a class="nav-link" href="help.htm">Help</a></li></ul></nav>' > "$TARGET/address_book.htm"
 printf '%s\n' '<nav><ul class="navbar-nav"><li class="nav-item"><a class="nav-link" href="address_book.htm">Address Book</a></li><li class="nav-item"><a class="nav-link" href="help.htm">Help</a></li></ul></nav>' > "$TARGET/index.htm"
@@ -30,7 +31,7 @@ printf 'standalone\n' > "$STATE/current-mode"
 printf '1.1.2\n' > "$STATE/version"
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace standalone >/dev/null
-grep -q '^1.5.14$' "$STATE/version"
+grep -q '^1.5.15$' "$STATE/version"
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/address_book.htm"
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/index.htm"
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/retro/js/navigation.js"

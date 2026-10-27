@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.15
+
+- Added bounded SG1_v4 central-directory retries after a failed refresh: the
+  first retry runs after two minutes, then backs off to 4, 8 and at most 15
+  minutes until a valid response succeeds.
+- Preserved the normal configured refresh interval and fail-closed status
+  behavior. A successful retry immediately refreshes the address book and
+  clears the retry state; stale cached data is never promoted to online.
+- Added exact backup, managed-file validation and uninstall restoration for
+  `stargate_address_manager.py`, plus regression coverage for failure,
+  backoff, recovery and no-network handling.
+
 ## 1.5.14
 
 - Fixed SG1_v4 Standard gate status so it follows the freshness of Kristian's
