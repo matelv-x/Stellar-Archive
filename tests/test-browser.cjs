@@ -13,6 +13,7 @@ let addonPolls=0;
 let aquilaInstalled=false;
 let addonAction='install';
 let restartRequests=0;
+const systemActionRequests={restart:0,reboot:0,shutdown:0};
 
 const server=http.createServer((request,response)=>{
   const requestPath=new URL(request.url,'http://127.0.0.1').pathname;
@@ -67,10 +68,17 @@ const server=http.createServer((request,response)=>{
     response.end(JSON.stringify({success:true,message:'Restart scheduled',service:'stargate-test.service'}));
     return;
   }
+  const systemAction=requestPath.match(/^\/stargate\/do\/(restart|reboot|shutdown)$/);
+  if(systemAction&&request.method==='POST'){
+    systemActionRequests[systemAction[1]]+=1;
+    response.writeHead(200,{'content-type':'application/json'});
+    response.end(JSON.stringify({success:true}));
+    return;
+  }
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/stellar-archive\/?/,'').replace(/^\//,'');
   if(relative.startsWith('data/integration-nav.js')){
     response.writeHead(200,{'content-type':'text/javascript; charset=utf-8'});
-    response.end('window.STELLAR_ARCHIVE_NAV={"mode":"retro","dialTarget":"retro","homeByHost":{"127.0.0.1":"/receiver.html","archive.example.test":"/"},"items":[{"label":"HOME","href":"/retro/dial.html"},{"label":"SYMBOLS","href":"/retro/symbol_overview.html"},{"label":"ADMIN","children":[{"label":"CONFIGURATION","href":"/config.htm"},{"label":"RESTART SOFTWARE","action":"restart"}]},{"label":"ALARM CLOCK","href":"/alarm_clock.htm","addon":true},{"label":"HELP","href":"/help.htm"}]};');
+    response.end('window.STELLAR_ARCHIVE_NAV={"mode":"retro","dialTarget":"retro","homeByHost":{"127.0.0.1":"/receiver.html","archive.example.test":"/"},"items":[{"label":"HOME","href":"/retro/dial.html"},{"label":"SYMBOLS","href":"/retro/symbol_overview.html"},{"label":"ADMIN","children":[{"label":"CONFIGURATION","href":"/config.htm"},{"label":"RESTART SOFTWARE","action":"restart"},{"label":"REBOOT","action":"reboot"},{"label":"SHUTDOWN","action":"shutdown"}]},{"label":"ALARM CLOCK","href":"/alarm_clock.htm","addon":true},{"label":"HELP","href":"/help.htm"}]};');
     return;
   }
   const file=path.resolve(root,relative||'index.html');
@@ -165,7 +173,24 @@ const server=http.createServer((request,response)=>{
     ]);
     await page.locator('.integration-dropdown summary').click();
     await page.waitForSelector('.integration-dropdown[open] .integration-menu');
-    assert.deepStrictEqual(await page.locator('.integration-menu .integration-button').allTextContents(),['CONFIGURATION','RESTART SOFTWARE']);
+    assert.deepStrictEqual(await page.locator('.integration-menu .integration-button').allTextContents(),['CONFIGURATION','RESTART SOFTWARE','REBOOT','SHUTDOWN']);
+    await page.getByRole('button',{name:'RESTART SOFTWARE'}).click();
+    await page.waitForSelector('#system-action-confirm[open]');
+    assert.strictEqual(await page.locator('#system-action-title').textContent(),'RESTART SOFTWARE');
+    assert.strictEqual(systemActionRequests.restart,0,'system action must wait for in-page confirmation');
+    const restartResponse=page.waitForResponse(response=>response.url().endsWith('/stargate/do/restart'));
+    await page.locator('#system-action-approve').click();
+    await restartResponse;
+    await page.waitForFunction(()=>document.querySelector('#system-action-confirm').open===false);
+    assert.strictEqual(systemActionRequests.restart,1,'confirmed restart must call its endpoint once');
+    await page.getByRole('button',{name:'REBOOT'}).click();
+    assert.strictEqual(await page.locator('#system-action-title').textContent(),'REBOOT RASPBERRY PI');
+    await page.locator('#system-action-cancel').click();
+    assert.strictEqual(systemActionRequests.reboot,0,'cancelled reboot must not call its endpoint');
+    await page.getByRole('button',{name:'SHUTDOWN'}).click();
+    assert.strictEqual(await page.locator('#system-action-title').textContent(),'SHUT DOWN RASPBERRY PI');
+    await page.locator('#system-action-cancel').click();
+    assert.strictEqual(systemActionRequests.shutdown,0,'cancelled shutdown must not call its endpoint');
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');

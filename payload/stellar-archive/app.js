@@ -256,10 +256,28 @@ function navItemHtml(item){
   if(item.href)return `<a class="integration-button${item.addon?' addon':''}" href="${escapeHtml(item.href)}"${item.title?` title="${escapeHtml(item.title)}"`:''}>${label}</a>`;
   return `<button class="integration-button${item.addon?' addon':''}" type="button" data-nav-action="${escapeHtml(item.action||'')}">${label}</button>`;
 }
+function confirmSystemAction(config){
+ const dialog=$('#system-action-confirm');
+ $('#system-action-title').textContent=config.title;
+ $('#system-action-question').textContent=config.question;
+ $('#system-action-approve').textContent=config.label;
+ return new Promise(resolve=>{
+  let settled=false;
+  const finish=value=>{if(settled)return;settled=true;dialog.close();resolve(value)};
+  $('#system-action-cancel').onclick=()=>finish(false);
+  $('#system-action-approve').onclick=()=>finish(true);
+  dialog.oncancel=event=>{event.preventDefault();finish(false)};
+  dialog.showModal();
+ });
+}
 async function runSystemAction(action){
- const config={restart:['Restart Stargate software?','/stargate/do/restart'],reboot:['Reboot the Raspberry Pi?','/stargate/do/reboot'],shutdown:['Shut down the Raspberry Pi?','/stargate/do/shutdown']}[action];
- if(!config||!window.confirm(config[0]))return;
- try{const response=await fetch(config[1],{method:'POST'});if(!response.ok)throw new Error(`HTTP ${response.status}`)}catch(error){window.alert(`Action failed: ${error.message}`)}
+ const config={
+  restart:{title:'RESTART SOFTWARE',question:'Restart Stargate software?',label:'RESTART',endpoint:'/stargate/do/restart'},
+  reboot:{title:'REBOOT RASPBERRY PI',question:'Reboot the Raspberry Pi?',label:'REBOOT',endpoint:'/stargate/do/reboot'},
+  shutdown:{title:'SHUT DOWN RASPBERRY PI',question:'Shut down the Raspberry Pi?',label:'SHUT DOWN',endpoint:'/stargate/do/shutdown'}
+ }[action];
+ if(!config||!await confirmSystemAction(config))return;
+ try{const response=await fetch(config.endpoint,{method:'POST'});if(!response.ok)throw new Error(`HTTP ${response.status}`)}catch(error){showDialog('ACTION FAILED',`System action failed: ${error.message}`)}
 }
 const archiveLinks=[
  ['GAIA VISUAL AND SCIENCE','ESA Gaia Milky Way map (2025)','https://www.cosmos.esa.int/web/gaia/milky-way'],
