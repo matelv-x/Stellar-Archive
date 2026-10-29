@@ -345,19 +345,35 @@ if ((HAS_RETRO)) && [[ ! -f "$ORIGINALS/retro-navigation.js" ]]; then
   run_copy "$RETRO_NAV" "$ORIGINALS/retro-navigation.js"
 fi
 
-# Always restore captured pages and navigation before applying the new selection.
+# Restore the two address-book pages before applying the selected replacement.
+# On an update, keep the current shared backend, address manager, routing and
+# navigation files in place: they are the surgical post-uninstall truth. The
+# captured pre-Archive copies may still contain an add-on removed much later.
 run_copy "$ORIGINALS/address_book.htm" "$ORIGINAL_PAGE"
 if ((HAS_RETRO)); then run_copy "$ORIGINALS/retro-address_book.html" "$RETRO_PAGE"; fi
-for original_nav in "$NAV_ORIGINALS"/*.htm; do
-  [[ -e "$original_nav" ]] || continue
-  run_copy "$original_nav" "$TARGET/$(basename -- "$original_nav")"
-done
-if ((HAS_RETRO)); then run_copy "$ORIGINALS/retro-navigation.js" "$RETRO_NAV"; fi
-if [[ -f "$ORIGINALS/address_book.js" ]]; then run_copy "$ORIGINALS/address_book.js" "$ORIGINAL_ADDRESS_JS"; fi
-run_copy "$ORIGINALS/web_server.py" "$WEB_SERVER"
-run_copy "$ORIGINALS/stargate_address_manager.py" "$ADDRESS_MANAGER"
-if [[ -f "$ADDON_OVERLAY/classes/web_server.py" ]]; then run_copy "$ADDON_OVERLAY/classes/web_server.py" "$WEB_SERVER"; fi
-if ((HAS_RETRO)) && [[ -f "$ADDON_OVERLAY/web/retro/js/navigation.js" ]]; then run_copy "$ADDON_OVERLAY/web/retro/js/navigation.js" "$RETRO_NAV"; fi
+if ((UNINSTALL)); then
+  for original_nav in "$NAV_ORIGINALS"/*.htm; do
+    [[ -e "$original_nav" ]] || continue
+    run_copy "$original_nav" "$TARGET/$(basename -- "$original_nav")"
+  done
+  if ((HAS_RETRO)); then run_copy "$ORIGINALS/retro-navigation.js" "$RETRO_NAV"; fi
+  if [[ -f "$ORIGINALS/address_book.js" ]]; then run_copy "$ORIGINALS/address_book.js" "$ORIGINAL_ADDRESS_JS"; fi
+  run_copy "$ORIGINALS/web_server.py" "$WEB_SERVER"
+  run_copy "$ORIGINALS/stargate_address_manager.py" "$ADDRESS_MANAGER"
+  if [[ -f "$ADDON_OVERLAY/classes/web_server.py" ]]; then run_copy "$ADDON_OVERLAY/classes/web_server.py" "$WEB_SERVER"; fi
+  if ((HAS_RETRO)) && [[ -f "$ADDON_OVERLAY/web/retro/js/navigation.js" ]]; then run_copy "$ADDON_OVERLAY/web/retro/js/navigation.js" "$RETRO_NAV"; fi
+else
+  for original_nav in "$NAV_ORIGINALS"/*.htm; do
+    [[ -e "$original_nav" ]] || continue
+    current_nav="$TARGET/$(basename -- "$original_nav")"
+    if [[ -f "$current_nav" ]] && grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$current_nav"; then
+      python3 "$SCRIPT_DIR/patch_navigation_links.py" --kind original --file "$current_nav" --remove
+    fi
+  done
+  if ((HAS_RETRO)) && grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$RETRO_NAV"; then
+    python3 "$SCRIPT_DIR/patch_navigation_links.py" --kind retro --file "$RETRO_NAV" --remove
+  fi
+fi
 
 if ((UNINSTALL)); then
   if ((HAS_RETRO)) && grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$RETRO_NAV"; then

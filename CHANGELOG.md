@@ -15,6 +15,9 @@
 - Uses a unique one-operation add-on overlay during SG1_v4 updates. A stale
   overlay left by an older interrupted or dry-run installer can no longer
   restore backend hooks belonging to an add-on that was already uninstalled.
+- Normal SG1_v4 updates preserve the current shared backend, address manager,
+  routing and navigation files instead of restoring their historical
+  pre-Archive snapshots, which may contain add-ons removed at a later date.
 
 ## 1.5.18
 

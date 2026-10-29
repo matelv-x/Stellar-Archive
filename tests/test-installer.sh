@@ -103,6 +103,17 @@ if grep -q 'STALE_FIXED_OVERLAY_MUST_NOT_RETURN' "$TEST_ROOT/sg1_v4/classes/web_
   exit 1
 fi
 
+# The original pre-Archive snapshot may contain an add-on that was removed
+# later. A normal Archive update must keep the clean current backend rather than
+# restoring that historical hook from originals.
+printf '\n# REMOVED_ADDON_HISTORICAL_HOOK\n' >> "$TARGET/.stellar-archive-addon/originals/web_server.py"
+"$PACKAGE_DIR/install.sh" --target "$TARGET" --replace both >/dev/null
+if grep -q 'REMOVED_ADDON_HISTORICAL_HOOK' "$TEST_ROOT/sg1_v4/classes/web_server.py"; then
+  printf 'normal update restored a removed add-on from originals\n' >&2
+  exit 1
+fi
+perl -ni -e 'print unless /REMOVED_ADDON_HISTORICAL_HOOK/' "$TARGET/.stellar-archive-addon/originals/web_server.py"
+
 # Reproduce the exact interrupted 1.3.0 validation state reported by ***:
 # new Archive/API files are present, while state and managed snapshots still
 # describe 1.2.8. The repair release must recover without manual deletion.
