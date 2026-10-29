@@ -13,7 +13,7 @@ class AddonContractTests(unittest.TestCase):
 
     def test_every_registered_addon_requires_surgical_uninstall_v2(self):
         addons = self.registry()
-        self.assertEqual(len(addons), 13)
+        self.assertEqual(len(addons), 14)
         for addon in addons:
             with self.subTest(addon=addon["id"]):
                 self.assertEqual(addon.get("maintenance_contract"), 1)
@@ -27,6 +27,12 @@ class AddonContractTests(unittest.TestCase):
             {"path": "web/js/debug.js", "contains": "Lamp Mode controls"},
             {"path": "classes/web_server.py", "contains": "# LAMP_MODE_WEB_START"},
         ]})
+
+    def test_fan113_home_has_surgical_static_integration(self):
+        addon = next(addon for addon in self.registry() if addon["id"] == "fan113-home")
+        self.assertFalse(addon["restart_required"])
+        self.assertEqual(addon["repository"], "matelv-x/FAN113-Home")
+        self.assertIn("web/js/home_redirect.js", addon["archive_integration_files"])
 
 
 if __name__ == "__main__":

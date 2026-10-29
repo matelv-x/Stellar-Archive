@@ -18,6 +18,9 @@
 - Normal SG1_v4 updates preserve the current shared backend, address manager,
   routing and navigation files instead of restoring their historical
   pre-Archive snapshots, which may contain add-ons removed at a later date.
+- Added FAN113 Home to the catalogue. Its Configuration integration provides
+  ORIGINAL, RETRO and FAN113 HOME choices, keeps HOME selection independent of
+  the visible interface, and requires no service or hardware restart.
 
 ## 1.5.18
 
