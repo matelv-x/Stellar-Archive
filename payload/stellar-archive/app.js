@@ -399,18 +399,19 @@ async function loadInstalledAddons(){
 let addonProgressContext=null;
 let addonConfirmResolve=null;
 const addonProgressPhases=['download','verify','install','complete'];
-function confirmAddonUninstall(addon){
- addonProgressContext={id:addon.id,name:addon.name,action:'uninstall',restartRequired:Boolean(addon.restart_required)};
+function confirmAddonAction(addon,action,message){
+ addonProgressContext={id:addon.id,name:addon.name,action,restartRequired:Boolean(addon.restart_required)};
  const overlay=$('#addon-progress-overlay');
  overlay.hidden=false;
  overlay.dataset.running='false';
  overlay.dataset.state='confirm';
- $('#addon-progress-title').textContent='CONFIRM UNINSTALL';
+ overlay.dataset.action=action;
+ $('#addon-progress-title').textContent=`CONFIRM ${action.toUpperCase()}`;
  $('#addon-progress-name').textContent=addon.name;
- $('#addon-progress-status').textContent='Check GitHub for the newest surgical uninstaller, then remove only this add-on?';
+ $('#addon-progress-status').textContent=message;
  $('#addon-progress-close').textContent='CANCEL';
  $('#addon-progress-close').hidden=false;
- $('#addon-progress-restart').textContent='UNINSTALL';
+ $('#addon-progress-restart').textContent=action.toUpperCase();
  $('#addon-progress-restart').hidden=false;
  return new Promise(resolve=>{addonConfirmResolve=resolve});
 }
@@ -420,6 +421,7 @@ function showAddonProgress(addon,action){
  overlay.hidden=false;
  overlay.dataset.running='true';
  overlay.dataset.state='running';
+ overlay.dataset.action=action;
  $('#addon-progress-title').textContent=`${action.toUpperCase()} IN PROGRESS`;
  $('#addon-progress-name').textContent=addon.name;
  $('#addon-progress-status').textContent='Preparing secure operation…';
@@ -557,12 +559,12 @@ async function handleAddonAction(event){
   const question=addon.update_available===true
    ?`Update ${addon.name} from ${addon.current_revision||'unknown'} to ${addon.latest_revision||'latest'}?`
    :`The installed ${addon.name} revision is unknown. Install the latest GitHub revision ${addon.latest_revision||''}?`;
-  if(!window.confirm(question))return;
+  if(!await confirmAddonAction(addon,'update',question))return;
  }else if(action==='install'){
   if(!reviewedAddonRepositories.has(addon.id)){ $('#addon-manager-status').textContent='Open the information link before installation.';return }
   if(!addon.can_install){$('#addon-manager-status').textContent=`${addon.name} cannot be installed until a safe uninstall procedure is verified.`;return}
-  if(!window.confirm(`Install ${addon.name} from its verified matelv-x repository? A Stargate software restart may be required afterward.`))return;
- }else if(!await confirmAddonUninstall(addon))return;
+  if(!await confirmAddonAction(addon,'install',`Install ${addon.name} from its verified matelv-x repository? A Stargate software restart may be required afterward.`))return;
+ }else if(!await confirmAddonAction(addon,'uninstall','Check GitHub for the newest surgical uninstaller, then remove only this add-on?'))return;
  button.disabled=true;
  $('#addon-manager-status').textContent=`Starting ${action} for ${addon.name}…`;
  showAddonProgress(addon,action);

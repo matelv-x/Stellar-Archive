@@ -108,6 +108,11 @@ class MatelvAddonManager:
         declared = set((manifest or {}).get("archive_integration_files", []))
         if "classes/web_server.py" in declared:
             pairs.append((context["sg1_root"] / "classes" / "web_server.py", managed / "web_server.py"))
+        if "classes/stargate_address_manager.py" in declared:
+            pairs.append((
+                context["sg1_root"] / "classes" / "stargate_address_manager.py",
+                managed / "stargate_address_manager.py",
+            ))
         original_navigation = managed / "original-nav-pages"
         if original_navigation.is_dir():
             for snapshot in original_navigation.glob("*.htm"):
@@ -207,6 +212,11 @@ class MatelvAddonManager:
                 continue
             if manifest["repository"].lower() != repository_key:
                 continue
+            registered = manifests.get(manifest["id"])
+            if registered:
+                merged = dict(registered)
+                merged.update(manifest)
+                manifest = self._validate_manifest(merged)
             manifests[manifest["id"]] = manifest
         return manifests
 
@@ -511,6 +521,9 @@ class MatelvAddonManager:
                 raise RuntimeError("the repository has no verified surgical uninstall contract")
             if remote_manifest["id"] != manifest["id"] or remote_manifest["repository"].lower() != manifest["repository"].lower():
                 raise RuntimeError("remote add-on manifest identity mismatch")
+            for inherited_key in ("detect", "archive_integration_files"):
+                if inherited_key not in remote_manifest and inherited_key in manifest:
+                    remote_manifest[inherited_key] = manifest[inherited_key]
             manifest = remote_manifest
             if action == "install" and not remote_manifest.get("uninstall"):
                 raise RuntimeError("installation is blocked: the current repository has no safe uninstall procedure")

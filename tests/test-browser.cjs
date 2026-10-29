@@ -34,7 +34,7 @@ const server=http.createServer((request,response)=>{
   }
   if(requestPath==='/stargate/get/stellar_archive_update'){
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,current_version:'1.5.19',latest_version:'1.5.19',update_available:false}));
+    response.end(JSON.stringify({success:true,current_version:'1.5.20',latest_version:'1.5.20',update_available:false}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_addons'){
@@ -222,7 +222,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.19');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.20');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));
@@ -242,10 +242,15 @@ const server=http.createServer((request,response)=>{
     await page.evaluate(()=>{window.open=()=>({opener:null})});
     await page.locator('#available-addon-list button[data-addon-action="info"]').click();
     assert.strictEqual(await installButton.isDisabled(),false,'repository information must unlock INSTALL');
-    page.once('dialog',dialog=>dialog.accept());
     await installButton.click();
-    await page.waitForSelector('#addon-progress-overlay:not([hidden])');
+    await page.waitForSelector('#addon-progress-overlay[data-state="confirm"]:not([hidden])');
+    assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'CONFIRM INSTALL');
     assert.strictEqual(await page.locator('#addon-progress-name').textContent(),'Aquila Symbol Patch');
+    assert.strictEqual(await page.locator('#addon-progress-close').textContent(),'CANCEL');
+    assert.strictEqual(await page.locator('#addon-progress-restart').textContent(),'INSTALL');
+    await page.locator('#addon-progress-restart').click();
+    await page.waitForSelector('#addon-progress-overlay[data-state="running"]');
+    assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'INSTALL IN PROGRESS');
     await page.waitForSelector('#addon-progress-restart:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'INSTALL COMPLETE');
     assert((await page.locator('#integration-nav').textContent()).includes('AQUILA SYMBOL'),'install must refresh and add its navigation button');

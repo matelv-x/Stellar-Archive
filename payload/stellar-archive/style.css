@@ -213,7 +213,7 @@ dialog p{font-size:14px;line-height:1.9}
 .addon-progress-steps li.done{border-color:#6bc4a3;color:#9df2cf;background:#0a2d28}
 .addon-progress-overlay[data-state="failed"] .addon-progress-track span{background:#d5656d}
 .addon-progress-overlay[data-state="confirm"] .addon-progress-track,.addon-progress-overlay[data-state="confirm"] .addon-progress-steps{display:none}
-.addon-progress-overlay[data-state="confirm"] #addon-progress-restart{border-color:#a65a5f;color:#ffb9bc}
+.addon-progress-overlay[data-state="confirm"][data-action="uninstall"] #addon-progress-restart{border-color:#a65a5f;color:#ffb9bc}
 .addon-progress-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
 .addon-progress-actions button{border:1px solid #4d9aae;background:#071d27;color:#c9edf2;padding:10px 14px;font-size:9px;letter-spacing:.12em;cursor:pointer}
 #addon-progress-restart{border-color:#d4aa55;color:#ffe3a2}

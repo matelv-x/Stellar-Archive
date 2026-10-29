@@ -28,13 +28,21 @@ class AdoptManagedAddonChangesTests(unittest.TestCase):
             backend.write_text("Retro Visuals backend", encoding="utf-8")
             backend_snapshot = managed / "web_server.py"
             backend_snapshot.write_text("Archive backend", encoding="utf-8")
+            address_manager = root / "classes" / "stargate_address_manager.py"
+            address_manager.write_text("LAN status integration", encoding="utf-8")
+            address_manager_snapshot = managed / "stargate_address_manager.py"
+            address_manager_snapshot.write_text("Archive status manager", encoding="utf-8")
             state = root / "state.json"
             state.write_text(json.dumps({"retro-visuals": {"revision": "a" * 40}}), encoding="utf-8")
             registry = root / "registry.json"
             registry.write_text(json.dumps({"addons": [{
                 "id": "retro-visuals",
                 "detect": {"all": [{"path": "web/retro/js/retro_visuals.js"}]},
-                "archive_integration_files": ["classes/web_server.py", "web/retro/js/navigation.js"],
+                "archive_integration_files": [
+                    "classes/web_server.py",
+                    "classes/stargate_address_manager.py",
+                    "web/retro/js/navigation.js",
+                ],
             }]}), encoding="utf-8")
             script = Path(__file__).resolve().parent.parent / "adopt_managed_addon_changes.py"
             overlay = managed.parent / "addon-overlay"
@@ -44,6 +52,7 @@ class AdoptManagedAddonChangesTests(unittest.TestCase):
             ], check=True)
             self.assertEqual(snapshot.read_text(encoding="utf-8"), "Visuals")
             self.assertEqual(backend_snapshot.read_text(encoding="utf-8"), "Retro Visuals backend")
+            self.assertEqual(address_manager_snapshot.read_text(encoding="utf-8"), "LAN status integration")
             self.assertEqual(unrelated_snapshot.read_text(encoding="utf-8"), "Original")
             self.assertEqual((overlay / "classes" / "web_server.py").read_text(encoding="utf-8"), "Retro Visuals backend")
             self.assertEqual((overlay / "web" / "retro" / "js" / "navigation.js").read_text(encoding="utf-8"), "Visuals")

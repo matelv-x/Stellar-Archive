@@ -87,6 +87,21 @@ class AddonManagerTests(unittest.TestCase):
         self.assertEqual(payload["available"], [])
         self.assertEqual(len(payload["addons"][0]["current_revision"]), 12)
 
+    def test_checkout_manifest_inherits_registry_detection_and_integrations(self):
+        checkout_manifest = self.home / "Example-Addon" / "stargate-addon.json"
+        checkout_payload = json.loads(checkout_manifest.read_text(encoding="utf-8"))
+        checkout_payload.pop("detect")
+        checkout_payload.pop("archive_integration_files", None)
+        checkout_manifest.write_text(json.dumps(checkout_payload), encoding="utf-8")
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["archive_integration_files"] = ["web/example.js"]
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+
+        manifests = self.manager._manifests(self.manager._checkout_map(self.home))
+        manifest = manifests["example-addon"]
+        self.assertEqual(manifest["detect"], registry["addons"][0]["detect"])
+        self.assertEqual(manifest["archive_integration_files"], ["web/example.js"])
+
     def test_not_installed_safe_addon_is_available_for_install(self):
         (self.web / "example.js").unlink()
         payload = self.manager.list_addons(check_remote=False)
@@ -189,6 +204,18 @@ class AddonManagerTests(unittest.TestCase):
         manifest = {"archive_integration_files": ["classes/web_server.py"]}
         self.manager._refresh_archive_managed_pages(self.manager.config(), manifest)
         self.assertEqual(snapshot.read_text(encoding="utf-8"), "verified add-on edit")
+
+    def test_refreshes_declared_address_manager_snapshot(self):
+        managed = self.web / ".stellar-archive-addon" / "managed"
+        managed.mkdir(parents=True)
+        address_manager = self.root / "classes" / "stargate_address_manager.py"
+        address_manager.parent.mkdir(parents=True, exist_ok=True)
+        address_manager.write_text("verified LAN edit", encoding="utf-8")
+        snapshot = managed / "stargate_address_manager.py"
+        snapshot.write_text("old", encoding="utf-8")
+        manifest = {"archive_integration_files": ["classes/stargate_address_manager.py"]}
+        self.manager._refresh_archive_managed_pages(self.manager.config(), manifest)
+        self.assertEqual(snapshot.read_text(encoding="utf-8"), "verified LAN edit")
 
     def test_current_cached_uninstaller_uses_no_network_download(self):
         context = self.manager.config()

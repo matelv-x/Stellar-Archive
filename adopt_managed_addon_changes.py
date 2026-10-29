@@ -11,6 +11,7 @@ from pathlib import Path
 
 SNAPSHOTS = {
     "classes/web_server.py": "web_server.py",
+    "classes/stargate_address_manager.py": "stargate_address_manager.py",
     "web/address_book.htm": "address_book.htm",
     "web/retro/address_book.html": "retro-address_book.html",
     "web/retro/js/navigation.js": "retro-navigation.js",

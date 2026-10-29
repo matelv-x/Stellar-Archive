@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.5.20
+
+- Added Visual Volume Meter to the managed catalogue and preserved the normal
+  percentage volume display when its colour overlay is removed.
+- Added in-page install and update confirmation with visible progress, matching
+  the existing embedded-WebView-safe uninstall flow.
+- Preserved catalogue-owned detection and Archive integration declarations when
+  an add-on repository supplies a smaller maintenance manifest.
+- Refreshes only the three owned maintenance blocks when upgrading an older
+  universal installation, so new catalogue endpoints are added without
+  replacing unrelated backend integrations.
+- Updated Dynamic Wormhole and FAN113 Home detection to their verified owned
+  runtime/state markers, preventing false Installed or Available results.
+- Declared LAN Discovery's shared status manager so verified LAN changes update
+  the managed Archive snapshot instead of blocking a later Archive upgrade.
+- Verified all 15 catalogue add-ons through sequential install/uninstall tests
+  on the fully virtual FAN113 gate, including navigation cleanup, preserved
+  settings/history, current gate status, Retro rendering and Seed Ship dialing.
+
 ## 1.5.19
 
 - Short desktop windows now scroll the complete left catalogue panel, matching
