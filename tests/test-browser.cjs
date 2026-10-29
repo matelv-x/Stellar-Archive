@@ -77,8 +77,16 @@ const server=http.createServer((request,response)=>{
   }
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/stellar-archive\/?/,'').replace(/^\//,'');
   if(relative.startsWith('data/integration-nav.js')){
+    const items=[
+      {label:'HOME',href:'/retro/dial.html'},
+      {label:'SYMBOLS',href:'/retro/symbol_overview.html'},
+      {label:'ADMIN',children:[{label:'CONFIGURATION',href:'/config.htm'},{label:'RESTART SOFTWARE',action:'restart'},{label:'REBOOT',action:'reboot'},{label:'SHUTDOWN',action:'shutdown'}]},
+      {label:'ALARM CLOCK',href:'/alarm_clock.htm',addon:true},
+      ...(aquilaInstalled?[{label:'AQUILA SYMBOL',href:'/aquila.htm',addon:true}]:[]),
+      {label:'HELP',href:'/help.htm'}
+    ];
     response.writeHead(200,{'content-type':'text/javascript; charset=utf-8'});
-    response.end('window.STELLAR_ARCHIVE_NAV={"mode":"retro","dialTarget":"retro","homeByHost":{"127.0.0.1":"/receiver.html","archive.example.test":"/"},"items":[{"label":"HOME","href":"/retro/dial.html"},{"label":"SYMBOLS","href":"/retro/symbol_overview.html"},{"label":"ADMIN","children":[{"label":"CONFIGURATION","href":"/config.htm"},{"label":"RESTART SOFTWARE","action":"restart"},{"label":"REBOOT","action":"reboot"},{"label":"SHUTDOWN","action":"shutdown"}]},{"label":"ALARM CLOCK","href":"/alarm_clock.htm","addon":true},{"label":"HELP","href":"/help.htm"}]};');
+    response.end(`window.STELLAR_ARCHIVE_NAV=${JSON.stringify({mode:'retro',dialTarget:'retro',homeByHost:{'127.0.0.1':'/receiver.html','archive.example.test':'/'},items})};`);
     return;
   }
   const file=path.resolve(root,relative||'index.html');
@@ -240,6 +248,7 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(await page.locator('#addon-progress-name').textContent(),'Aquila Symbol Patch');
     await page.waitForSelector('#addon-progress-restart:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'INSTALL COMPLETE');
+    assert((await page.locator('#integration-nav').textContent()).includes('AQUILA SYMBOL'),'install must refresh and add its navigation button');
     assert.strictEqual(await page.locator('#addon-progress-close').textContent(),'LATER');
     assert.strictEqual(await page.locator('#addon-progress-bar').evaluate(element=>element.style.width),'100%');
     assert.strictEqual(await page.locator('.addon-progress-steps li.done').count(),3);
@@ -260,6 +269,7 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'UNINSTALL IN PROGRESS');
     await page.waitForSelector('#addon-progress-restart:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'UNINSTALL COMPLETE');
+    assert(!(await page.locator('#integration-nav').textContent()).includes('AQUILA SYMBOL'),'uninstall must refresh and remove its navigation button');
     assert.strictEqual(await page.locator('.addon-progress-steps li').nth(2).textContent(),'REMOVE');
     const restartRequestsBeforeAddonRestart=restartRequests;
     await page.locator('#addon-progress-restart').click();

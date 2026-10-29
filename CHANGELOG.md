@@ -9,6 +9,9 @@
 - Routed the Archive RESTART control through the delayed maintenance endpoint,
   allowing the HTTP response to finish before the Stargate service stops and
   preventing a successful restart from being reported as HTTP 502.
+- Refreshes the generated Archive navigation without browser cache after every
+  add-on operation and on page load, so uninstall immediately removes the
+  add-on button and installation adds it back without a stale menu.
 
 ## 1.5.18
 

@@ -3,7 +3,7 @@
 const archive=window.STELLAR_ARCHIVE_DATA;
 const worlds=archive.worlds;
 const integrationMode=new URLSearchParams(window.location.search).get('mode');
-const integrationNav=window.STELLAR_ARCHIVE_NAV||{mode:'standalone',items:[]};
+let integrationNav=window.STELLAR_ARCHIVE_NAV||{mode:'standalone',items:[]};
 function configuredHostHomeHref(){
  const host=(window.location.hostname||'').toLowerCase();
  const hostHome=integrationNav.homeByHost&&integrationNav.homeByHost[host];
@@ -245,14 +245,25 @@ function renderIntegrationNav(){
   if(item.children?.length)return `<details class="integration-dropdown"><summary class="integration-button">${label}</summary><div class="integration-menu">${item.children.map(child=>navItemHtml(child)).join('')}</div></details>`;
   return navItemHtml(item);
  }).join('');
- nav.addEventListener('click',event=>{
+ nav.onclick=event=>{
   const button=event.target.closest('[data-nav-action]');
   if(!button)return;
   const action=button.dataset.navAction;
   if(action==='about')showAboutDialog();
   if(['restart','reboot','shutdown'].includes(action))runSystemAction(action);
- });
+ };
  fitMastheadContents();
+}
+async function refreshIntegrationNavigation(){
+ const response=await fetch(`data/integration-nav.js?maintenance=${Date.now()}`,{cache:'no-store',credentials:'same-origin'});
+ if(!response.ok)throw new Error(`HTTP ${response.status}`);
+ const source=await response.text();
+ const match=source.match(/^\s*window\.STELLAR_ARCHIVE_NAV\s*=\s*(\{[\s\S]*\})\s*;\s*$/);
+ if(!match)throw new Error('invalid navigation payload');
+ const payload=JSON.parse(match[1]);
+ if(!payload||!Array.isArray(payload.items))throw new Error('invalid navigation items');
+ integrationNav=payload;
+ renderIntegrationNav();
 }
 function navItemHtml(item){
   const label=escapeHtml(item.label||'LINK');
@@ -459,7 +470,10 @@ async function pollAddonMaintenance(addonId){
    const addon=[...(payload.addons||[]),...(payload.available||[])].find(item=>item.id===addonId);
    if(!addon){failAddonProgress('The add-on status is no longer available.');return}
    updateAddonProgress(addon.task||{});
-   if(['complete','failed'].includes(addon.task?.state))return;
+   if(['complete','failed'].includes(addon.task?.state)){
+    if(addon.task?.state==='complete')await refreshIntegrationNavigation();
+    return;
+   }
   }catch(error){$('#addon-manager-status').textContent=`Add-on status unavailable: ${error.message}`;failAddonProgress(`Status unavailable: ${error.message}`);return}
  }
  $('#addon-manager-status').textContent='The add-on operation is still running. Refresh in a moment.';
@@ -633,6 +647,7 @@ async function refreshGateStatuses(){
  }finally{window.clearTimeout(timeout)}
 }
 configureIntegration();
+refreshIntegrationNavigation().catch(()=>{});
 fitArchiveToWindow();
 window.addEventListener('resize',fitArchiveToWindow,{passive:true});
 window.visualViewport?.addEventListener('resize',fitArchiveToWindow,{passive:true});
