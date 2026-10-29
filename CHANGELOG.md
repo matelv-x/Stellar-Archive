@@ -20,7 +20,9 @@
   pre-Archive snapshots, which may contain add-ons removed at a later date.
 - Added FAN113 Home to the catalogue. Its Configuration integration provides
   ORIGINAL, RETRO and FAN113 HOME choices, keeps HOME selection independent of
-  the visible interface, and requires no service or hardware restart.
+  the visible interface, and requires one Stargate service restart to reload
+  the extended Configuration schema. It never reboots the host, restarts Seed
+  Ship, or sends a hardware command.
 
 ## 1.5.18
 

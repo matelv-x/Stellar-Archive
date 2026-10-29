@@ -30,7 +30,7 @@ class AddonContractTests(unittest.TestCase):
 
     def test_fan113_home_has_surgical_static_integration(self):
         addon = next(addon for addon in self.registry() if addon["id"] == "fan113-home")
-        self.assertFalse(addon["restart_required"])
+        self.assertTrue(addon["restart_required"])
         self.assertEqual(addon["repository"], "matelv-x/FAN113-Home")
         self.assertIn("web/js/home_redirect.js", addon["archive_integration_files"])
 

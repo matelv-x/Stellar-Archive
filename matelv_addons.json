@@ -82,7 +82,7 @@
       "install": {"argv": ["./install-fan113-home.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 300},
       "uninstall": {"argv": ["./restore-fan113-home.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 300},
       "archive_integration_files": ["config/milkyway-config.json", "config/defaults-milkyway/config.json.dist", "web/config.htm", "web/js/home_redirect.js"],
-      "restart_required": false
+      "restart_required": true
     },
     {
       "maintenance_contract": 1,
