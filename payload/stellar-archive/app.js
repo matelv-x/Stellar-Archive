@@ -362,7 +362,23 @@ async function loadInstalledAddons(){
  }finally{$('#refresh-addons').disabled=false}
 }
 let addonProgressContext=null;
+let addonConfirmResolve=null;
 const addonProgressPhases=['download','verify','install','complete'];
+function confirmAddonUninstall(addon){
+ addonProgressContext={id:addon.id,name:addon.name,action:'uninstall',restartRequired:Boolean(addon.restart_required)};
+ const overlay=$('#addon-progress-overlay');
+ overlay.hidden=false;
+ overlay.dataset.running='false';
+ overlay.dataset.state='confirm';
+ $('#addon-progress-title').textContent='CONFIRM UNINSTALL';
+ $('#addon-progress-name').textContent=addon.name;
+ $('#addon-progress-status').textContent='Use the verified bounded restore procedure for this add-on?';
+ $('#addon-progress-close').textContent='CANCEL';
+ $('#addon-progress-close').hidden=false;
+ $('#addon-progress-restart').textContent='UNINSTALL';
+ $('#addon-progress-restart').hidden=false;
+ return new Promise(resolve=>{addonConfirmResolve=resolve});
+}
 function showAddonProgress(addon,action){
  addonProgressContext={id:addon.id,name:addon.name,action,restartRequired:Boolean(addon.restart_required)};
  const overlay=$('#addon-progress-overlay');
@@ -374,11 +390,14 @@ function showAddonProgress(addon,action){
  $('#addon-progress-status').textContent='Preparing secure operation…';
  $('#addon-progress-bar').style.width='5%';
  $('#addon-progress-close').hidden=true;
+ $('#addon-progress-restart').textContent='RESTART SERVICE';
  $('#addon-progress-restart').hidden=true;
+ const labels=action==='uninstall'?['PREPARE','VERIFY','REMOVE','COMPLETE']:(action==='update'?['DOWNLOAD','VERIFY','UPDATE','COMPLETE']:['DOWNLOAD','VERIFY','INSTALL','COMPLETE']);
+ document.querySelectorAll('.addon-progress-steps li').forEach((item,index)=>{item.textContent=labels[index]});
  updateAddonProgressSteps('prepare');
 }
 function updateAddonProgressSteps(phase){
- const activeIndex=addonProgressPhases.indexOf(phase);
+ const activeIndex=addonProgressPhases.indexOf(phase==='prepare'?'download':phase);
  document.querySelectorAll('.addon-progress-steps li').forEach(item=>{
   const index=addonProgressPhases.indexOf(item.dataset.phase);
   item.classList.toggle('active',index===activeIndex);
@@ -425,8 +444,20 @@ async function pollAddonMaintenance(addonId){
  $('#addon-manager-status').textContent='The add-on operation is still running. Refresh in a moment.';
  failAddonProgress('The operation did not report completion. Check the installed add-on list before trying again.');
 }
-$('#addon-progress-close').addEventListener('click',()=>{$('#addon-progress-overlay').hidden=true;addonProgressContext=null;loadInstalledAddons()});
+$('#addon-progress-close').addEventListener('click',()=>{
+ $('#addon-progress-overlay').hidden=true;
+ addonProgressContext=null;
+ if(addonConfirmResolve){const resolve=addonConfirmResolve;addonConfirmResolve=null;resolve(false);return}
+ loadInstalledAddons();
+});
 $('#addon-progress-restart').addEventListener('click',async()=>{
+ if(addonConfirmResolve){
+  const resolve=addonConfirmResolve;
+  addonConfirmResolve=null;
+  $('#addon-progress-restart').hidden=true;
+  resolve(true);
+  return;
+ }
  if(!addonProgressContext||!window.confirm(`Restart the Stargate service for ${addonProgressContext.name} now?`))return;
  $('#addon-progress-close').hidden=true;
  $('#addon-progress-restart').hidden=true;
@@ -483,7 +514,7 @@ async function handleAddonAction(event){
   if(!reviewedAddonRepositories.has(addon.id)){ $('#addon-manager-status').textContent='Open the information link before installation.';return }
   if(!addon.can_install){$('#addon-manager-status').textContent=`${addon.name} cannot be installed until a safe uninstall procedure is verified.`;return}
   if(!window.confirm(`Install ${addon.name} from its verified matelv-x repository? A Stargate software restart may be required afterward.`))return;
- }else if(!window.confirm(`Uninstall ${addon.name} using its verified bounded restore procedure?`))return;
+ }else if(!await confirmAddonUninstall(addon))return;
  button.disabled=true;
  $('#addon-manager-status').textContent=`Starting ${action} for ${addon.name}…`;
  showAddonProgress(addon,action);

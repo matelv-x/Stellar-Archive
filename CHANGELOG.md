@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.16
+
+- Replaced the managed add-on uninstall browser prompt with an in-page
+  confirmation that remains visible in embedded WebViews and proceeds directly
+  into the live Prepare, Verify, Remove and Complete progress stages.
+- Changed the Stellar Archive update check to follow GitHub's public latest
+  release redirect instead of consuming the anonymous GitHub API rate limit.
+  Release ZIP and SHA-256 verification remain mandatory before installation.
+
 ## 1.5.15
 
 - Added bounded SG1_v4 central-directory retries after a failed refresh: the

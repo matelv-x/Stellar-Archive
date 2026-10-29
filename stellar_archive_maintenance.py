@@ -49,29 +49,29 @@ class StellarArchiveMaintenance:
             raise ValueError("invalid release version: {}".format(value))
         return tuple(int(part) for part in match.groups())
 
-    def github_json(self, url):
-        request = urllib.request.Request(url, headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "Stellar-Archive-Updater/1.4",
-        })
-        with urllib.request.urlopen(request, timeout=15) as response:
-            return json.loads(response.read().decode("utf-8"))
-
     def latest_release(self):
         config = self.config()
-        release = self.github_json("https://api.github.com/repos/{}/releases/latest".format(config["repository"]))
-        latest = str(release.get("tag_name", ""))
+        release_url = "https://github.com/{}/releases/latest".format(config["repository"])
+        request = urllib.request.Request(release_url, headers={
+            "Accept": "text/html",
+            "User-Agent": "Stellar-Archive-Updater/1.5",
+        })
+        with urllib.request.urlopen(request, timeout=15) as response:
+            resolved_url = response.geturl()
+        release_prefix = "https://github.com/{}/releases/tag/".format(config["repository"])
+        if not resolved_url.startswith(release_prefix):
+            raise ValueError("latest GitHub release redirect is unavailable")
+        latest = resolved_url[len(release_prefix):].split("?", 1)[0].split("#", 1)[0]
         self.version_tuple(latest)
-        zip_name = "sg1_v3_v4_stellar_archive_universal_{}.zip".format(latest.lstrip("v"))
-        assets = {asset.get("name"): asset.get("browser_download_url") for asset in release.get("assets", [])}
-        if not assets.get(zip_name) or not assets.get(zip_name + ".sha256"):
-            raise ValueError("latest release does not contain the universal ZIP and SHA-256 asset")
+        version = latest.lstrip("v")
+        zip_name = "sg1_v3_v4_stellar_archive_universal_{}.zip".format(version)
+        asset_root = "https://github.com/{}/releases/download/{}".format(config["repository"], latest)
         return {
-            "version": latest.lstrip("v"),
+            "version": version,
             "zip_name": zip_name,
-            "zip_url": assets[zip_name],
-            "sha_url": assets[zip_name + ".sha256"],
-            "release_url": release.get("html_url", ""),
+            "zip_url": "{}/{}".format(asset_root, zip_name),
+            "sha_url": "{}/{}.sha256".format(asset_root, zip_name),
+            "release_url": resolved_url,
         }
 
     def check(self):
@@ -194,7 +194,7 @@ class StellarArchiveMaintenance:
             return {"success": False, "message": str(error)}
 
     def _download(self, url, destination):
-        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.15"})
+        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.16"})
         total = 0
         with urllib.request.urlopen(request, timeout=30) as response, open(destination, "wb") as output:
             while True:

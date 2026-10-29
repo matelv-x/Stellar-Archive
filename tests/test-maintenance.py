@@ -49,7 +49,7 @@ class MaintenanceTests(unittest.TestCase):
         installer.chmod(0o755)
         self.zip_path = self.root / "release.zip"
         with zipfile.ZipFile(self.zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
-            archive.write(installer, "sg1-v3-v4-stellar-archive-universal-v1.5.15/install.sh")
+            archive.write(installer, "sg1-v3-v4-stellar-archive-universal-v1.5.16/install.sh")
         digest = hashlib.sha256(self.zip_path.read_bytes()).hexdigest()
         self.sha_path = self.root / "release.zip.sha256"
         self.sha_path.write_text("{}  release.zip\n".format(digest), encoding="utf-8")
@@ -66,7 +66,7 @@ class MaintenanceTests(unittest.TestCase):
             "installer": str(self.cached),
             "restart_service": "stargate-test.service",
         }), encoding="utf-8")
-        release = {"version": "1.5.15", "zip_name": "release.zip", "zip_url": "zip", "sha_url": "sha", "release_url": "https://example.invalid"}
+        release = {"version": "1.5.16", "zip_name": "release.zip", "zip_url": "zip", "sha_url": "sha", "release_url": "https://example.invalid"}
         self.controller = TestController(self.config_path, release, {"zip": self.zip_path, "sha": self.sha_path})
 
     def tearDown(self):
@@ -86,6 +86,30 @@ class MaintenanceTests(unittest.TestCase):
         self.assertEqual(self.controller.task["state"], "complete")
         args = self.marker.read_text(encoding="utf-8").splitlines()
         self.assertEqual(args, ["--platform", "v4", "--target", "/tmp/example-web", "--replace", "standalone"])
+
+    @mock.patch("stellar_archive_maintenance.urllib.request.urlopen")
+    def test_latest_release_uses_public_redirect_without_github_api(self, urlopen):
+        response = mock.MagicMock()
+        response.geturl.return_value = "https://github.com/example/archive/releases/tag/v1.5.16"
+        urlopen.return_value.__enter__.return_value = response
+        release = StellarArchiveMaintenance(self.config_path).latest_release()
+        self.assertEqual(release["version"], "1.5.16")
+        self.assertEqual(
+            release["zip_url"],
+            "https://github.com/example/archive/releases/download/v1.5.16/sg1_v3_v4_stellar_archive_universal_1.5.16.zip",
+        )
+        self.assertEqual(release["sha_url"], release["zip_url"] + ".sha256")
+        requested = urlopen.call_args.args[0]
+        self.assertEqual(requested.full_url, "https://github.com/example/archive/releases/latest")
+        self.assertNotIn("api.github.com", requested.full_url)
+
+    @mock.patch("stellar_archive_maintenance.urllib.request.urlopen")
+    def test_latest_release_rejects_redirect_outside_configured_repository(self, urlopen):
+        response = mock.MagicMock()
+        response.geturl.return_value = "https://example.invalid/releases/tag/v9.9.9"
+        urlopen.return_value.__enter__.return_value = response
+        with self.assertRaisesRegex(ValueError, "redirect is unavailable"):
+            StellarArchiveMaintenance(self.config_path).latest_release()
 
     def test_uninstall_uses_cached_installer(self):
         result = self.controller.start_uninstall(Handler())

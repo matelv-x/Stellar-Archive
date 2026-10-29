@@ -11,6 +11,7 @@ const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=u
 let addonTask={state:'idle',message:'Ready'};
 let addonPolls=0;
 let aquilaInstalled=false;
+let addonAction='install';
 
 const server=http.createServer((request,response)=>{
   const requestPath=new URL(request.url,'http://127.0.0.1').pathname;
@@ -35,22 +36,23 @@ const server=http.createServer((request,response)=>{
       const stages=[
         {phase:'download',progress:20,message:'Downloading repository'},
         {phase:'verify',progress:50,message:'Verifying maintenance contract'},
-        {phase:'install',progress:75,message:'Running verified install procedure'},
-        {state:'complete',phase:'complete',progress:100,message:'Aquila Symbol Patch installed'}
+        {phase:'install',progress:75,message:`Running verified ${addonAction} procedure`},
+        {state:'complete',phase:'complete',progress:100,message:`Aquila Symbol Patch ${addonAction} complete`}
       ];
       addonTask={state:'running',...stages[Math.min(addonPolls-1,stages.length-1)]};
-      if(addonTask.state==='complete')aquilaInstalled=true;
+      if(addonTask.state==='complete')aquilaInstalled=addonAction!=='uninstall';
     }
     const aquila={id:'aquila-symbol-patch',name:'Aquila Symbol Patch',repository:'matelv-x/Aquila-Symbol-Patch',repository_url:'https://github.com/matelv-x/Aquila-Symbol-Patch',installed:aquilaInstalled,current_revision:aquilaInstalled?'222222222222':null,latest_revision:'222222222222',update_available:false,check_error:'',can_install:!aquilaInstalled,can_update:aquilaInstalled,can_uninstall:aquilaInstalled,restart_required:true,task:addonTask};
     response.writeHead(200,{'content-type':'application/json'});
     response.end(JSON.stringify({success:true,addons:[{id:'alarm-clock',name:'Alarm Clock',repository:'matelv-x/Alarm-Clock',repository_url:'https://github.com/matelv-x/Alarm-Clock',installed:true,current_revision:'111111111111',latest_revision:'111111111111',update_available:false,check_error:'',can_install:false,can_update:true,can_uninstall:true,task:{state:'idle',message:'Ready'}},...(aquilaInstalled?[aquila]:[])],available:aquilaInstalled?[]:[aquila]}));
     return;
   }
-  if(requestPath==='/stargate/do/stellar_archive_addon_install'&&request.method==='POST'){
+  if(/^\/stargate\/do\/stellar_archive_addon_(install|uninstall)$/.test(requestPath)&&request.method==='POST'){
+    addonAction=requestPath.endsWith('_uninstall')?'uninstall':'install';
     addonPolls=0;
-    addonTask={state:'running',phase:'prepare',progress:5,message:'Preparing Aquila Symbol Patch install'};
+    addonTask={state:'running',phase:'prepare',progress:5,message:`Preparing Aquila Symbol Patch ${addonAction}`};
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,message:'Install started',task:addonTask}));
+    response.end(JSON.stringify({success:true,message:`${addonAction} started`,task:addonTask}));
     return;
   }
   if(requestPath==='/stargate/do/stellar_archive_restart'&&request.method==='POST'){
@@ -160,7 +162,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.15');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.16');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));
@@ -191,6 +193,22 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(await page.locator('.addon-progress-steps li.done').count(),3);
     assert.strictEqual(await page.locator('.addon-progress-steps li.active').textContent(),'COMPLETE');
     await page.screenshot({path:path.join(__dirname,'validation-addon-progress.png'),fullPage:false});
+    await page.locator('#addon-progress-close').click();
+    await page.waitForSelector('#addon-progress-overlay',{state:'hidden'});
+    const aquilaRow=page.locator('#addon-list .addon-row').filter({hasText:'Aquila Symbol Patch'});
+    await aquilaRow.locator('button[data-addon-action="uninstall"]').click();
+    await page.waitForSelector('#addon-progress-overlay[data-state="confirm"]:not([hidden])');
+    assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'CONFIRM UNINSTALL');
+    assert.strictEqual(await page.locator('#addon-progress-name').textContent(),'Aquila Symbol Patch');
+    assert.strictEqual(await page.locator('#addon-progress-close').textContent(),'CANCEL');
+    assert.strictEqual(await page.locator('#addon-progress-restart').textContent(),'UNINSTALL');
+    await page.screenshot({path:path.join(__dirname,'validation-addon-uninstall-confirm.png'),fullPage:false});
+    await page.locator('#addon-progress-restart').click();
+    await page.waitForSelector('#addon-progress-overlay[data-state="running"]');
+    assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'UNINSTALL IN PROGRESS');
+    await page.waitForSelector('#addon-progress-restart:not([hidden])',{timeout:10000});
+    assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'UNINSTALL COMPLETE');
+    assert.strictEqual(await page.locator('.addon-progress-steps li').nth(2).textContent(),'REMOVE');
     await page.locator('#addon-progress-close').click();
     await page.waitForSelector('#addon-progress-overlay',{state:'hidden'});
     assert.strictEqual(await page.locator('#check-archive-update').count(),1);
