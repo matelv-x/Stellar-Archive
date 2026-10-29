@@ -2,6 +2,8 @@
   "schema": 1,
   "addons": [
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "alarm-clock",
       "name": "Alarm Clock",
       "repository": "matelv-x/Alarm-Clock",
@@ -9,9 +11,12 @@
       "detect": {"any": [{"path": "classes/alarm_clock_manager.py"}, {"path": "web/alarm_clock.htm"}]},
       "install": {"argv": ["./install.sh"], "env": {"APP_DIR": "{sg1_root}", "ALARM_CLOCK_MODE": "keep"}, "timeout": 1200},
       "uninstall": {"argv": ["./restore.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
+      "archive_integration_files": ["classes/web_server.py"],
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "aquila-symbol-patch",
       "name": "Aquila Symbol Patch",
       "repository": "matelv-x/Aquila-Symbol-Patch",
@@ -22,6 +27,8 @@
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "connection-history",
       "name": "Connection History",
       "repository": "matelv-x/Connection-History",
@@ -29,9 +36,12 @@
       "detect": {"all": [{"path": "web/connection_history.htm"}, {"path": "web/js/connection_history.js"}]},
       "install": {"argv": ["./history.sh", "{sg1_root}"], "timeout": 900},
       "uninstall": {"argv": ["./restore-history.sh", "{sg1_root}"], "timeout": 900},
+      "archive_integration_files": ["classes/web_server.py", "web/retro/js/navigation.js"],
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "dhd-led-test",
       "name": "DHD LED Test",
       "repository": "matelv-x/DHD-LED-Test",
@@ -39,9 +49,12 @@
       "detect": {"any": [{"path": "test/dhd_test_from_config.py"}, {"path": "web/debug.htm", "contains": "DHD LED TEST UNIVERSAL PATCH START"}]},
       "install": {"argv": ["./install.sh", "{sg1_root}"], "timeout": 1200},
       "uninstall": {"argv": ["./restore.sh", "{sg1_root}"], "timeout": 900},
+      "archive_integration_files": ["classes/web_server.py"],
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "dynamic-wormhole",
       "name": "Dynamic Wormhole",
       "repository": "matelv-x/Dynamic-Wormhole",
@@ -52,19 +65,25 @@
       ]},
       "install": {"argv": ["./install.sh", "{sg1_root}"], "timeout": 1200},
       "uninstall": {"argv": ["./restore.sh", "{sg1_root}"], "timeout": 900},
+      "archive_integration_files": ["classes/web_server.py"],
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "lan-discovery",
       "name": "LAN Discovery",
       "repository": "matelv-x/LAN-Discovery",
       "platforms": ["v4"],
-      "detect": {"any": [{"path": "classes/stargate_address_book.py", "contains": "lan_gates"}, {"path": "web/retro/js/address_book.js", "contains": "lan"}]},
+      "detect": {"all": [{"path": "classes/stargate_address_book.py", "contains": "lan_gates"}, {"path": "web/retro/js/address_book.js", "contains": "lan"}]},
       "install": {"argv": ["./langate.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
       "uninstall": {"argv": ["./restore-langate.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
+      "archive_integration_files": ["classes/web_server.py", "web/retro/address_book.html", "web/js/address_book.js"],
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "lamp-mode",
       "name": "Lamp Mode",
       "repository": "matelv-x/Lamp-Mode",
@@ -72,9 +91,12 @@
       "detect": {"any": [{"path": "web/js/debug.js", "contains": "lamp"}, {"path": "classes/web_server.py", "contains": "lamp_mode"}]},
       "install": {"argv": ["./install.sh", "--target", "{sg1_root}"], "timeout": 900},
       "uninstall": {"argv": ["./restore.sh", "--target", "{sg1_root}"], "timeout": 900},
+      "archive_integration_files": ["classes/web_server.py"],
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "retro-visuals",
       "name": "Retro Visuals",
       "repository": "matelv-x/Retro-Visuals",
@@ -86,6 +108,8 @@
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "retro-wormhole-animation",
       "name": "Retro Wormhole Animation",
       "repository": "matelv-x/Retro-Wormhole-Animation",
@@ -93,9 +117,12 @@
       "detect": {"all": [{"path": "classes/portal_media_manager.py"}, {"path": "web/retro/js/portal_media.js"}]},
       "install": {"argv": ["./install.sh", "--target", "{sg1_root}", "--install-dependencies"], "timeout": 1200},
       "uninstall": {"argv": ["./restore.sh", "--target", "{sg1_root}"], "timeout": 900},
+      "archive_integration_files": ["classes/web_server.py"],
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "sg1-iris",
       "name": "SG1 Iris",
       "repository": "matelv-x/SG1-Iris",
@@ -106,6 +133,8 @@
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "silence-mode",
       "name": "Silence Mode",
       "repository": "matelv-x/Silence-Mode",
@@ -116,6 +145,8 @@
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "stargate-ring-symbols",
       "name": "Stargate Ring Symbols",
       "repository": "matelv-x/Stargate-Ring-Symbols",
@@ -126,6 +157,8 @@
       "restart_required": true
     },
     {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "switch-to-retro",
       "name": "Switch To Retro",
       "repository": "matelv-x/Switch-To-Retro",
@@ -133,6 +166,7 @@
       "detect": {"all": [{"path": "web/js/home_redirect.js"}]},
       "install": {"argv": ["./switch-to-retro.sh", "true", "retro/dial.html"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
       "uninstall": {"argv": ["./restore-switch-to-retro.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
+      "archive_integration_files": ["classes/web_server.py", "web/js/address_book.js", "web/retro/js/navigation.js"],
       "restart_required": true
     }
   ]

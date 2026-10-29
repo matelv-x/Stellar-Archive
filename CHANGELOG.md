@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.18
+
+- Added surgical uninstall contract v2 to all 13 managed Matelv-x add-ons.
+  Uninstall now checks GitHub silently for the newest procedure, verifies its
+  repository identity and exact revision, and uses the verified local cache
+  without a network download when that revision is already available.
+- Added conflict-safe selective removal for shared integrations. LAN Discovery
+  uses a reverse three-way merge and preserves LAN records; Connection History
+  preserves history data; Dynamic Wormhole, Silence Mode, Retro Wormhole
+  Animation, Ring Symbols and Switch To Retro remove only owned hooks or values.
+- Added regression coverage for the no-download cache path and for the v2
+  uninstall requirement across the complete 13-add-on registry.
+
 ## 1.5.17
 
 - Replaced the post-install and post-uninstall native restart prompt with a

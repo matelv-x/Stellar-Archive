@@ -273,6 +273,43 @@ class MatelvAddonManager:
         value = result.stdout.strip().lower()
         return value if result.returncode == 0 and SHA_RE.fullmatch(value) else None
 
+    def _cached_checkout(self, context, addon_id, expected_repository):
+        path = context["target"] / ".stellar-archive-addon" / "addon-packages" / addon_id
+        if not (path / ".git").is_dir():
+            return None
+        remote = self._run(["git", "-C", str(path), "remote", "get-url", "origin"], timeout=5)
+        if remote.returncode:
+            return None
+        repository = self._repo_from_remote(remote.stdout)
+        if not repository or repository.lower() != expected_repository.lower():
+            return None
+        return {"path": path, "origin": remote.stdout.strip()}
+
+    def _clone_local_checkout(self, source, destination):
+        result = self._run(
+            ["git", "clone", "--depth", "1", "--no-hardlinks", str(source["path"]), str(destination)],
+            timeout=60,
+        )
+        if result.returncode:
+            return result
+        return self._run(
+            ["git", "-C", str(destination), "remote", "set-url", "origin", source["origin"]],
+            timeout=5,
+        )
+
+    def _cache_verified_checkout(self, context, addon_id, checkout):
+        cache_root = context["target"] / ".stellar-archive-addon" / "addon-packages"
+        cache_root.mkdir(parents=True, exist_ok=True)
+        destination = cache_root / addon_id
+        temporary = cache_root / (addon_id + ".tmp")
+        shutil.rmtree(str(temporary), ignore_errors=True)
+        result = self._clone_local_checkout(checkout, temporary)
+        if result.returncode:
+            shutil.rmtree(str(temporary), ignore_errors=True)
+            raise RuntimeError("could not cache the verified maintenance package")
+        shutil.rmtree(str(destination), ignore_errors=True)
+        os.replace(str(temporary), str(destination))
+
     def _remote_revision(self, repository, checkout):
         now = time.time()
         cached = self.remote_cache.get(repository.lower())
@@ -417,11 +454,32 @@ class MatelvAddonManager:
                 raise RuntimeError("another maintenance operation is already running")
             origin = checkout["origin"] if checkout else "https://github.com/{}.git".format(manifest["repository"])
             clone = Path(temp) / "repository"
-            self.tasks[addon_id] = {
-                "state": "running", "action": action, "phase": "download", "progress": 20,
-                "message": "Downloading repository",
-            }
-            cloned = self._run(["git", "clone", "--depth", "1", origin, str(clone)], timeout=180)
+            latest_revision = None
+            local_source = None
+            if action == "uninstall":
+                self.tasks[addon_id] = {
+                    "state": "running", "action": action, "phase": "download", "progress": 20,
+                    "message": "Checking the latest uninstall procedure",
+                }
+                latest_revision, remote_error = self._remote_revision(manifest["repository"], checkout)
+                if not latest_revision:
+                    raise RuntimeError("latest uninstall procedure check failed: {}".format(remote_error))
+                for candidate in (
+                    self._cached_checkout(context, addon_id, manifest["repository"]),
+                    checkout,
+                ):
+                    if candidate and self._repo_from_remote(candidate["origin"]) and self._local_revision(candidate) == latest_revision:
+                        local_source = candidate
+                        break
+            if local_source:
+                self.tasks[addon_id]["message"] = "Using the current verified uninstall procedure"
+                cloned = self._clone_local_checkout(local_source, clone)
+            else:
+                self.tasks[addon_id] = {
+                    "state": "running", "action": action, "phase": "download", "progress": 20,
+                    "message": "Downloading repository",
+                }
+                cloned = self._run(["git", "clone", "--depth", "1", origin, str(clone)], timeout=180)
             if cloned.returncode:
                 raise RuntimeError("repository download failed: {}".format((cloned.stderr or cloned.stdout)[-600:]))
             self.tasks[addon_id] = {
@@ -432,12 +490,20 @@ class MatelvAddonManager:
             cloned_repository = None if remote.returncode else self._repo_from_remote(remote.stdout)
             if not cloned_repository or cloned_repository.lower() != manifest["repository"].lower():
                 raise RuntimeError("downloaded repository identity does not match the manifest")
+            revision_result = self._run(["git", "-C", str(clone), "rev-parse", "HEAD"], timeout=5)
+            verified_revision = revision_result.stdout.strip().lower()
+            if not SHA_RE.fullmatch(verified_revision):
+                raise RuntimeError("could not verify maintenance package revision")
+            if action == "uninstall" and verified_revision != latest_revision:
+                raise RuntimeError("the uninstall package is not the latest GitHub revision")
             remote_manifest_path = clone / "stargate-addon.json"
             if not remote_manifest_path.is_file():
                 raise RuntimeError("the repository has no signed maintenance contract; use its documented manual procedure")
             remote_manifest = self._validate_manifest(json.loads(remote_manifest_path.read_text(encoding="utf-8")))
             if remote_manifest.get("maintenance_contract") != 1:
                 raise RuntimeError("the repository maintenance contract is unsupported")
+            if remote_manifest.get("uninstall_contract") != 2:
+                raise RuntimeError("the repository has no verified surgical uninstall contract")
             if remote_manifest["id"] != manifest["id"] or remote_manifest["repository"].lower() != manifest["repository"].lower():
                 raise RuntimeError("remote add-on manifest identity mismatch")
             manifest = remote_manifest
@@ -454,6 +520,11 @@ class MatelvAddonManager:
                     raise RuntimeError("manifest command is missing from the repository")
                 executable.chmod(executable.stat().st_mode | 0o100)
                 argv[0] = str(executable)
+            self._cache_verified_checkout(
+                context,
+                addon_id,
+                {"path": clone, "origin": remote.stdout.strip()},
+            )
             self.tasks[addon_id] = {
                 "state": "running", "action": action, "phase": "install", "progress": 75,
                 "message": "Running verified {} procedure".format(action),
@@ -474,10 +545,8 @@ class MatelvAddonManager:
                 raise RuntimeError("{} failed: {}".format(action, detail.strip()))
             state = self._state()
             if action in ("install", "update"):
-                revision_result = self._run(["git", "-C", str(clone), "rev-parse", "HEAD"], timeout=5)
-                revision = revision_result.stdout.strip().lower()
-                if SHA_RE.fullmatch(revision):
-                    state[addon_id] = {"repository": manifest["repository"], "revision": revision}
+                if SHA_RE.fullmatch(verified_revision):
+                    state[addon_id] = {"repository": manifest["repository"], "revision": verified_revision}
                     self._write_state(state)
             else:
                 state.pop(addon_id, None)

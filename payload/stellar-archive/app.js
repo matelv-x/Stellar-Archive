@@ -372,7 +372,7 @@ function confirmAddonUninstall(addon){
  overlay.dataset.state='confirm';
  $('#addon-progress-title').textContent='CONFIRM UNINSTALL';
  $('#addon-progress-name').textContent=addon.name;
- $('#addon-progress-status').textContent='Use the verified bounded restore procedure for this add-on?';
+ $('#addon-progress-status').textContent='Check GitHub for the newest surgical uninstaller, then remove only this add-on?';
  $('#addon-progress-close').textContent='CANCEL';
  $('#addon-progress-close').hidden=false;
  $('#addon-progress-restart').textContent='UNINSTALL';
@@ -392,7 +392,7 @@ function showAddonProgress(addon,action){
  $('#addon-progress-close').hidden=true;
  $('#addon-progress-restart').textContent='RESTART SERVICE';
  $('#addon-progress-restart').hidden=true;
- const labels=action==='uninstall'?['PREPARE','VERIFY','REMOVE','COMPLETE']:(action==='update'?['DOWNLOAD','VERIFY','UPDATE','COMPLETE']:['DOWNLOAD','VERIFY','INSTALL','COMPLETE']);
+ const labels=action==='uninstall'?['GITHUB CHECK','VERIFY','REMOVE','COMPLETE']:(action==='update'?['DOWNLOAD','VERIFY','UPDATE','COMPLETE']:['DOWNLOAD','VERIFY','INSTALL','COMPLETE']);
  document.querySelectorAll('.addon-progress-steps li').forEach((item,index)=>{item.textContent=labels[index]});
  updateAddonProgressSteps('prepare');
 }

@@ -2,8 +2,10 @@
 import io
 import json
 import subprocess
+import shutil
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from matelv_addon_manager import MatelvAddonManager
@@ -36,6 +38,17 @@ class AddonManagerTests(unittest.TestCase):
         subprocess.run(["git", "-C", str(checkout), "config", "user.name", "Test"], check=True)
         (checkout / "install.sh").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
         (checkout / "restore.sh").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        (checkout / "stargate-addon.json").write_text(json.dumps({
+            "id": "example-addon",
+            "maintenance_contract": 1,
+            "uninstall_contract": 2,
+            "name": "Example Add-on",
+            "repository": "matelv-x/Example-Addon",
+            "platforms": ["v4"],
+            "detect": {"all": [{"path": "web/example.js", "contains": "EXAMPLE_ADDON_ACTIVE"}]},
+            "install": {"argv": ["./install.sh", "--target", "{sg1_root}"]},
+            "uninstall": {"argv": ["./restore.sh", "--target", "{sg1_root}"]},
+        }), encoding="utf-8")
         subprocess.run(["git", "-C", str(checkout), "add", "."], check=True)
         subprocess.run(["git", "-C", str(checkout), "commit", "-qm", "fixture"], check=True)
         subprocess.run([
@@ -47,6 +60,8 @@ class AddonManagerTests(unittest.TestCase):
             "schema": 1,
             "addons": [{
                 "id": "example-addon",
+                "maintenance_contract": 1,
+                "uninstall_contract": 2,
                 "name": "Example Add-on",
                 "repository": "matelv-x/Example-Addon",
                 "platforms": ["v4"],
@@ -57,6 +72,7 @@ class AddonManagerTests(unittest.TestCase):
         }), encoding="utf-8")
         config = lambda: {"platform": "v4", "target": str(self.web), "mode": "both"}
         self.manager = MatelvAddonManager(config, registry_path=self.registry)
+        self.manager.state_path = Path(self.temp.name) / "addon-state.json"
 
     def tearDown(self):
         self.temp.cleanup()
@@ -83,6 +99,10 @@ class AddonManagerTests(unittest.TestCase):
         registry = json.loads(self.registry.read_text(encoding="utf-8"))
         registry["addons"][0]["uninstall"] = None
         self.registry.write_text(json.dumps(registry), encoding="utf-8")
+        checkout_manifest = self.home / "Example-Addon" / "stargate-addon.json"
+        checkout_payload = json.loads(checkout_manifest.read_text(encoding="utf-8"))
+        checkout_payload["uninstall"] = None
+        checkout_manifest.write_text(json.dumps(checkout_payload), encoding="utf-8")
         payload = self.manager.list_addons(check_remote=False)
         self.assertFalse(payload["available"][0]["can_install"])
         result = self.manager.start(Handler("example-addon"), "install", lambda _handler: True)
@@ -169,6 +189,34 @@ class AddonManagerTests(unittest.TestCase):
         manifest = {"archive_integration_files": ["classes/web_server.py"]}
         self.manager._refresh_archive_managed_pages(self.manager.config(), manifest)
         self.assertEqual(snapshot.read_text(encoding="utf-8"), "verified add-on edit")
+
+    def test_current_cached_uninstaller_uses_no_network_download(self):
+        context = self.manager.config()
+        checkout = self.manager._checkout_map(context["home_root"])["matelv-x/example-addon"]
+        revision = self.manager._local_revision(checkout)
+        self.manager._cache_verified_checkout(context, "example-addon", checkout)
+        shutil.rmtree(str(checkout["path"]))
+        manifest = self.manager._registry()["example-addon"]
+        commands = []
+        original_run = self.manager._run
+
+        def tracked(command, **kwargs):
+            commands.append(list(command))
+            return original_run(command, **kwargs)
+
+        with mock.patch.object(self.manager, "_run", side_effect=tracked), mock.patch.object(
+            self.manager, "_remote_revision", return_value=(revision, "")
+        ):
+            self.manager._run_action("example-addon", "uninstall", manifest, context, None)
+
+        self.assertEqual(self.manager.tasks["example-addon"]["state"], "complete")
+        network_clones = [
+            command for command in commands
+            if command[:2] == ["git", "clone"] and any("github.com" in part for part in command)
+        ]
+        self.assertEqual(network_clones, [])
+        cache = context["target"] / ".stellar-archive-addon" / "addon-packages" / "example-addon"
+        self.assertEqual(self.manager._local_revision({"path": cache}), revision)
 
 
 if __name__ == "__main__":

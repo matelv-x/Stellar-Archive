@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.17 contains one entry-point installer and two isolated adapters. It
+Version 1.5.18 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -15,8 +15,8 @@ follow the selected Original or Retro integration mode.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_1.5.17.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.17
+unzip sg1_v3_v4_stellar_archive_universal_1.5.18.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.18
 ./install.sh
 ```
 
@@ -165,11 +165,17 @@ Before running downloaded code the manager verifies all of the following:
 
 - the repository belongs to `matelv-x`;
 - the remote repository contains `stargate-addon.json` with maintenance
-  contract version 1;
+  contract version 1 and surgical uninstall contract version 2;
 - the manifest identity matches the selected add-on;
 - the requested command is declared in that verified manifest;
 - a new installation declares both install and uninstall procedures;
 - no Archive or other add-on maintenance operation is already active.
+
+Before every add-on removal the manager silently resolves the current GitHub
+HEAD revision. If that exact verified uninstaller is already cached on the Pi
+or present in its managed checkout, it is used locally and nothing is
+downloaded. A newer revision is downloaded, identity-checked and cached before
+its declared surgical removal command can run.
 
 Managed procedures run with `STARGATE_ADDON_NO_RESTART=1`. They can update web
 files but do not restart Stargate software or reboot the Pi. The progress window
