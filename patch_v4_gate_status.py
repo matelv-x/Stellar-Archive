@@ -14,35 +14,8 @@ WEB_IMPORT = """# STELLAR_ARCHIVE_GATE_STATUS_IMPORT_BEGIN
 from datetime import datetime as stellar_archive_datetime
 # STELLAR_ARCHIVE_GATE_STATUS_IMPORT_END"""
 WEB_DATA = """                # STELLAR_ARCHIVE_GATE_STATUS_BEGIN
-                last_success = self.stargate.cfg.get('fan_gate_last_update')
-                try:
-                    refresh_seconds = max(
-                        60.0,
-                        float(self.stargate.cfg.get('fan_gate_refresh_interval')) * 60.0
-                    )
-                except (TypeError, ValueError):
-                    refresh_seconds = 1800.0
-                age_seconds = None
-                try:
-                    age_seconds = (
-                        stellar_archive_datetime.now()
-                        - stellar_archive_datetime.fromisoformat(str(last_success))
-                    ).total_seconds()
-                except (TypeError, ValueError):
-                    pass
-                refresh_enabled = bool(self.stargate.cfg.get('fan_gate_refresh_enable'))
                 data['local_address'] = self.stargate.addr_manager.get_book().get_local_address()
-                data['status_freshness'] = {
-                    'source': 'central_directory',
-                    'last_success': str(last_success) if last_success else None,
-                    'age_seconds': round(age_seconds, 1) if age_seconds is not None else None,
-                    'stale': (
-                        not refresh_enabled
-                        or age_seconds is None
-                        or age_seconds < -60
-                        or age_seconds > refresh_seconds + 120
-                    )
-                }
+                data['status_freshness'] = self.stargate.addr_manager.get_fan_status_freshness()
                 # STELLAR_ARCHIVE_GATE_STATUS_END"""
 
 JS_MARKER = "STELLAR_ARCHIVE_GATE_STATUS"
@@ -66,14 +39,151 @@ function stellarArchiveGateIsOnline(value) {
 
 """
 
+MANAGER_IMPORTS = """# STELLAR_ARCHIVE_GATE_STATUS_PROBE_IMPORT_BEGIN
+import concurrent.futures as stellar_archive_futures
+import ipaddress as stellar_archive_ipaddress
+import subprocess as stellar_archive_subprocess
+import threading as stellar_archive_threading
+# STELLAR_ARCHIVE_GATE_STATUS_PROBE_IMPORT_END"""
+
 MANAGER_STATE = """        # STELLAR_ARCHIVE_DIRECTORY_RETRY_BEGIN
         self._fan_directory_retry_delay_minutes = 0
         self._fan_directory_retry_at = None
         stargate.app.schedule.every(1).minutes.do(self.retry_fan_gates_from_api)
+        self._fan_status_probe_lock = stellar_archive_threading.Lock()
+        self._fan_status_probe_last_success = None
+        self._fan_status_probe_error = None
+        stargate.app.schedule.every(5).minutes.do(self.start_fan_gate_status_probe)
+        self.start_fan_gate_status_probe()
         # STELLAR_ARCHIVE_DIRECTORY_RETRY_END
 """
 
-MANAGER_METHODS = '''    def _schedule_fan_directory_retry(self, error_name):
+MANAGER_METHODS = '''    def get_fan_status_freshness(self):
+        """Prefer direct Subspace reachability; retain central-directory fallback."""
+        probe_last = getattr(self, '_fan_status_probe_last_success', None)
+        probe_age = None
+        if probe_last is not None:
+            probe_age = (datetime.now() - probe_last).total_seconds()
+        if probe_age is not None and -60 <= probe_age <= 420:
+            return {
+                'source': 'subspace_probe',
+                'last_success': str(probe_last),
+                'age_seconds': round(probe_age, 1),
+                'stale': False,
+                'last_error': getattr(self, '_fan_status_probe_error', None),
+            }
+
+        last = self.cfg.get('fan_gate_last_update')
+        try:
+            interval = max(60.0, float(self.cfg.get('fan_gate_refresh_interval')) * 60.0)
+        except (TypeError, ValueError):
+            interval = 1800.0
+        age = None
+        try:
+            age = (datetime.now() - datetime.fromisoformat(str(last))).total_seconds()
+        except (TypeError, ValueError):
+            pass
+        return {
+            'source': 'central_directory',
+            'last_success': str(last) if last else None,
+            'age_seconds': round(age, 1) if age is not None else None,
+            'stale': (
+                not bool(self.cfg.get('fan_gate_refresh_enable'))
+                or age is None
+                or age < -60
+                or age > interval + 120
+            ),
+            'last_error': (
+                getattr(self, '_fan_status_probe_error', None)
+                or getattr(self, '_fan_directory_error', None)
+            ),
+        }
+
+    def start_fan_gate_status_probe(self):
+        """Refresh cached FAN statuses without blocking the scheduler."""
+        if not self._fan_status_probe_lock.acquire(blocking=False):
+            return False
+
+        def run_probe():
+            try:
+                self.update_fan_gate_statuses_from_subspace()
+            finally:
+                self._fan_status_probe_lock.release()
+
+        stellar_archive_threading.Thread(target=run_probe, daemon=True).start()
+        return True
+
+    @staticmethod
+    def _probe_fan_gate_ip(ip_value):
+        """Return ICMP reachability for a private Subspace address, or None on probe error."""
+        try:
+            ip = stellar_archive_ipaddress.ip_address(str(ip_value))
+            if ip not in stellar_archive_ipaddress.ip_network('172.30.0.0/16'):
+                return None
+            result = stellar_archive_subprocess.run(
+                ['/bin/ping', '-c', '1', '-W', '1', str(ip)],
+                stdout=stellar_archive_subprocess.DEVNULL,
+                stderr=stellar_archive_subprocess.DEVNULL,
+                timeout=2,
+                check=False,
+            )
+            return result.returncode == 0
+        except (OSError, ValueError, stellar_archive_subprocess.SubprocessError):
+            return None
+
+    def update_fan_gate_statuses_from_subspace(self):
+        """Probe existing FAN peers and atomically update only their online flags."""
+        fan_gates = self.address_book.get_fan_gates()
+        local_address = self.address_book.get_local_address()
+        candidates = {
+            name: gate for name, gate in fan_gates.items()
+            if gate.get('gate_address') != local_address and gate.get('ip_address')
+        }
+        if not candidates:
+            self._fan_status_probe_error = 'NoFanGates'
+            return False
+
+        results = {}
+        with stellar_archive_futures.ThreadPoolExecutor(
+            max_workers=min(24, len(candidates))
+        ) as executor:
+            futures = {
+                executor.submit(self._probe_fan_gate_ip, gate.get('ip_address')): name
+                for name, gate in candidates.items()
+            }
+            for future in stellar_archive_futures.as_completed(futures):
+                result = future.result()
+                if result is not None:
+                    results[futures[future]] = result
+
+        online_count = sum(results.values())
+        if not results or online_count == 0:
+            self._fan_status_probe_error = 'NoReachableFanGates'
+            self.log.log('Fan Gate Status Probe: FAILED (no reachable Subspace peers)')
+            return False
+
+        updated = {}
+        changed = 0
+        for name, gate in fan_gates.items():
+            clean_gate = {key: value for key, value in gate.items() if key != 'type'}
+            if name in results:
+                next_status = '1' if results[name] else '0'
+                if str(clean_gate.get('is_gate_online')) != next_status:
+                    changed += 1
+                clean_gate['is_gate_online'] = next_status
+            updated[name] = clean_gate
+        self.address_book.datastore.set('fan_gates', updated)
+        self.fan_gates = self.address_book.get_fan_gates()
+        self._fan_status_probe_last_success = datetime.now()
+        self._fan_status_probe_error = None
+        self.log.log(
+            'Fan Gate Status Probe: Success! '
+            + str(online_count) + '/' + str(len(results))
+            + ' reachable; ' + str(changed) + ' status change(s)'
+        )
+        return True
+
+    def _schedule_fan_directory_retry(self, error_name):
         """Schedule a bounded retry without changing the normal refresh interval."""
         previous_delay = getattr(self, '_fan_directory_retry_delay_minutes', 0)
         delay = 2 if previous_delay <= 0 else min(previous_delay * 2, 15)
@@ -148,7 +258,20 @@ MANAGER_METHODS = '''    def _schedule_fan_directory_retry(self, error_name):
 def patch_web_server(path):
     text = path.read_text(encoding="utf-8", errors="replace")
     if WEB_MARKER in text:
-        return False
+        updated, count = re.subn(
+            r"                # STELLAR_ARCHIVE_GATE_STATUS_BEGIN\n.*?"
+            r"                # STELLAR_ARCHIVE_GATE_STATUS_END",
+            WEB_DATA,
+            text,
+            count=1,
+            flags=re.DOTALL,
+        )
+        if count != 1:
+            raise ValueError("expected exactly one SG1_v4 gate-status block")
+        if updated == text:
+            return False
+        path.write_text(updated, encoding="utf-8")
+        return True
     if text.count(WEB_IMPORT_ANCHOR) != 1:
         raise ValueError("expected exactly one SG1_v4 web-server import anchor")
     if text.count(WEB_DATA_ANCHOR) != 1:
@@ -192,27 +315,51 @@ def patch_address_js(path):
 
 def patch_address_manager(path):
     text = path.read_text(encoding="utf-8", errors="replace")
-    if MANAGER_MARKER in text:
-        return False
+    original_text = text
     import_anchor = "from datetime import datetime"
     schedule_anchor = (
         "            stargate.app.schedule.every(update_interval).minutes.do( "
         "self.update_fan_gates_from_api )"
     )
-    if text.count(import_anchor) != 1:
-        raise ValueError("expected exactly one SG1_v4 datetime import anchor")
-    if text.count(schedule_anchor) != 1:
-        raise ValueError("expected exactly one SG1_v4 fan-directory schedule anchor")
+    if "STELLAR_ARCHIVE_GATE_STATUS_PROBE_IMPORT_BEGIN" not in text:
+        json_anchor = "import json"
+        if text.count(json_anchor) != 1:
+            raise ValueError("expected exactly one SG1_v4 json import anchor")
+        text = text.replace(json_anchor, json_anchor + "\n" + MANAGER_IMPORTS, 1)
+    if MANAGER_MARKER in text:
+        text, state_count = re.subn(
+            r"        # STELLAR_ARCHIVE_DIRECTORY_RETRY_BEGIN\n.*?"
+            r"        # STELLAR_ARCHIVE_DIRECTORY_RETRY_END",
+            MANAGER_STATE.rstrip(),
+            text,
+            count=1,
+            flags=re.DOTALL,
+        )
+        if state_count != 1:
+            raise ValueError("expected exactly one SG1_v4 retry state block")
+    else:
+        if text.count(schedule_anchor) != 1:
+            raise ValueError("expected exactly one SG1_v4 fan-directory schedule anchor")
+        text = text.replace(schedule_anchor, schedule_anchor + "\n\n" + MANAGER_STATE.rstrip(), 1)
+    if "from datetime import datetime, timedelta" not in text:
+        if text.count(import_anchor) != 1:
+            raise ValueError("expected exactly one SG1_v4 datetime import anchor")
+        text = text.replace(import_anchor, "from datetime import datetime, timedelta", 1)
+    method_start = (
+        r"    def get_fan_status_freshness\(self\):\n"
+        if "def get_fan_status_freshness" in text
+        else r"    def update_fan_gates_from_api\(self\):\n"
+    )
     method_pattern = re.compile(
-        r"    def update_fan_gates_from_api\(self\):\n.*?"
+        method_start + r".*?"
         r"(?=    def start_lan_gate_discovery\(self\):)",
         re.DOTALL,
     )
     text, count = method_pattern.subn(MANAGER_METHODS, text, count=1)
     if count != 1:
         raise ValueError("expected exactly one SG1_v4 fan-directory update method")
-    text = text.replace(import_anchor, "from datetime import datetime, timedelta", 1)
-    text = text.replace(schedule_anchor, schedule_anchor + "\n\n" + MANAGER_STATE.rstrip(), 1)
+    if text == original_text:
+        return False
     path.write_text(text, encoding="utf-8")
     return True
 

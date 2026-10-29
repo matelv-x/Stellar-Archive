@@ -2,6 +2,10 @@
 
 ## 1.5.19
 
+- Added a fail-safe Subspace reachability probe for existing FAN gates. When
+  Imunify360 blocks the central JSON directory, SG1_v4 now refreshes the shared
+  Original Address Book and Stellar Archive ONLINE/OFFLINE flags directly from
+  the private `172.30.0.0/16` network instead of presenting stale API values.
 - Added a catalogue display-order selector. The existing registration order
   remains the default, with an alphabetical A–Z option available at any time.
 - Narrowed Lamp Mode installation detection to its unique owned markers so

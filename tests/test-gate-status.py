@@ -80,12 +80,28 @@ console.log(JSON.stringify({
             class FakeBook:
                 def __init__(self, *_args):
                     self.updated = []
+                    self.gates = {}
+                    self.datastore = types.SimpleNamespace(set=self._set)
+
+                def _set(self, key, value):
+                    if key == "fan_gates":
+                        self.gates = value
 
                 def get_fan_gates(self):
-                    return {}
+                    return {name: dict(gate) for name, gate in self.gates.items()}
+
+                def get_local_address(self):
+                    return [9, 9, 9, 9, 9, 9]
 
                 def set_fan_gate(self, *values):
                     self.updated.append(values)
+                    name, address, ip, status = values[:4]
+                    self.gates[name] = {
+                        "name": name,
+                        "gate_address": address,
+                        "ip_address": ip,
+                        "is_gate_online": status,
+                    }
 
             address_book_module.StargateAddressBook = FakeBook
             previous = sys.modules.get("stargate_address_book")
@@ -152,7 +168,7 @@ console.log(JSON.stringify({
                 app=types.SimpleNamespace(schedule=Schedule()),
             )
             manager = module.StargateAddressManager(stargate)
-            self.assertEqual(len(callbacks), 2)
+            self.assertEqual(len(callbacks), 3)
 
             module.requests.get = lambda *_args, **_kwargs: Response("not json")
             expected_delays = [2, 4, 8, 15, 15]
@@ -178,6 +194,33 @@ console.log(JSON.stringify({
             self.assertIsNone(manager._fan_directory_error)
             self.assertEqual(manager.address_book.updated[0][0], "Test")
             self.assertIn("fan_gate_last_update", manager.cfg.values)
+
+            manager.address_book.gates = {
+                "Reachable": {
+                    "name": "Reachable",
+                    "gate_address": [1, 2, 3],
+                    "ip_address": "172.30.0.1",
+                    "is_gate_online": "0",
+                },
+                "Offline": {
+                    "name": "Offline",
+                    "gate_address": [4, 5, 6],
+                    "ip_address": "172.30.0.2",
+                    "is_gate_online": "1",
+                },
+            }
+            manager._probe_fan_gate_ip = lambda ip: ip.endswith(".1")
+            self.assertTrue(manager.update_fan_gate_statuses_from_subspace())
+            self.assertEqual(
+                manager.address_book.gates["Reachable"]["is_gate_online"], "1"
+            )
+            self.assertEqual(
+                manager.address_book.gates["Offline"]["is_gate_online"], "0"
+            )
+            self.assertEqual(
+                manager.get_fan_status_freshness()["source"], "subspace_probe"
+            )
+            self.assertFalse(manager.get_fan_status_freshness()["stale"])
 
             stargate.net_tools.has_internet_access = lambda: False
             manager.update_fan_gates_from_api()
