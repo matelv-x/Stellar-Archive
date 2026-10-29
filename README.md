@@ -175,7 +175,10 @@ Before every add-on removal the manager silently resolves the current GitHub
 HEAD revision. If that exact verified uninstaller is already cached on the Pi
 or present in its managed checkout, it is used locally and nothing is
 downloaded. A newer revision is downloaded, identity-checked and cached before
-its declared surgical removal command can run.
+its declared surgical removal command can run. If the lightweight revision
+check cannot confirm the result, the manager does not use a possibly stale
+local copy: it always downloads the current default branch from GitHub and
+verifies that fresh checkout before removal.
 
 Managed procedures run with `STARGATE_ADDON_NO_RESTART=1`. They can update web
 files but do not restart Stargate software or reboot the Pi. The progress window

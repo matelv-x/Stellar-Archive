@@ -462,22 +462,24 @@ class MatelvAddonManager:
                     "message": "Checking the latest uninstall procedure",
                 }
                 latest_revision, remote_error = self._remote_revision(manifest["repository"], checkout)
-                if not latest_revision:
-                    raise RuntimeError("latest uninstall procedure check failed: {}".format(remote_error))
-                for candidate in (
-                    self._cached_checkout(context, addon_id, manifest["repository"]),
-                    checkout,
-                ):
-                    if candidate and self._repo_from_remote(candidate["origin"]) and self._local_revision(candidate) == latest_revision:
-                        local_source = candidate
-                        break
+                if latest_revision:
+                    for candidate in (
+                        self._cached_checkout(context, addon_id, manifest["repository"]),
+                        checkout,
+                    ):
+                        if candidate and self._repo_from_remote(candidate["origin"]) and self._local_revision(candidate) == latest_revision:
+                            local_source = candidate
+                            break
             if local_source:
                 self.tasks[addon_id]["message"] = "Using the current verified uninstall procedure"
                 cloned = self._clone_local_checkout(local_source, clone)
             else:
                 self.tasks[addon_id] = {
                     "state": "running", "action": action, "phase": "download", "progress": 20,
-                    "message": "Downloading repository",
+                    "message": (
+                        "Downloading the latest uninstall procedure from GitHub"
+                        if action == "uninstall" else "Downloading repository"
+                    ),
                 }
                 cloned = self._run(["git", "clone", "--depth", "1", origin, str(clone)], timeout=180)
             if cloned.returncode:
@@ -494,7 +496,7 @@ class MatelvAddonManager:
             verified_revision = revision_result.stdout.strip().lower()
             if not SHA_RE.fullmatch(verified_revision):
                 raise RuntimeError("could not verify maintenance package revision")
-            if action == "uninstall" and verified_revision != latest_revision:
+            if action == "uninstall" and latest_revision and verified_revision != latest_revision:
                 raise RuntimeError("the uninstall package is not the latest GitHub revision")
             remote_manifest_path = clone / "stargate-addon.json"
             if not remote_manifest_path.is_file():

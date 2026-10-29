@@ -12,6 +12,9 @@
   Animation, Ring Symbols and Switch To Retro remove only owned hooks or values.
 - Added regression coverage for the no-download cache path and for the v2
   uninstall requirement across the complete 13-add-on registry.
+- Corrected the same 1.5.18 release so an inconclusive lightweight GitHub
+  revision check always falls back to downloading and verifying a fresh
+  uninstaller from the repository instead of stopping or trusting stale cache.
 
 ## 1.5.17
 

@@ -218,6 +218,38 @@ class AddonManagerTests(unittest.TestCase):
         cache = context["target"] / ".stellar-archive-addon" / "addon-packages" / "example-addon"
         self.assertEqual(self.manager._local_revision({"path": cache}), revision)
 
+    def test_inconclusive_revision_check_downloads_fresh_github_uninstaller(self):
+        context = self.manager.config()
+        checkout = self.manager._checkout_map(context["home_root"])["matelv-x/example-addon"]
+        manifest = self.manager._registry()["example-addon"]
+        commands = []
+        original_run = self.manager._run
+
+        def tracked(command, **kwargs):
+            commands.append(list(command))
+            if command[:4] == ["git", "clone", "--depth", "1"] and "github.com" in command[4]:
+                replacement = list(command)
+                replacement[4] = str(checkout["path"])
+                result = original_run(replacement, **kwargs)
+                if result.returncode == 0:
+                    original_run([
+                        "git", "-C", command[5], "remote", "set-url", "origin", checkout["origin"],
+                    ], timeout=5)
+                return result
+            return original_run(command, **kwargs)
+
+        with mock.patch.object(self.manager, "_run", side_effect=tracked), mock.patch.object(
+            self.manager, "_remote_revision", return_value=(None, "lightweight check unavailable")
+        ):
+            self.manager._run_action("example-addon", "uninstall", manifest, context, checkout)
+
+        self.assertEqual(self.manager.tasks["example-addon"]["state"], "complete")
+        github_clones = [
+            command for command in commands
+            if command[:4] == ["git", "clone", "--depth", "1"] and "github.com" in command[4]
+        ]
+        self.assertEqual(len(github_clones), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
