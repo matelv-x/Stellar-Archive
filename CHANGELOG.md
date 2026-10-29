@@ -23,6 +23,10 @@
   the visible interface, and requires one Stargate service restart to reload
   the extended Configuration schema. It never reboots the host, restarts Seed
   Ship, or sends a hardware command.
+- Expanded Alarm Clock's shared-file declaration to include Original and Retro
+  navigation. Corrected Alarm Clock and Retro Visuals uninstallers now remove
+  their buttons from every live, managed and full-restore navigation snapshot,
+  preventing later Archive updates from reviving dead menu entries.
 
 ## 1.5.18
 

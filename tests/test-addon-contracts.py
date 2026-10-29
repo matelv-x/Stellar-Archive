@@ -34,6 +34,11 @@ class AddonContractTests(unittest.TestCase):
         self.assertEqual(addon["repository"], "matelv-x/FAN113-Home")
         self.assertIn("web/js/home_redirect.js", addon["archive_integration_files"])
 
+    def test_alarm_clock_declares_every_archive_navigation_surface(self):
+        addon = next(addon for addon in self.registry() if addon["id"] == "alarm-clock")
+        self.assertIn("web/address_book.htm", addon["archive_integration_files"])
+        self.assertIn("web/retro/js/navigation.js", addon["archive_integration_files"])
+
 
 if __name__ == "__main__":
     unittest.main()
