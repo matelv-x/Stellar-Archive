@@ -32,7 +32,7 @@ if grep -q 'STELLAR_ARCHIVE_DIRECTORY_RETRY' "$TEST_ROOT/home/pi/sg1_v4/classes/
 fi
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace standalone >/dev/null
-grep -q '^1.5.18$' "$TARGET/.stellar-archive-addon/version"
+grep -q '^1.5.19$' "$TARGET/.stellar-archive-addon/version"
 grep -q 'STELLAR_ARCHIVE_DIRECTORY_RETRY_BEGIN' "$TEST_ROOT/home/pi/sg1_v4/classes/stargate_address_manager.py"
 grep -q 'retry scheduled in' "$TEST_ROOT/home/pi/sg1_v4/classes/stargate_address_manager.py"
 

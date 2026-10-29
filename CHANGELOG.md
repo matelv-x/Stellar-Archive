@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.19
+
+- Added a catalogue display-order selector. The existing registration order
+  remains the default, with an alphabetical A–Z option available at any time.
+- Narrowed Lamp Mode installation detection to its unique owned markers so
+  unrelated text cannot keep the add-on in the Installed list after removal.
+- Routed the Archive RESTART control through the delayed maintenance endpoint,
+  allowing the HTTP response to finish before the Stargate service stops and
+  preventing a successful restart from being reported as HTTP 502.
+
 ## 1.5.18
 
 - Added surgical uninstall contract v2 to all 13 managed Matelv-x add-ons.

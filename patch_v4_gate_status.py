@@ -223,7 +223,7 @@ def patch_html(path):
     text = path.read_text(encoding="utf-8", errors="replace")
     updated, count = re.subn(
         r'src=["\']/js/address_book\.js(?:\?[^"\']*)?["\']',
-        'src="/js/address_book.js?v=stellar-archive-1.5.18-status"',
+        'src="/js/address_book.js?v=stellar-archive-1.5.19-status"',
         text,
         count=1,
     )

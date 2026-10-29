@@ -30,7 +30,9 @@ const gateWorldProfiles={
 function filtered(){
  const q=$('#search').value.toLowerCase().trim();
  const category=$('#category').value;
- return worlds.filter(w=>(category==='all'||w.category===category)&&`${w.name} ${w.description} ${w.classification} ${w.fullAddress.join('-')}`.toLowerCase().includes(q));
+ const matches=worlds.filter(w=>(category==='all'||w.category===category)&&`${w.name} ${w.description} ${w.classification} ${w.fullAddress.join('-')}`.toLowerCase().includes(q));
+ if($('#sort-order').value==='alphabetical')return [...matches].sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base',numeric:true}));
+ return matches;
 }
 const visualClass=world=>`visual-${world.id}`;
 const addressKey=address=>address.join('-');
@@ -161,6 +163,7 @@ $('#worlds').addEventListener('click',choose);
 $('#nodes').addEventListener('click',choose);
 $('#search').addEventListener('input',render);
 $('#category').addEventListener('change',render);
+$('#sort-order').addEventListener('change',render);
 function showDialog(title,copy){$('#dialog-title').textContent=title;$('#dialog-copy').textContent=copy;$('#dialog-maintenance').hidden=true;$('#dialog-links').hidden=true;$('#dialog-links').innerHTML='';$('#details').showModal()}
 function dialHref(world){
   const address=world.storedAddress.join('-');
@@ -272,7 +275,7 @@ function confirmSystemAction(config){
 }
 async function runSystemAction(action){
  const config={
-  restart:{title:'RESTART SOFTWARE',question:'Restart Stargate software?',label:'RESTART',endpoint:'/stargate/do/restart'},
+  restart:{title:'RESTART SOFTWARE',question:'Restart Stargate software?',label:'RESTART',endpoint:'/stargate/do/stellar_archive_restart'},
   reboot:{title:'REBOOT RASPBERRY PI',question:'Reboot the Raspberry Pi?',label:'REBOOT',endpoint:'/stargate/do/reboot'},
   shutdown:{title:'SHUT DOWN RASPBERRY PI',question:'Shut down the Raspberry Pi?',label:'SHUT DOWN',endpoint:'/stargate/do/shutdown'}
  }[action];

@@ -34,7 +34,7 @@ const server=http.createServer((request,response)=>{
   }
   if(requestPath==='/stargate/get/stellar_archive_update'){
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,current_version:'1.5.18',latest_version:'1.5.18',update_available:false}));
+    response.end(JSON.stringify({success:true,current_version:'1.5.19',latest_version:'1.5.19',update_available:false}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_addons'){
@@ -109,6 +109,26 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(original.href,`/receiver.html?address=${original.address}&source=stellar-archive`);
     assert.strictEqual(original.home,'/receiver.html');
     assert.strictEqual(original.homeButton,'/receiver.html');
+    assert.strictEqual(await page.locator('#sort-order').inputValue(),'registered');
+    assert.deepStrictEqual(
+      await page.locator('#worlds .world').evaluateAll(nodes=>nodes.slice(0,6).map(node=>node.dataset.id)),
+      await page.evaluate(()=>window.STELLAR_ARCHIVE_DATA.worlds.slice(0,6).map(world=>world.id))
+    );
+    await page.selectOption('#sort-order','alphabetical');
+    const alphabeticalNames=await page.locator('#worlds .world-name').allTextContents();
+    assert.deepStrictEqual(alphabeticalNames,[...alphabeticalNames].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base',numeric:true})));
+    await page.screenshot({path:path.join(__dirname,'validation-catalogue-sort.png'),fullPage:false});
+    await page.selectOption('#category','fan');
+    assert.strictEqual(
+      await page.locator('#worlds .world-name').first().textContent(),
+      await page.evaluate(()=>window.STELLAR_ARCHIVE_DATA.worlds.filter(world=>world.category==='fan').map(world=>world.name).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base',numeric:true}))[0])
+    );
+    await page.selectOption('#sort-order','registered');
+    assert.strictEqual(
+      await page.locator('#worlds .world').first().getAttribute('data-id'),
+      await page.evaluate(()=>window.STELLAR_ARCHIVE_DATA.worlds.find(world=>world.category==='fan').id)
+    );
+    await page.selectOption('#category','all');
     assert.deepStrictEqual(await page.evaluate(()=>({
       freshStandard:gateOnline({type:'standard',gate_address:[9]},'',true),
       staleStandard:gateOnline({type:'standard',gate_address:[9]},'',false),
@@ -177,12 +197,12 @@ const server=http.createServer((request,response)=>{
     await page.getByRole('button',{name:'RESTART SOFTWARE'}).click();
     await page.waitForSelector('#system-action-confirm[open]');
     assert.strictEqual(await page.locator('#system-action-title').textContent(),'RESTART SOFTWARE');
-    assert.strictEqual(systemActionRequests.restart,0,'system action must wait for in-page confirmation');
-    const restartResponse=page.waitForResponse(response=>response.url().endsWith('/stargate/do/restart'));
+    assert.strictEqual(restartRequests,0,'system action must wait for in-page confirmation');
+    const restartResponse=page.waitForResponse(response=>response.url().endsWith('/stargate/do/stellar_archive_restart'));
     await page.locator('#system-action-approve').click();
     await restartResponse;
     await page.waitForFunction(()=>document.querySelector('#system-action-confirm').open===false);
-    assert.strictEqual(systemActionRequests.restart,1,'confirmed restart must call its endpoint once');
+    assert.strictEqual(restartRequests,1,'confirmed restart must call the delayed maintenance endpoint once');
     await page.getByRole('button',{name:'REBOOT'}).click();
     assert.strictEqual(await page.locator('#system-action-title').textContent(),'REBOOT RASPBERRY PI');
     await page.locator('#system-action-cancel').click();
@@ -194,7 +214,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.18');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.19');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));
@@ -241,16 +261,17 @@ const server=http.createServer((request,response)=>{
     await page.waitForSelector('#addon-progress-restart:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'UNINSTALL COMPLETE');
     assert.strictEqual(await page.locator('.addon-progress-steps li').nth(2).textContent(),'REMOVE');
+    const restartRequestsBeforeAddonRestart=restartRequests;
     await page.locator('#addon-progress-restart').click();
     await page.waitForSelector('#addon-progress-overlay[data-state="confirm-restart"]');
-    assert.strictEqual(restartRequests,0,'first restart click must only show the in-page confirmation');
+    assert.strictEqual(restartRequests,restartRequestsBeforeAddonRestart,'first restart click must only show the in-page confirmation');
     assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'CONFIRM RESTART');
     assert.strictEqual(await page.locator('#addon-progress-close').textContent(),'CANCEL');
     assert.strictEqual(await page.locator('#addon-progress-restart').textContent(),'RESTART NOW');
     await page.locator('#addon-progress-restart').click();
     await page.waitForSelector('#addon-progress-overlay[data-state="restarting"]');
     await page.waitForFunction(()=>document.querySelector('#addon-progress-title').textContent==='SERVICE ONLINE');
-    assert.strictEqual(restartRequests,1,'confirmed restart must send exactly one request');
+    assert.strictEqual(restartRequests,restartRequestsBeforeAddonRestart+1,'confirmed restart must send exactly one request');
     await page.locator('#addon-progress-close').click();
     await page.waitForSelector('#addon-progress-overlay',{state:'hidden'});
     assert.strictEqual(await page.locator('#check-archive-update').count(),1);

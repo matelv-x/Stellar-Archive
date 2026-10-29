@@ -43,6 +43,7 @@ button{color:inherit}
 .search input{min-width:0;width:100%;background:none;border:0;color:#d2f5f4;font-size:12px;outline-offset:7px}
 .search input::placeholder{color:#78a1b3}
 .eyebrow{font-size:9px;letter-spacing:.2em;color:var(--gold);display:block}
+.catalogue-controls{display:grid;gap:14px}
 .select-wrap{display:flex;align-items:center;border:1px solid #7c9ba488;border-radius:3px;min-height:44px;margin-top:9px;background:#0c30434d}
 .select-wrap>span{font-size:27px;margin:0 12px;color:#b2ebef}
 .select-wrap select{color:#d4e3e6;letter-spacing:.18em;font-size:11px;width:100%;background:transparent;border:0;padding:13px 8px;outline-offset:2px}
