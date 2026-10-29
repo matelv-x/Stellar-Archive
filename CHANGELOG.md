@@ -15,6 +15,9 @@
 - Corrected the same 1.5.18 release so an inconclusive lightweight GitHub
   revision check always falls back to downloading and verifying a fresh
   uninstaller from the repository instead of stopping or trusting stale cache.
+- Corrected operation-time revision resolution to bypass the five-minute
+  catalogue display cache, preventing a just-superseded local uninstaller from
+  being treated as current.
 
 ## 1.5.17
 

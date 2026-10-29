@@ -199,13 +199,19 @@ class AddonManagerTests(unittest.TestCase):
         manifest = self.manager._registry()["example-addon"]
         commands = []
         original_run = self.manager._run
+        repository_key = "matelv-x/example-addon"
+        self.manager.remote_cache[repository_key] = (0, "0" * 40, "stale catalogue result")
+
+        def fresh_revision(_repository, _checkout):
+            self.assertNotIn(repository_key, self.manager.remote_cache)
+            return revision, ""
 
         def tracked(command, **kwargs):
             commands.append(list(command))
             return original_run(command, **kwargs)
 
         with mock.patch.object(self.manager, "_run", side_effect=tracked), mock.patch.object(
-            self.manager, "_remote_revision", return_value=(revision, "")
+            self.manager, "_remote_revision", side_effect=fresh_revision
         ):
             self.manager._run_action("example-addon", "uninstall", manifest, context, None)
 

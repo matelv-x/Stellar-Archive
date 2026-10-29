@@ -172,7 +172,8 @@ Before running downloaded code the manager verifies all of the following:
 - no Archive or other add-on maintenance operation is already active.
 
 Before every add-on removal the manager silently resolves the current GitHub
-HEAD revision. If that exact verified uninstaller is already cached on the Pi
+HEAD revision with a fresh operation-time query; catalogue display cache is
+never trusted for removal. If that exact verified uninstaller is already cached on the Pi
 or present in its managed checkout, it is used locally and nothing is
 downloaded. A newer revision is downloaded, identity-checked and cached before
 its declared surgical removal command can run. If the lightweight revision

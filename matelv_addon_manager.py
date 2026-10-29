@@ -461,6 +461,9 @@ class MatelvAddonManager:
                     "state": "running", "action": action, "phase": "download", "progress": 20,
                     "message": "Checking the latest uninstall procedure",
                 }
+                # Catalogue results may be cached for display, but removal
+                # must always resolve GitHub again at operation time.
+                self.remote_cache.pop(manifest["repository"].lower(), None)
                 latest_revision, remote_error = self._remote_revision(manifest["repository"], checkout)
                 if latest_revision:
                     for candidate in (
