@@ -211,22 +211,6 @@ function fitMastheadContents(){
  const scale=Math.min(1,inner.clientWidth/naturalWidth);
  inner.style.transform=`scale(${scale})`;
 }
-let shortPanelFrame=0;
-function updateShortWindowPanels(){
- if(shortPanelFrame)return;
- shortPanelFrame=window.requestAnimationFrame(()=>{
-  shortPanelFrame=0;
-  const shortWindow=document.documentElement.classList.contains('short-window-layout');
-  const scale=Number($('#archive-shell').dataset.scale)||1;
-  const catalogue=$('.catalogue');
-  for(const panel of [$('.star-chart'),$('.destination')]){
-   if(!shortWindow){panel.style.transform='';continue}
-   const maxOffset=Math.max(0,catalogue.offsetHeight-panel.offsetHeight);
-   const offset=Math.min(window.scrollY/scale,maxOffset);
-   panel.style.transform=`translateY(${offset}px)`;
-  }
- });
-}
 function fitArchiveToWindow(){
  const shell=$('#archive-shell');
  const width=window.innerWidth;
@@ -242,17 +226,15 @@ function fitArchiveToWindow(){
   shell.dataset.scale='1.0000';
   shell.dataset.scrollMode='window';
   $('.masthead-inner').style.transform='none';
-  updateShortWindowPanels();
   return;
  }
  const scale=Math.min(1,Math.max(.55,width/1400));
  shell.style.zoom=String(scale);
  shell.style.width=`${width/scale}px`;
- shell.style.height=shortWindow?'auto':`${height/scale}px`;
+ shell.style.height=`${height/scale}px`;
  shell.dataset.scale=scale.toFixed(4);
- shell.dataset.scrollMode=shortWindow?'window':'catalogue';
+ shell.dataset.scrollMode=shortWindow?'catalogue-panel':'records';
  fitMastheadContents();
- updateShortWindowPanels();
 }
 function updateInstalledGateName(value){
  const name=String(value||'').trim();
@@ -672,7 +654,6 @@ refreshIntegrationNavigation().catch(()=>{});
 fitArchiveToWindow();
 window.addEventListener('resize',fitArchiveToWindow,{passive:true});
 window.visualViewport?.addEventListener('resize',fitArchiveToWindow,{passive:true});
-window.addEventListener('scroll',updateShortWindowPanels,{passive:true});
 render();
 refreshGateStatuses();
 window.setInterval(refreshGateStatuses,15000);

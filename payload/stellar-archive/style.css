@@ -347,15 +347,8 @@ dialog p{font-size:14px;line-height:1.9}
 .profile-status strong{font-size:7px}
 .profile-status strong i{vertical-align:middle}
 
-/* Short desktop windows scroll the complete document instead of trapping the
-   catalogue records in the small space left below search and filter controls. */
-html.short-window-layout,html.short-window-layout body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
-html.short-window-layout body{display:block}
-html.short-window-layout #archive-viewport{height:auto;min-height:100vh;overflow:visible}
-html.short-window-layout #archive-shell{height:auto!important;min-height:100vh;overflow:visible}
-html.short-window-layout .workspace{flex:none;align-items:start;overflow:visible}
-html.short-window-layout .catalogue{height:auto;max-height:none;overflow:visible}
+/* In short desktop windows the complete left catalogue panel scrolls like the
+   destination panel. Search and filters can leave the panel viewport, while
+   the application window itself remains fixed. */
+html.short-window-layout .catalogue{overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#8f8056 #06131b}
 html.short-window-layout #worlds{flex:none;overflow:visible}
-html.short-window-layout .star-chart,
-html.short-window-layout .destination{height:calc(100vh - 144px);align-self:start;will-change:transform}
-html.short-window-layout .destination{overflow:auto}
