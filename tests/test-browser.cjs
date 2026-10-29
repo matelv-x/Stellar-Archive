@@ -12,6 +12,7 @@ let addonTask={state:'idle',message:'Ready'};
 let addonPolls=0;
 let aquilaInstalled=false;
 let addonAction='install';
+let restartRequests=0;
 
 const server=http.createServer((request,response)=>{
   const requestPath=new URL(request.url,'http://127.0.0.1').pathname;
@@ -28,6 +29,11 @@ const server=http.createServer((request,response)=>{
   if(requestPath==='/stargate/get/dialing_status'){
     response.writeHead(200,{'content-type':'application/json'});
     response.end(JSON.stringify({gate_name:'Test Gate',local_address:[1,2,3,4,5,6]}));
+    return;
+  }
+  if(requestPath==='/stargate/get/stellar_archive_update'){
+    response.writeHead(200,{'content-type':'application/json'});
+    response.end(JSON.stringify({success:true,current_version:'1.5.17',latest_version:'1.5.17',update_available:false}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_addons'){
@@ -56,6 +62,7 @@ const server=http.createServer((request,response)=>{
     return;
   }
   if(requestPath==='/stargate/do/stellar_archive_restart'&&request.method==='POST'){
+    restartRequests+=1;
     response.writeHead(200,{'content-type':'application/json'});
     response.end(JSON.stringify({success:true,message:'Restart scheduled',service:'stargate-test.service'}));
     return;
@@ -162,7 +169,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.16');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.17');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));
@@ -209,6 +216,16 @@ const server=http.createServer((request,response)=>{
     await page.waitForSelector('#addon-progress-restart:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'UNINSTALL COMPLETE');
     assert.strictEqual(await page.locator('.addon-progress-steps li').nth(2).textContent(),'REMOVE');
+    await page.locator('#addon-progress-restart').click();
+    await page.waitForSelector('#addon-progress-overlay[data-state="confirm-restart"]');
+    assert.strictEqual(restartRequests,0,'first restart click must only show the in-page confirmation');
+    assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'CONFIRM RESTART');
+    assert.strictEqual(await page.locator('#addon-progress-close').textContent(),'CANCEL');
+    assert.strictEqual(await page.locator('#addon-progress-restart').textContent(),'RESTART NOW');
+    await page.locator('#addon-progress-restart').click();
+    await page.waitForSelector('#addon-progress-overlay[data-state="restarting"]');
+    await page.waitForFunction(()=>document.querySelector('#addon-progress-title').textContent==='SERVICE ONLINE');
+    assert.strictEqual(restartRequests,1,'confirmed restart must send exactly one request');
     await page.locator('#addon-progress-close').click();
     await page.waitForSelector('#addon-progress-overlay',{state:'hidden'});
     assert.strictEqual(await page.locator('#check-archive-update').count(),1);

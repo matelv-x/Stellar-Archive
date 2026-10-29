@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.17
+
+- Replaced the post-install and post-uninstall native restart prompt with a
+  second in-page confirmation step that works in embedded FramelessWindow
+  WebViews and sends exactly one restart request after explicit confirmation.
+- Made Lamp Mode removal preserve shared backend integrations by publishing a
+  surgical uninstaller and declaring its Archive-managed backend overlay.
+
 ## 1.5.16
 
 - Replaced the managed add-on uninstall browser prompt with an in-page

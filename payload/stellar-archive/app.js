@@ -458,10 +458,20 @@ $('#addon-progress-restart').addEventListener('click',async()=>{
   resolve(true);
   return;
  }
- if(!addonProgressContext||!window.confirm(`Restart the Stargate service for ${addonProgressContext.name} now?`))return;
+ if(!addonProgressContext)return;
+ const overlay=$('#addon-progress-overlay');
+ if(overlay.dataset.state!=='confirm-restart'){
+  overlay.dataset.state='confirm-restart';
+  $('#addon-progress-title').textContent='CONFIRM RESTART';
+  $('#addon-progress-status').textContent=`Restart the Stargate service for ${addonProgressContext.name} now?`;
+  $('#addon-progress-close').textContent='CANCEL';
+  $('#addon-progress-restart').textContent='RESTART NOW';
+  return;
+ }
  $('#addon-progress-close').hidden=true;
  $('#addon-progress-restart').hidden=true;
- $('#addon-progress-overlay').dataset.running='true';
+ overlay.dataset.running='true';
+ overlay.dataset.state='restarting';
  $('#addon-progress-title').textContent='RESTARTING SERVICE';
  $('#addon-progress-status').textContent='Sending a target-specific restart request…';
  try{
