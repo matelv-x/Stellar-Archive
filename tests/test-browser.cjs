@@ -307,7 +307,7 @@ const server=http.createServer((request,response)=>{
       const worlds=document.querySelector('#worlds');
       const summary=[...document.querySelectorAll('.gate-summary p>span')].map(item=>item.getBoundingClientRect().toJSON());
       const glyphBoxes=[...document.querySelectorAll('.glyph-box')].map(item=>item.getBoundingClientRect().toJSON());
-      return {brand:box('.brand'),brandMark:document.querySelector('.brand-mark').getAttribute('src'),nav:box('#integration-nav'),gateName:box('.installed-gate'),gateNameText:document.querySelector('.installed-gate').textContent.trim(),catalogue:box('.catalogue'),chart:box('.star-chart'),destination:box('.destination'),planetScene:box('.planet-scene'),planet:box('#planet'),console:box('.address-console'),consoleTitle:box('.console-title'),glyphArea:box('.glyph-area'),glyphBoxes,seal:box('.seal'),sealMark:document.querySelector('.seal>img').getAttribute('src'),selection:box('.selection'),viewport:box('#archive-viewport'),summary,worldsScrollable:worlds.scrollHeight>worlds.clientHeight,bodyScroll:{width:document.body.scrollWidth,height:document.body.scrollHeight}};
+      return {brand:box('.brand'),brandMark:document.querySelector('.brand-mark').getAttribute('src'),nav:box('#integration-nav'),gateName:box('.installed-gate'),gateNameText:document.querySelector('.installed-gate').textContent.trim(),catalogue:box('.catalogue'),chart:box('.star-chart'),destination:box('.destination'),planetScene:box('.planet-scene'),planet:box('#planet'),console:box('.address-console'),consoleTitle:box('.console-title'),glyphArea:box('.glyph-area'),glyphBoxes,seal:box('.seal'),sealMark:document.querySelector('.seal>img').getAttribute('src'),selection:box('.selection'),viewport:box('#archive-viewport'),summary,worldsScrollable:worlds.scrollHeight>worlds.clientHeight,worldsOverflow:getComputedStyle(worlds).overflowY,scrollMode:document.querySelector('#archive-shell').dataset.scrollMode,shortLayout:document.documentElement.classList.contains('short-window-layout'),bodyScroll:{width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight}};
     });
     assert(layout.brand.right<=layout.nav.left+1,'scaled masthead brand must not overlap right-side navigation');
     assert(layout.gateName.bottom<=layout.nav.top+1,'installed gate name must appear above navigation buttons');
@@ -317,27 +317,41 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(layout.brandMark,'assets/sgc-emblem-stellar-v1.png');
     assert.strictEqual(layout.sealMark,'assets/sgc-emblem-stellar-v1.png');
     assert.strictEqual(layout.gateNameText,'TEST GATE');
-    assert(layout.glyphBoxes.every(glyph=>glyph.width>20&&glyph.height>35&&glyph.top>=layout.glyphArea.top-1&&glyph.bottom<=layout.glyphArea.bottom+1),'all glyph buttons must remain visible in the upper half of the compact console');
-    assert(layout.glyphArea.bottom<=layout.selection.top+1&&layout.glyphArea.bottom<=layout.seal.top+1,'compact console must place glyphs above the lower controls');
-    assert(layout.selection.width<=150&&layout.selection.height<=54,'compact DIAL button must not remain oversized');
-    assert(layout.console.bottom<=768+1,`complete destination address must remain visible: ${JSON.stringify({console:layout.console,viewport:layout.viewport,body:layout.bodyScroll})}`);
     assert(layout.consoleTitle.top>=layout.console.top&&layout.consoleTitle.bottom<=layout.console.bottom,'lower-frame heading must not be clipped');
-    assert(layout.viewport.width<=1256+1&&layout.viewport.height<=768+1,'scaled archive must fit the window');
-    assert(layout.worldsScrollable,'planet list must retain internal scrolling');
-    assert(layout.bodyScroll.width<=1256+1&&layout.bodyScroll.height<=768+1,'page itself must not become a long scrolling document');
+    assert(layout.viewport.width<=1256+1,'scaled archive must fit the window width');
+    assert(layout.shortLayout&&layout.scrollMode==='window','short desktop windows must use complete-window scrolling');
+    assert.strictEqual(layout.worldsOverflow,'visible','planet list must not trap scrolling inside its own viewport');
+    assert.strictEqual(layout.worldsScrollable,false,'planet list must expand to its complete height');
+    assert(layout.bodyScroll.width<=1256+1&&layout.bodyScroll.height>768*5,'complete document must become the vertical scroll surface');
+    await page.locator('#worlds .world').last().scrollIntoViewIfNeeded();
+    await page.waitForTimeout(100);
+    const lastRecordScroll=await page.evaluate(()=>({
+      scrollY:window.scrollY,
+      searchBottom:document.querySelector('.search').getBoundingClientRect().bottom,
+      last:document.querySelector('#worlds .world:last-child').getBoundingClientRect().toJSON(),
+      chartTop:document.querySelector('.star-chart').getBoundingClientRect().top,
+      destinationTop:document.querySelector('.destination').getBoundingClientRect().top
+    }));
+    assert(lastRecordScroll.scrollY>0&&lastRecordScroll.searchBottom<0,'search and filters must scroll away to release the full window for records');
+    assert(lastRecordScroll.last.top>=0&&lastRecordScroll.last.bottom<=768+1,'last planet must be reachable with window scrolling');
+    assert(lastRecordScroll.chartTop>=-20&&lastRecordScroll.chartTop<150&&lastRecordScroll.destinationTop>=-20&&lastRecordScroll.destinationTop<150,`galaxy and destination panels must remain visible while the window scrolls through planet records: ${JSON.stringify(lastRecordScroll)}`);
+    await page.evaluate(()=>window.scrollTo(0,0));
     await page.screenshot({path:path.join(__dirname,'validation-header-small.png'),fullPage:false});
     await page.setViewportSize({width:980,height:700});
     await page.waitForFunction(()=>Math.abs(Number(document.querySelector('#archive-shell').dataset.scale)-.7)<.002);
     assert.strictEqual(await page.locator('#archive-shell').getAttribute('data-scale'),'0.7000');
+    assert(await page.evaluate(()=>document.documentElement.classList.contains('short-window-layout')),'700 px desktop window must use complete-window scrolling');
+    await page.locator('.address-console').scrollIntoViewIfNeeded();
     const compact=await page.evaluate(()=>{
       const box=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();
-      return {console:box('.address-console'),glyphArea:box('.glyph-area'),glyphs:[...document.querySelectorAll('.glyph-box')].map(item=>item.getBoundingClientRect().toJSON()),seal:box('.seal'),selection:box('.selection'),body:{width:document.body.scrollWidth,height:document.body.scrollHeight}};
+      return {console:box('.address-console'),glyphArea:box('.glyph-area'),glyphs:[...document.querySelectorAll('.glyph-box')].map(item=>item.getBoundingClientRect().toJSON()),seal:box('.seal'),selection:box('.selection'),body:{width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight},scrollY:window.scrollY};
     });
     assert(compact.glyphs.every(glyph=>glyph.width>20&&glyph.height>35&&glyph.top>=compact.glyphArea.top-1&&glyph.bottom<=compact.glyphArea.bottom+1),'all glyphs must remain visible at 980 px');
     assert(compact.glyphArea.bottom<=compact.seal.top+1&&compact.glyphArea.bottom<=compact.selection.top+1,'980 px console must retain the upper/lower split');
-    assert(compact.console.bottom<=701&&compact.body.width<=981&&compact.body.height<=701,'980 px archive must remain inside the browser viewport');
+    assert(compact.scrollY>0&&compact.console.bottom<=701&&compact.body.width<=981&&compact.body.height>701,'980 px archive must expose its lower console through window scrolling');
     await page.screenshot({path:path.join(__dirname,'validation-console-compact.png'),fullPage:false});
     await page.setViewportSize({width:1408,height:1783});
+    await page.evaluate(()=>window.scrollTo(0,0));
     await page.waitForFunction(()=>document.querySelector('#archive-shell').dataset.scale==='1.0000');
     const tall=await page.evaluate(()=>{
       const box=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();

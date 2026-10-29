@@ -2,6 +2,10 @@
 
 ## 1.5.19
 
+- Short desktop windows now use the browser window as the catalogue scroll
+  surface. Search and filter controls move out of the way, planet records use
+  the full window height, and the galaxy and destination panels remain visible
+  alongside the scrolling list; tall desktop and mobile layouts are unchanged.
 - Added a fail-safe Subspace reachability probe for existing FAN gates. When
   Imunify360 blocks the central JSON directory, SG1_v4 now refreshes the shared
   Original Address Book and Stellar Archive ONLINE/OFFLINE flags directly from
