@@ -68,7 +68,9 @@ MAINTENANCE_CONFIG="$SG1_ROOT/classes/.stellar-archive-maintenance.json"
 ADDON_MANAGER="$SG1_ROOT/classes/matelv_addon_manager.py"
 ADDON_REGISTRY="$SG1_ROOT/classes/matelv_addons.json"
 ADDON_STATE="$SG1_ROOT/classes/.matelv-addon-state.json"
-ADDON_OVERLAY="$STATE/addon-overlay"
+# Use a per-process overlay. A fixed path can survive an interrupted or dry-run
+# update and must never be replayed over a later surgical add-on uninstall.
+ADDON_OVERLAY="$STATE/addon-overlay-$$"
 RESTART_SERVICE=""
 for unit_path in /etc/systemd/system/*.service; do
   [[ -f "$unit_path" ]] || continue
@@ -246,6 +248,7 @@ note "SG1_v4 web root: $TARGET"
 note "Planned action: $action"
 note 'No service restart or hardware command is used.'
 if ((DRY_RUN)); then
+  [[ ! -d "$ADDON_OVERLAY" ]] || remove_exact_tree "$ADDON_OVERLAY" "$STATE"
   note 'Dry run complete: no files changed.'
   exit 0
 fi

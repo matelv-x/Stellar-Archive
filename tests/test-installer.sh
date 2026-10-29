@@ -92,6 +92,17 @@ grep -q 'RETRO_VISUALS_TEST_BACKEND' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 grep -q 'retroVisualsTest' "$TARGET/retro/js/navigation.js"
 grep -q '"label":"VISUALS"' "$TARGET/stellar-archive/data/integration-nav.js"
 
+# A stale overlay left by an older interrupted/dry-run installer must never be
+# replayed after a surgical add-on uninstall. New operations use a unique path.
+mkdir -p "$TARGET/.stellar-archive-addon/addon-overlay/classes"
+cp "$TEST_ROOT/sg1_v4/classes/web_server.py" "$TARGET/.stellar-archive-addon/addon-overlay/classes/web_server.py"
+printf '\n# STALE_FIXED_OVERLAY_MUST_NOT_RETURN\n' >> "$TARGET/.stellar-archive-addon/addon-overlay/classes/web_server.py"
+"$PACKAGE_DIR/install.sh" --target "$TARGET" --replace both >/dev/null
+if grep -q 'STALE_FIXED_OVERLAY_MUST_NOT_RETURN' "$TEST_ROOT/sg1_v4/classes/web_server.py"; then
+  printf 'stale fixed add-on overlay was replayed\n' >&2
+  exit 1
+fi
+
 # Reproduce the exact interrupted 1.3.0 validation state reported by ***:
 # new Archive/API files are present, while state and managed snapshots still
 # describe 1.2.8. The repair release must recover without manual deletion.

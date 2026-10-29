@@ -12,6 +12,9 @@
 - Refreshes the generated Archive navigation without browser cache after every
   add-on operation and on page load, so uninstall immediately removes the
   add-on button and installation adds it back without a stale menu.
+- Uses a unique one-operation add-on overlay during SG1_v4 updates. A stale
+  overlay left by an older interrupted or dry-run installer can no longer
+  restore backend hooks belonging to an add-on that was already uninstalled.
 
 ## 1.5.18
 
