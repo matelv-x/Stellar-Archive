@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.24
+
+- Replaces the static FAN catalogue choice with live ONLINE and OFFLINE filters.
+- Keeps STANDARD as the packaged directory category and limits LAN results to
+  Archive records currently discovered by the Stargate's home-network address
+  book, so historical LAN labels cannot create stale local results.
+- Updates filter counts and visible results whenever live gate status changes.
+
 ## 1.5.23
 
 - Detects live address-book destinations that are new, renamed aliases or use a

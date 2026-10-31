@@ -13,16 +13,22 @@ function integrationHomeHref(){
  return configuredHostHomeHref()||(integrationMode==='retro'?'/retro/dial.html':'/index.htm');
 }
 let selected=worlds[0],visible=[];
-let liveGateStatuses=new Map(),liveStatusState='checking',liveStatusSignature='';
+let liveGateStatuses=new Map(),liveLanAddresses=new Set(),liveStatusState='checking',liveStatusSignature='';
 let pendingDestinations=[];
 const motionEpoch=performance.now();
 let motionNodes=[],motionFrame=0,lastMotionUpdate=0;
 const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 const $=selector=>document.querySelector(selector);
 function renderCategoryCounts(){
- const counts={all:worlds.length,standard:0,fan:0,lan:0};
- worlds.forEach(world=>{if(Object.hasOwn(counts,world.category))counts[world.category]++});
- const labels={all:`ALL ${counts.all} RECORDS`,standard:`STANDARD · ${counts.standard}`,fan:`FAN · ${counts.fan}`,lan:`LAN · ${counts.lan}`};
+ const counts={
+  all:worlds.length,
+  online:worlds.filter(world=>liveGateStatuses.get(addressKey(world.storedAddress))===true).length,
+  offline:worlds.filter(world=>liveGateStatuses.get(addressKey(world.storedAddress))===false).length,
+  standard:worlds.filter(world=>world.category==='standard').length,
+  lan:worlds.filter(world=>liveLanAddresses.has(addressKey(world.storedAddress))).length
+ };
+ const pending=liveStatusState==='checking'||liveStatusState==='error';
+ const labels={all:`ALL ${counts.all} RECORDS`,online:`ONLINE · ${pending?'—':counts.online}`,offline:`OFFLINE · ${pending?'—':counts.offline}`,standard:`STANDARD · ${counts.standard}`,lan:`LAN · ${pending?'—':counts.lan}`};
  $('#category').querySelectorAll('option').forEach(option=>{if(labels[option.value])option.textContent=labels[option.value]});
 }
 const escapeHtml=value=>String(value).replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
@@ -37,7 +43,15 @@ const gateWorldProfiles={
 function filtered(){
  const q=$('#search').value.toLowerCase().trim();
  const category=$('#category').value;
- const matches=worlds.filter(w=>(category==='all'||w.category===category)&&`${w.name} ${w.description} ${w.classification} ${w.fullAddress.join('-')}`.toLowerCase().includes(q));
+ const matches=worlds.filter(world=>{
+  const address=addressKey(world.storedAddress);
+  const categoryMatch=category==='all'||
+   (category==='online'&&liveGateStatuses.get(address)===true)||
+   (category==='offline'&&liveGateStatuses.get(address)===false)||
+   (category==='standard'&&world.category==='standard')||
+   (category==='lan'&&liveLanAddresses.has(address));
+  return categoryMatch&&`${world.name} ${world.description} ${world.classification} ${world.fullAddress.join('-')}`.toLowerCase().includes(q);
+ });
  if($('#sort-order').value==='alphabetical')return [...matches].sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base',numeric:true}));
  return matches;
 }
@@ -442,7 +456,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.23';
+const installedArchiveVersion='1.5.24';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -838,14 +852,26 @@ async function refreshGateStatuses(){
    const address=addressKey(entry.gate_address);
    return [address,gateOnline(entry,localAddress,directoryFresh)];
   }));
+  const nextLanAddresses=new Set(entries.filter(entry=>entry.type==='lan'&&Array.isArray(entry.gate_address)).map(entry=>addressKey(entry.gate_address)));
   if(!next.size)throw new Error('empty address book');
-  const signature=[...next].sort(([a],[b])=>a.localeCompare(b)).map(([address,online])=>`${address}:${online?1:0}`).join('|');
+  const signature=[...next].sort(([a],[b])=>a.localeCompare(b)).map(([address,online])=>`${address}:${online?1:0}`).join('|')+`|lan:${[...nextLanAddresses].sort().join(',')}`;
   liveGateStatuses=next;
+  liveLanAddresses=nextLanAddresses;
   liveStatusState='ready';
   renderGateSummary(counts);
-  if(signature!==liveStatusSignature){liveStatusSignature=signature;updateRenderedGateStatuses()}
+  renderCategoryCounts();
+  if(signature!==liveStatusSignature){
+   liveStatusSignature=signature;
+   if(['online','offline','lan'].includes($('#category').value))render();
+   else updateRenderedGateStatuses();
+  }
  }catch(error){
-  if(liveStatusState!=='error'){liveGateStatuses=new Map();liveStatusState='error';liveStatusSignature='';renderGateSummary(null);updateRenderedGateStatuses()}
+  if(liveStatusState!=='error'){
+   liveGateStatuses=new Map();liveLanAddresses=new Set();liveStatusState='error';liveStatusSignature='';
+   renderGateSummary(null);renderCategoryCounts();
+   if(['online','offline','lan'].includes($('#category').value))render();
+   else updateRenderedGateStatuses();
+  }
  }finally{window.clearTimeout(timeout)}
 }
 configureIntegration();

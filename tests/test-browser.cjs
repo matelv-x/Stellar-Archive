@@ -41,7 +41,7 @@ const server=http.createServer((request,response)=>{
   }
   if(requestPath==='/stargate/get/stellar_archive_update'){
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,current_version:'1.5.23',latest_version:archiveUpdateAvailable?'1.5.24':'1.5.23',update_available:archiveUpdateAvailable}));
+    response.end(JSON.stringify({success:true,current_version:'1.5.24',latest_version:archiveUpdateAvailable?'1.5.25':'1.5.24',update_available:archiveUpdateAvailable}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_addons'){
@@ -136,7 +136,9 @@ const server=http.createServer((request,response)=>{
     }]);
     assert(!JSON.stringify(downloadedPending).includes('192.0.2.44'),'downloaded pending file must not include live private fields');
     await page.locator('#close-pending-destinations').click();
-    assert.deepStrictEqual(await page.locator('#category option').allTextContents(),['ALL 131 RECORDS','STANDARD · 35','FAN · 94','LAN · 2']);
+    await page.waitForFunction(()=>document.querySelector('#category option[value="lan"]').textContent!=='LAN · —');
+    assert.deepStrictEqual(await page.locator('#category option').evaluateAll(options=>options.map(option=>option.value)),['all','online','offline','standard','lan']);
+    assert.deepStrictEqual(await page.locator('#category option').allTextContents(),['ALL 131 RECORDS','ONLINE · 6','OFFLINE · 1','STANDARD · 35','LAN · 2']);
     const spriteThumbnails=await page.locator('#worlds .mini-planet > .mini-planet-image').count();
     const archiveImageData=await page.evaluate(()=>({
       assetCount:window.STELLAR_ARCHIVE_DATA.worlds.filter(world=>world.visualAsset).length,
@@ -222,15 +224,24 @@ const server=http.createServer((request,response)=>{
     const alphabeticalNames=await page.locator('#worlds .world-name').allTextContents();
     assert.deepStrictEqual(alphabeticalNames,[...alphabeticalNames].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base',numeric:true})));
     await page.screenshot({path:path.join(__dirname,'validation-catalogue-sort.png'),fullPage:false});
-    await page.selectOption('#category','fan');
-    assert.strictEqual(
-      await page.locator('#worlds .world-name').first().textContent(),
-      await page.evaluate(()=>window.STELLAR_ARCHIVE_DATA.worlds.filter(world=>world.category==='fan').map(world=>world.name).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base',numeric:true}))[0])
-    );
+    await page.selectOption('#category','online');
+    assert.strictEqual(await page.locator('#worlds .world').count(),7);
+    assert.strictEqual(await page.locator('#worlds .owner-status:not(.online)').count(),0);
+    statusRevision=0;
+    await page.evaluate(()=>refreshGateStatuses());
+    await page.selectOption('#category','offline');
+    assert.strictEqual(await page.locator('#worlds .world').count(),1);
+    assert.strictEqual(await page.locator('#worlds .owner-status:not(.offline)').count(),0);
+    statusRevision=1;
+    await page.evaluate(()=>refreshGateStatuses());
+    await page.selectOption('#category','lan');
+    assert.deepStrictEqual(await page.locator('#worlds .world').evaluateAll(nodes=>nodes.map(node=>node.dataset.id).sort()),['fan-071-highlander','lan-001-seed-ship-1']);
+    await page.selectOption('#category','standard');
+    assert.strictEqual(await page.locator('#worlds .world').count(),35);
     await page.selectOption('#sort-order','registered');
     assert.strictEqual(
       await page.locator('#worlds .world').first().getAttribute('data-id'),
-      await page.evaluate(()=>window.STELLAR_ARCHIVE_DATA.worlds.find(world=>world.category==='fan').id)
+      await page.evaluate(()=>window.STELLAR_ARCHIVE_DATA.worlds.find(world=>world.category==='standard').id)
     );
     await page.selectOption('#category','all');
     assert.deepStrictEqual(await page.evaluate(()=>({
@@ -318,7 +329,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.23');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.24');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));
@@ -541,12 +552,12 @@ const server=http.createServer((request,response)=>{
     await page.reload();
     await page.waitForSelector('#update-notice:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#update-notice-title').textContent(),'2 UPDATES AVAILABLE');
-    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.24 and 1 add-on update'));
+    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.25 and 1 add-on update'));
     assert(await page.getByRole('button',{name:'ABOUT •'}).evaluate(button=>button.classList.contains('update-available')),'ABOUT must show an update indicator');
     await page.screenshot({path:path.join(__dirname,'validation-automatic-update-banner.png'),fullPage:false});
     await page.locator('#update-notice-open').click();
     await page.waitForSelector('#dialog-maintenance:not([hidden])');
-    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.24 is available.');
+    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.25 is available.');
     assert((await page.locator('#addon-list').textContent()).includes('UPDATE AVAILABLE'));
     assert.strictEqual(await page.locator('#update-notice').isHidden(),true);
     await page.screenshot({path:path.join(__dirname,'validation-automatic-update-notice.png'),fullPage:false});
