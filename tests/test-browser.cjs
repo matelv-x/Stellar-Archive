@@ -16,6 +16,7 @@ let restartRequests=0;
 let statusRevision=0;
 let staticImageRequests=[];
 let archiveUpdateAvailable=false;
+let archiveUpdateRequests=0;
 let alarmUpdateAvailable=false;
 const systemActionRequests={restart:0,reboot:0,shutdown:0};
 
@@ -41,7 +42,13 @@ const server=http.createServer((request,response)=>{
   }
   if(requestPath==='/stargate/get/stellar_archive_update'){
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,current_version:'1.5.24',latest_version:archiveUpdateAvailable?'1.5.25':'1.5.24',update_available:archiveUpdateAvailable}));
+    response.end(JSON.stringify({success:true,current_version:'1.5.25',latest_version:archiveUpdateAvailable?'1.5.26':'1.5.25',update_available:archiveUpdateAvailable,task:archiveUpdateRequests?{state:'complete',message:'Updated safely'}:{state:'idle',message:'Ready'}}));
+    return;
+  }
+  if(requestPath==='/stargate/do/stellar_archive_update'&&request.method==='POST'){
+    archiveUpdateRequests+=1;
+    response.writeHead(200,{'content-type':'application/json'});
+    response.end(JSON.stringify({success:true,message:'Update started'}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_addons'){
@@ -329,7 +336,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.24');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.25');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));
@@ -398,6 +405,23 @@ const server=http.createServer((request,response)=>{
     await page.waitForSelector('#addon-progress-overlay',{state:'hidden'});
     assert.strictEqual(await page.locator('#check-archive-update').count(),1);
     assert.strictEqual(await page.locator('#uninstall-archive').count(),1);
+    archiveUpdateAvailable=true;
+    await page.locator('#check-archive-update').click();
+    await page.waitForSelector('#system-action-confirm[open]');
+    assert.strictEqual(await page.locator('#system-action-title').textContent(),'UPDATE STELLAR ARCHIVE');
+    assert.strictEqual(await page.locator('#system-action-approve').textContent(),'UPDATE');
+    assert.strictEqual(archiveUpdateRequests,0,'update must wait for in-page confirmation');
+    await page.locator('#system-action-cancel').click();
+    assert.strictEqual(archiveUpdateRequests,0,'cancelled update must not call the backend');
+    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Update cancelled.');
+    await page.locator('#check-archive-update').click();
+    await page.waitForSelector('#system-action-confirm[open]');
+    const updateResponse=page.waitForResponse(response=>response.url().endsWith('/stargate/do/stellar_archive_update'));
+    await page.locator('#system-action-approve').click();
+    await updateResponse;
+    await page.waitForFunction(()=>document.querySelector('#maintenance-status').textContent==='Updated safely');
+    assert.strictEqual(archiveUpdateRequests,1,'approved update must call the backend exactly once');
+    archiveUpdateAvailable=false;
     await page.screenshot({path:path.join(__dirname,'validation-about-addons.png'),fullPage:false});
     await page.locator('#close-dialog').click();
     await page.setViewportSize({width:1256,height:768});
@@ -552,12 +576,12 @@ const server=http.createServer((request,response)=>{
     await page.reload();
     await page.waitForSelector('#update-notice:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#update-notice-title').textContent(),'2 UPDATES AVAILABLE');
-    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.25 and 1 add-on update'));
+    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.26 and 1 add-on update'));
     assert(await page.getByRole('button',{name:'ABOUT •'}).evaluate(button=>button.classList.contains('update-available')),'ABOUT must show an update indicator');
     await page.screenshot({path:path.join(__dirname,'validation-automatic-update-banner.png'),fullPage:false});
     await page.locator('#update-notice-open').click();
     await page.waitForSelector('#dialog-maintenance:not([hidden])');
-    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.25 is available.');
+    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.26 is available.');
     assert((await page.locator('#addon-list').textContent()).includes('UPDATE AVAILABLE'));
     assert.strictEqual(await page.locator('#update-notice').isHidden(),true);
     await page.screenshot({path:path.join(__dirname,'validation-automatic-update-notice.png'),fullPage:false});

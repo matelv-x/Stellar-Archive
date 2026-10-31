@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.25
+
+- Replaces native browser confirmation for Archive update and uninstall with
+  the existing in-page confirmation dialog, preventing embedded WebViews from
+  silently treating an intended update as cancelled.
+
 ## 1.5.24
 
 - Replaces the static FAN catalogue choice with live ONLINE and OFFLINE filters.

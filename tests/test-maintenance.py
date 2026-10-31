@@ -49,7 +49,7 @@ class MaintenanceTests(unittest.TestCase):
         installer.chmod(0o755)
         self.zip_path = self.root / "release.zip"
         with zipfile.ZipFile(self.zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
-            archive.write(installer, "sg1-v3-v4-stellar-archive-universal-v1.5.24/install.sh")
+            archive.write(installer, "sg1-v3-v4-stellar-archive-universal-v1.5.25/install.sh")
         digest = hashlib.sha256(self.zip_path.read_bytes()).hexdigest()
         self.sha_path = self.root / "release.zip.sha256"
         self.sha_path.write_text("{}  release.zip\n".format(digest), encoding="utf-8")
@@ -66,7 +66,7 @@ class MaintenanceTests(unittest.TestCase):
             "installer": str(self.cached),
             "restart_service": "stargate-test.service",
         }), encoding="utf-8")
-        release = {"version": "1.5.24", "zip_name": "release.zip", "zip_url": "zip", "sha_url": "sha", "release_url": "https://example.invalid"}
+        release = {"version": "1.5.25", "zip_name": "release.zip", "zip_url": "zip", "sha_url": "sha", "release_url": "https://example.invalid"}
         self.controller = TestController(self.config_path, release, {"zip": self.zip_path, "sha": self.sha_path})
 
     def tearDown(self):
@@ -90,13 +90,13 @@ class MaintenanceTests(unittest.TestCase):
     @mock.patch("stellar_archive_maintenance.urllib.request.urlopen")
     def test_latest_release_uses_public_redirect_without_github_api(self, urlopen):
         response = mock.MagicMock()
-        response.geturl.return_value = "https://github.com/example/archive/releases/tag/v1.5.24"
+        response.geturl.return_value = "https://github.com/example/archive/releases/tag/v1.5.25"
         urlopen.return_value.__enter__.return_value = response
         release = StellarArchiveMaintenance(self.config_path).latest_release()
-        self.assertEqual(release["version"], "1.5.24")
+        self.assertEqual(release["version"], "1.5.25")
         self.assertEqual(
             release["zip_url"],
-            "https://github.com/example/archive/releases/download/v1.5.24/sg1_v3_v4_stellar_archive_universal_1.5.24.zip",
+            "https://github.com/example/archive/releases/download/v1.5.25/sg1_v3_v4_stellar_archive_universal_1.5.25.zip",
         )
         self.assertEqual(release["sha_url"], release["zip_url"] + ".sha256")
         requested = urlopen.call_args.args[0]

@@ -456,7 +456,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.24';
+const installedArchiveVersion='1.5.25';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -792,14 +792,24 @@ $('#check-archive-update').addEventListener('click',async()=>{
  try{
   const status=await maintenanceRequest('/stargate/get/stellar_archive_update');
   if(!status.update_available){setMaintenanceBusy(false,`Stellar Archive ${status.current_version} is up to date.`);return}
-  if(!window.confirm(`Update Stellar Archive ${status.current_version} to ${status.latest_version}?`)){setMaintenanceBusy(false,'Update cancelled.');return}
+  const approved=await confirmSystemAction({
+   title:'UPDATE STELLAR ARCHIVE',
+   question:`Update Stellar Archive ${status.current_version} to ${status.latest_version}?`,
+   label:'UPDATE'
+  });
+  if(!approved){setMaintenanceBusy(false,'Update cancelled.');return}
   const result=await maintenanceRequest('/stargate/do/stellar_archive_update',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
   setMaintenanceBusy(true,result.message||'Update started…');
   pollMaintenance();
  }catch(error){setMaintenanceBusy(false,`Update check failed: ${error.message}`)}
 });
 $('#uninstall-archive').addEventListener('click',async()=>{
- if(!window.confirm('Uninstall Stellar Archive and restore the files captured before installation?'))return;
+ const approved=await confirmSystemAction({
+  title:'UNINSTALL STELLAR ARCHIVE',
+  question:'Uninstall Stellar Archive and restore the files captured before installation?',
+  label:'UNINSTALL'
+ });
+ if(!approved)return;
  setMaintenanceBusy(true,'Starting uninstall…');
  try{
   const result=await maintenanceRequest('/stargate/do/stellar_archive_uninstall',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
