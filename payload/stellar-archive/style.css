@@ -26,12 +26,21 @@ button{color:inherit}
 .integration-button{appearance:none;background:#08222c;border:1px solid #7ce5ef99;border-radius:3px;color:#bcecf3;font-size:9px;letter-spacing:.11em;line-height:1;padding:10px 11px;text-decoration:none;white-space:nowrap;box-shadow:inset 0 0 12px #7ce5ef0b}
 .integration-button:hover,.integration-button:focus-visible{background:#164251;color:#fff4d1;border-color:var(--gold-bright);outline:none}
 .integration-button.addon{border-color:#d9b96c;color:#f3dca2}
+.integration-button.update-available{border-color:#ffe1a3;color:#fff1bf;box-shadow:inset 0 0 13px #ffd87824,0 0 10px #ffd87832}
+.integration-button.update-available:after{content:' •';color:#ffcf6b}
 .integration-dropdown{position:relative}
 .integration-dropdown summary{list-style:none;cursor:pointer}
 .integration-dropdown summary::-webkit-details-marker{display:none}
 .integration-dropdown[open] summary{border-color:var(--gold-bright);color:#fff4d1}
 .integration-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:50;display:grid;min-width:220px;padding:8px;background:#061821f7;border:1px solid var(--gold);box-shadow:0 15px 35px #000c}
 .integration-menu .integration-button{border:0;border-bottom:1px solid #31515c;background:transparent;border-radius:0;text-align:left;width:100%}
+.update-notice{position:absolute;z-index:140;right:20px;top:108px;width:min(430px,calc(100% - 40px));display:flex;align-items:center;gap:16px;padding:15px 44px 15px 17px;border:1px solid #e9c785;background:linear-gradient(120deg,#173542f5,#071922f8);box-shadow:0 10px 35px #000b,0 0 18px #ffcf6b32;color:#dcecef}
+.update-notice[hidden]{display:none!important}
+.update-notice>div{display:grid;gap:5px;flex:1;min-width:0}
+.update-notice strong{font:15px Georgia,serif;letter-spacing:.14em;color:#fff0c9}
+.update-notice>div>span:last-child{font-size:10px;line-height:1.5;color:#a9c7ce}
+.update-notice button{border:1px solid #d5bd7d;background:#5c4828;color:#fff0cf;padding:9px 11px;font-size:9px;letter-spacing:.12em;white-space:nowrap}
+.update-notice .update-notice-close{position:absolute;right:9px;top:8px;border:0;background:transparent;padding:3px 6px;font-size:20px;line-height:1;color:#a9c7ce}
 .workspace{display:grid;grid-template-columns:minmax(0,23fr) minmax(0,52fr) minmax(0,25fr);gap:14px;padding:22px 20px 14px;min-height:0;height:auto;max-height:none;flex:1 1 auto}
 .panel{position:relative;border:1px solid #9c8e6470;background:linear-gradient(145deg,#04151ddd,#020f16e8);box-shadow:inset 0 0 24px #0008,0 0 12px #79dbe509;min-width:0}
 .panel:before,.panel:after{content:'';position:absolute;width:35px;height:23px;border-color:var(--gold);pointer-events:none;z-index:5}

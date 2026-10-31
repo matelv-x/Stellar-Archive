@@ -296,6 +296,7 @@ function renderIntegrationNav(){
   if(action==='about')showAboutDialog();
   if(['restart','reboot','shutdown'].includes(action))runSystemAction(action);
  };
+ updateAboutUpdateIndicator();
  fitMastheadContents();
 }
 async function refreshIntegrationNavigation(){
@@ -384,6 +385,79 @@ async function maintenanceRequest(url,options={}){
  if(!response.ok||payload.success===false)throw new Error(payload.message||`HTTP ${response.status}`);
  return payload;
 }
+const automaticUpdateInterval=6*60*60*1000;
+const automaticUpdateCacheKey='stellar-archive-update-check-v2';
+const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
+const installedArchiveVersion='1.5.22';
+let automaticUpdateSummary=null;
+let automaticAddonPayload=null;
+let addonsLastCheckedAt=0;
+function updateAboutUpdateIndicator(){
+ const button=document.querySelector('[data-nav-action="about"]');
+ if(button)button.classList.toggle('update-available',Boolean(automaticUpdateSummary?.count));
+}
+function updateSummarySignature(summary){
+ return [summary.archiveLatest||'',...(summary.addonUpdates||[]).map(addon=>`${addon.id}:${addon.latest_revision||''}`).sort()].join('|');
+}
+function showAutomaticUpdateSummary(summary){
+ automaticUpdateSummary=summary?.count?summary:null;
+ const notice=$('#update-notice');
+ updateAboutUpdateIndicator();
+ if(!automaticUpdateSummary){notice.hidden=true;return}
+ const signature=updateSummarySignature(automaticUpdateSummary);
+ let dismissed='';
+ try{dismissed=sessionStorage.getItem(dismissedUpdateStorageKey)||''}catch(error){}
+ if(dismissed===signature){notice.hidden=true;return}
+ const archiveCount=automaticUpdateSummary.archiveLatest?1:0;
+ const addonCount=automaticUpdateSummary.addonUpdates.length;
+ const parts=[];
+ if(archiveCount)parts.push(`Stellar Archive ${automaticUpdateSummary.archiveLatest}`);
+ if(addonCount)parts.push(`${addonCount} add-on update${addonCount===1?'':'s'}`);
+ $('#update-notice-title').textContent=automaticUpdateSummary.count===1?'1 UPDATE AVAILABLE':`${automaticUpdateSummary.count} UPDATES AVAILABLE`;
+ $('#update-notice-copy').textContent=`${parts.join(' and ')} ${automaticUpdateSummary.count===1?'is':'are'} ready to review.`;
+ notice.hidden=false;
+}
+function cachedAutomaticUpdateSummary(){
+ try{
+  const cached=JSON.parse(localStorage.getItem(automaticUpdateCacheKey)||'null');
+  if(!cached||cached.installedVersion!==installedArchiveVersion||Date.now()-Number(cached.checkedAt)>automaticUpdateInterval)return null;
+  return cached.summary||{count:0,archiveLatest:'',addonUpdates:[]};
+ }catch(error){return null}
+}
+function cacheAutomaticUpdateSummary(summary){
+ try{localStorage.setItem(automaticUpdateCacheKey,JSON.stringify({installedVersion:installedArchiveVersion,checkedAt:Date.now(),summary}))}catch(error){}
+}
+async function checkUpdatesAutomatically({force=false}={}){
+ if(!force){
+  const cached=cachedAutomaticUpdateSummary();
+  if(cached){showAutomaticUpdateSummary(cached);return cached}
+ }
+ const [archiveResult,addonsResult]=await Promise.allSettled([
+  maintenanceRequest('/stargate/get/stellar_archive_update'),
+  maintenanceRequest('/stargate/get/stellar_archive_addons')
+ ]);
+ const archiveStatus=archiveResult.status==='fulfilled'?archiveResult.value:null;
+ const addonPayload=addonsResult.status==='fulfilled'?addonsResult.value:null;
+ if(addonPayload){
+  automaticAddonPayload=addonPayload;
+  addonsLastCheckedAt=Date.now();
+  renderAddons(addonPayload.addons||[],addonPayload.available||[]);
+ }
+ const addonUpdates=(addonPayload?.addons||[]).filter(addon=>addon.update_available===true).map(addon=>({id:addon.id,name:addon.name,latest_revision:addon.latest_revision||''}));
+ const archiveLatest=archiveStatus?.update_available===true?archiveStatus.latest_version:'';
+ const summary={count:(archiveLatest?1:0)+addonUpdates.length,archiveLatest,addonUpdates};
+ if(archiveStatus){
+  $('#maintenance-status').textContent=archiveLatest?`Stellar Archive ${archiveLatest} is available.`:`Stellar Archive ${archiveStatus.current_version} is up to date.`;
+ }
+ if(archiveStatus||addonPayload)cacheAutomaticUpdateSummary(summary);
+ showAutomaticUpdateSummary(summary);
+ return summary;
+}
+$('#update-notice-open').addEventListener('click',()=>{$('#update-notice').hidden=true;showAboutDialog()});
+$('#update-notice-close').addEventListener('click',()=>{
+ if(automaticUpdateSummary){try{sessionStorage.setItem(dismissedUpdateStorageKey,updateSummarySignature(automaticUpdateSummary))}catch(error){}}
+ $('#update-notice').hidden=true;
+});
 function setMaintenanceBusy(busy,message){
  $('#check-archive-update').disabled=busy;
  $('#uninstall-archive').disabled=busy;
@@ -428,11 +502,18 @@ function renderAddons(addons,available){
  }).join('');
 }
 async function loadInstalledAddons(){
+ if(automaticAddonPayload&&Date.now()-addonsLastCheckedAt<5*60*1000){
+  renderAddons(automaticAddonPayload.addons||[],automaticAddonPayload.available||[]);
+  return automaticAddonPayload;
+ }
  $('#refresh-addons').disabled=true;
  $('#addon-manager-status').textContent='Detecting installed add-ons and checking GitHub…';
  try{
   const payload=await maintenanceRequest('/stargate/get/stellar_archive_addons');
+  automaticAddonPayload=payload;
+  addonsLastCheckedAt=Date.now();
   renderAddons(payload.addons||[],payload.available||[]);
+  return payload;
  }catch(error){
   $('#addon-manager-status').textContent=`Add-on detection failed: ${error.message}`;
  }finally{$('#refresh-addons').disabled=false}
@@ -512,12 +593,17 @@ async function pollAddonMaintenance(addonId){
   await new Promise(resolve=>window.setTimeout(resolve,1000));
   try{
    const payload=await maintenanceRequest('/stargate/get/stellar_archive_addons');
+   automaticAddonPayload=payload;
+   addonsLastCheckedAt=Date.now();
    renderAddons(payload.addons||[],payload.available||[]);
    const addon=[...(payload.addons||[]),...(payload.available||[])].find(item=>item.id===addonId);
    if(!addon){failAddonProgress('The add-on status is no longer available.');return}
    updateAddonProgress(addon.task||{});
    if(['complete','failed'].includes(addon.task?.state)){
-    if(addon.task?.state==='complete')await refreshIntegrationNavigation();
+    if(addon.task?.state==='complete'){
+     await refreshIntegrationNavigation();
+     await checkUpdatesAutomatically({force:true});
+    }
     return;
    }
   }catch(error){$('#addon-manager-status').textContent=`Add-on status unavailable: ${error.message}`;failAddonProgress(`Status unavailable: ${error.message}`);return}
@@ -571,7 +657,7 @@ $('#addon-progress-restart').addEventListener('click',async()=>{
   $('#addon-progress-close').hidden=false;
  }catch(error){failAddonProgress(`Restart failed: ${error.message}`)}
 });
-$('#refresh-addons').addEventListener('click',loadInstalledAddons);
+$('#refresh-addons').addEventListener('click',()=>{automaticAddonPayload=null;loadInstalledAddons()});
 async function handleAddonAction(event){
  const button=event.target.closest('button[data-addon-action]');
  if(!button)return;
@@ -607,6 +693,7 @@ async function handleAddonAction(event){
   if(!await confirmAddonAction(addon,'install',`Install ${addon.name} from its verified matelv-x repository? A Stargate software restart may be required afterward.`))return;
  }else if(!await confirmAddonAction(addon,'uninstall','Check GitHub for the newest surgical uninstaller, then remove only this add-on?'))return;
  button.disabled=true;
+ automaticAddonPayload=null;
  $('#addon-manager-status').textContent=`Starting ${action} for ${addon.name}…`;
  showAddonProgress(addon,action);
  try{
@@ -701,3 +788,6 @@ renderCategoryCounts();
 render();
 refreshGateStatuses();
 window.setInterval(refreshGateStatuses,15000);
+window.setTimeout(()=>checkUpdatesAutomatically(),1200);
+window.setInterval(()=>checkUpdatesAutomatically({force:true}),automaticUpdateInterval);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!cachedAutomaticUpdateSummary())checkUpdatesAutomatically({force:true})});

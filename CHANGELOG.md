@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.22
+
+- Checks GitHub automatically for a newer Stellar Archive release and newer
+  revisions of installed managed add-ons after the Archive opens, then repeats
+  the check every six hours while the page remains open.
+- Shows a non-blocking update notification and marks the ABOUT button only when
+  one or more updates are available. VIEW UPDATES opens the existing safe
+  maintenance controls; no update is installed without user confirmation.
+- Reuses the automatic add-on result inside the About dialog and caches a
+  no-change result for six hours, preventing duplicate GitHub checks during
+  ordinary navigation and repeated dialog opens.
+- Retains the preloaded thumbnail sprite and the 35% reduced catalogue status
+  glow introduced in the final v1.5.21 package.
+
 ## 1.5.21
 
 - Reconciles the artwork branch with the complete 1.5.20 maintenance history
