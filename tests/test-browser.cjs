@@ -42,7 +42,7 @@ const server=http.createServer((request,response)=>{
   }
   if(requestPath==='/stargate/get/stellar_archive_update'){
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,current_version:'1.5.25',latest_version:archiveUpdateAvailable?'1.5.26':'1.5.25',update_available:archiveUpdateAvailable,task:archiveUpdateRequests?{state:'complete',message:'Updated safely'}:{state:'idle',message:'Ready'}}));
+    response.end(JSON.stringify({success:true,current_version:'1.5.26',latest_version:archiveUpdateAvailable?'1.5.27':'1.5.26',update_available:archiveUpdateAvailable,task:archiveUpdateRequests?{state:'complete',message:'Updated safely'}:{state:'idle',message:'Ready'}}));
     return;
   }
   if(requestPath==='/stargate/do/stellar_archive_update'&&request.method==='POST'){
@@ -145,7 +145,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('#close-pending-destinations').click();
     await page.waitForFunction(()=>document.querySelector('#category option[value="lan"]').textContent!=='LAN · —');
     assert.deepStrictEqual(await page.locator('#category option').evaluateAll(options=>options.map(option=>option.value)),['all','online','offline','standard','lan']);
-    assert.deepStrictEqual(await page.locator('#category option').allTextContents(),['ALL 131 RECORDS','ONLINE · 6','OFFLINE · 1','STANDARD · 35','LAN · 2']);
+    assert.deepStrictEqual(await page.locator('#category option').allTextContents(),['ALL 131 RECORDS','ONLINE · 3','OFFLINE · 1','STANDARD · 35','LAN · 2']);
     const spriteThumbnails=await page.locator('#worlds .mini-planet > .mini-planet-image').count();
     const archiveImageData=await page.evaluate(()=>({
       assetCount:window.STELLAR_ARCHIVE_DATA.worlds.filter(world=>world.visualAsset).length,
@@ -232,17 +232,20 @@ const server=http.createServer((request,response)=>{
     assert.deepStrictEqual(alphabeticalNames,[...alphabeticalNames].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base',numeric:true})));
     await page.screenshot({path:path.join(__dirname,'validation-catalogue-sort.png'),fullPage:false});
     await page.selectOption('#category','online');
-    assert.strictEqual(await page.locator('#worlds .world').count(),7);
+    assert.strictEqual(await page.locator('#worlds .world').count(),4);
     assert.strictEqual(await page.locator('#worlds .owner-status:not(.online)').count(),0);
+    assert.strictEqual(await page.locator('#worlds .world-symbols').evaluateAll(nodes=>nodes.every(node=>node.textContent.startsWith('FAN ·'))),true,'ONLINE must exclude STANDARD and LAN records');
     statusRevision=0;
     await page.evaluate(()=>refreshGateStatuses());
     await page.selectOption('#category','offline');
     assert.strictEqual(await page.locator('#worlds .world').count(),1);
     assert.strictEqual(await page.locator('#worlds .owner-status:not(.offline)').count(),0);
+    assert.strictEqual(await page.locator('#worlds .world-symbols').evaluateAll(nodes=>nodes.every(node=>node.textContent.startsWith('FAN ·'))),true,'OFFLINE must contain FAN records only');
     statusRevision=1;
     await page.evaluate(()=>refreshGateStatuses());
     await page.selectOption('#category','lan');
     assert.deepStrictEqual(await page.locator('#worlds .world').evaluateAll(nodes=>nodes.map(node=>node.dataset.id).sort()),['fan-071-highlander','lan-001-seed-ship-1']);
+    assert.strictEqual(await page.locator('#worlds .owner-status:not(.online)').count(),0,'home-network LAN records must be online');
     await page.selectOption('#category','standard');
     assert.strictEqual(await page.locator('#worlds .world').count(),35);
     await page.selectOption('#sort-order','registered');
@@ -336,7 +339,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.25');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.26');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));
@@ -576,12 +579,12 @@ const server=http.createServer((request,response)=>{
     await page.reload();
     await page.waitForSelector('#update-notice:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#update-notice-title').textContent(),'2 UPDATES AVAILABLE');
-    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.26 and 1 add-on update'));
+    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.27 and 1 add-on update'));
     assert(await page.getByRole('button',{name:'ABOUT •'}).evaluate(button=>button.classList.contains('update-available')),'ABOUT must show an update indicator');
     await page.screenshot({path:path.join(__dirname,'validation-automatic-update-banner.png'),fullPage:false});
     await page.locator('#update-notice-open').click();
     await page.waitForSelector('#dialog-maintenance:not([hidden])');
-    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.26 is available.');
+    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.27 is available.');
     assert((await page.locator('#addon-list').textContent()).includes('UPDATE AVAILABLE'));
     assert.strictEqual(await page.locator('#update-notice').isHidden(),true);
     await page.screenshot({path:path.join(__dirname,'validation-automatic-update-notice.png'),fullPage:false});

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.26
+
+- Makes catalogue filters mutually exclusive: ONLINE and OFFLINE contain FAN
+  gates only, STANDARD remains its own directory category, and LAN contains
+  only currently discovered home-network gates.
+- Keeps LAN gates online without also counting or displaying them under ONLINE.
+
 ## 1.5.25
 
 - Replaces native browser confirmation for Archive update and uninstall with

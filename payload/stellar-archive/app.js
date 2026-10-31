@@ -22,8 +22,8 @@ const $=selector=>document.querySelector(selector);
 function renderCategoryCounts(){
  const counts={
   all:worlds.length,
-  online:worlds.filter(world=>liveGateStatuses.get(addressKey(world.storedAddress))===true).length,
-  offline:worlds.filter(world=>liveGateStatuses.get(addressKey(world.storedAddress))===false).length,
+  online:worlds.filter(world=>world.category==='fan'&&liveGateStatuses.get(addressKey(world.storedAddress))===true).length,
+  offline:worlds.filter(world=>world.category==='fan'&&liveGateStatuses.get(addressKey(world.storedAddress))===false).length,
   standard:worlds.filter(world=>world.category==='standard').length,
   lan:worlds.filter(world=>liveLanAddresses.has(addressKey(world.storedAddress))).length
  };
@@ -46,8 +46,8 @@ function filtered(){
  const matches=worlds.filter(world=>{
   const address=addressKey(world.storedAddress);
   const categoryMatch=category==='all'||
-   (category==='online'&&liveGateStatuses.get(address)===true)||
-   (category==='offline'&&liveGateStatuses.get(address)===false)||
+   (category==='online'&&world.category==='fan'&&liveGateStatuses.get(address)===true)||
+   (category==='offline'&&world.category==='fan'&&liveGateStatuses.get(address)===false)||
    (category==='standard'&&world.category==='standard')||
    (category==='lan'&&liveLanAddresses.has(address));
   return categoryMatch&&`${world.name} ${world.description} ${world.classification} ${world.fullAddress.join('-')}`.toLowerCase().includes(q);
@@ -456,7 +456,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.25';
+const installedArchiveVersion='1.5.26';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
