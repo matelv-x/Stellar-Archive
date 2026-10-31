@@ -57,15 +57,15 @@ button{color:inherit}
 .world-name{font:14px Georgia,serif;letter-spacing:.18em}
 .world-symbols{display:block;color:#b9bfaa;font-size:10px;letter-spacing:.3em;margin-top:10px}
 .world-arrow{font-size:26px;color:#a4dae2}
-.mini-planet{height:62px;width:62px;flex-shrink:0;border:1px solid currentColor;box-shadow:0 0 0 2px #020b14,0 0 11px currentColor;background:#020b14;border-radius:50%;filter:none;position:relative}
-.mini-planet:before{content:'';position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,transparent 0 61%,currentColor 62% 65%,transparent 66%);filter:drop-shadow(0 0 4px currentColor) drop-shadow(0 0 9px currentColor);opacity:.82;transform:scale(.98);transform-origin:center;animation:gate-status-ring 2.8s ease-in-out infinite;pointer-events:none;z-index:3}
+.mini-planet{height:62px;width:62px;flex-shrink:0;border:1px solid currentColor;box-shadow:0 0 0 2px #020b14,0 0 7.15px currentColor;background:#020b14;border-radius:50%;filter:none;position:relative}
+.mini-planet:before{content:'';position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,transparent 0 61%,currentColor 62% 65%,transparent 66%);filter:drop-shadow(0 0 2.6px currentColor) drop-shadow(0 0 5.85px currentColor);opacity:.82;transform:scale(.98);transform-origin:center;animation:gate-status-ring 2.8s ease-in-out infinite;pointer-events:none;z-index:3}
 .mini-planet.status-online{color:#50e39b}
 .mini-planet.status-offline{color:#ff626b}
 .mini-planet.status-standard{color:#4f9dff}
 .mini-planet.status-lan{color:#ff9b42}
 .mini-planet.status-unknown{color:#708791}
 .mini-planet.status-unknown:before{opacity:.12;animation:none}
-@keyframes gate-status-ring{0%,100%{opacity:.81;transform:scale(.9875);filter:drop-shadow(0 0 4px currentColor) drop-shadow(0 0 10px currentColor)}50%{opacity:1;transform:scale(1.0225);filter:drop-shadow(0 0 5px currentColor) drop-shadow(0 0 13px currentColor)}}
+@keyframes gate-status-ring{0%,100%{opacity:.81;transform:scale(.9875);filter:drop-shadow(0 0 2.6px currentColor) drop-shadow(0 0 6.5px currentColor)}50%{opacity:1;transform:scale(1.0225);filter:drop-shadow(0 0 3.25px currentColor) drop-shadow(0 0 8.45px currentColor)}}
 .catalogue-footer{padding:19px 0 16px;display:flex;align-items:center;justify-content:center;gap:13px;color:var(--muted);border-top:1px solid #806d4c50}
 .catalogue-footer p{display:grid;gap:4px;font-size:8px;letter-spacing:.24em;text-align:center;line-height:1.35;margin:0}
 .catalogue-footer p>span{display:block;white-space:nowrap}
@@ -343,10 +343,12 @@ dialog p{font-size:14px;line-height:1.9}
 .planet{position:relative;background-image:var(--planet-image)!important;background-size:cover!important;background-position:center!important;filter:none}
 .mini-planet{overflow:visible}
 .mini-planet-image{position:absolute;inset:0;border-radius:50%;background-image:url('assets/optimized/e5e7a3cbc719d11091d92f37573dd9940e5f0e5ae9919f77acb404530957fa49.webp');background-size:1200% 1100%;background-position:var(--thumb-x) var(--thumb-y);background-repeat:no-repeat;z-index:1}
-.mini-planet.object-visual{border-radius:50%;background-size:contain!important;background-color:#020b14;box-shadow:0 0 0 2px #020b14,0 0 11px currentColor}
+.mini-planet.object-visual{border-radius:50%;background-size:contain!important;background-color:#020b14;box-shadow:0 0 0 2px #020b14,0 0 7.15px currentColor}
 .planet.object-visual{width:100%;height:100%;aspect-ratio:auto;border-radius:18px;background-size:contain!important;background-repeat:no-repeat!important;background-color:#020b14;box-shadow:inset 0 0 30px #020b147d,0 0 32px #8fc6dc28}
 .planet.object-visual:after{border-radius:18px}
-.planet.black-hole,.mini-planet.black-hole{background:radial-gradient(circle,#000 0 45%,#ffd99a 47%,#da6f20 50%,#44210d 56%,transparent 62%),conic-gradient(from 20deg,transparent,#f2a65255,transparent,#ffe2a588,transparent)!important;box-shadow:0 0 28px #e98b4050}
+.planet.black-hole,.mini-planet.black-hole{background:radial-gradient(circle,#000 0 45%,#ffd99a 47%,#da6f20 50%,#44210d 56%,transparent 62%),conic-gradient(from 20deg,transparent,#f2a65255,transparent,#ffe2a588,transparent)!important}
+.planet.black-hole{box-shadow:0 0 28px #e98b4050}
+.mini-planet.black-hole{box-shadow:0 0 18.2px #e98b4050}
 .chart-heading h1{max-width:360px}
 .destination-heading h2{overflow-wrap:anywhere}
 .profile{overflow:visible}
