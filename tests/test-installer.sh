@@ -77,7 +77,7 @@ grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/index.htm"
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/retro/js/navigation.js"
 grep -q '"dialTarget":"retro"' "$TARGET/stellar-archive/data/integration-nav.js"
 grep -q 'symbolCount > 6 ? "/retro/dial9.html" : "/retro/dial.html"' "$TARGET/js/address_book.js"
-grep -q 'address_book.js?v=stellar-archive-1.5.19-status' "$TARGET/address_book.htm"
+grep -q 'address_book.js?v=stellar-archive-1.5.21-status' "$TARGET/address_book.htm"
 
 # A managed add-on installed after Archive may legitimately extend the shared
 # backend and Retro navigation. A later Archive update must preserve those
@@ -122,7 +122,7 @@ perl -pi -e 's/sg1-universal-1\.5\.24/sg1-universal-1.3.0/g' "$TARGET/stellar-ar
 perl -pi -e 's/stellar-archive-1\.5\.24-status/stellar-archive-1.3.0-extended-route/g' "$TARGET/address_book.htm" "$TARGET/js/address_book.js"
 recovery_output="$("$PACKAGE_DIR/install.sh" --target "$TARGET" --replace both)"
 grep -q 'recover the interrupted 1.3.0 validation run' <<<"$recovery_output"
-grep -q '^1.5.19$' "$TARGET/.stellar-archive-addon/version"
+grep -q '^1.5.21$' "$TARGET/.stellar-archive-addon/version"
 grep -q 'mode=original' "$TARGET/address_book.htm"
 grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 

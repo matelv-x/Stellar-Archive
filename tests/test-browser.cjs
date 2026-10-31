@@ -38,7 +38,7 @@ const server=http.createServer((request,response)=>{
   }
   if(requestPath==='/stargate/get/stellar_archive_update'){
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,current_version:'1.5.19',latest_version:'1.5.19',update_available:false}));
+    response.end(JSON.stringify({success:true,current_version:'1.5.21',latest_version:'1.5.21',update_available:false}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_addons'){
@@ -285,7 +285,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.19');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.21');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));

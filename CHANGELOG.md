@@ -1,6 +1,12 @@
 # Changelog
 
-## 1.5.19
+## 1.5.21
+
+- Reconciles the artwork branch with the complete 1.5.20 maintenance history
+  after an accidental release rollback, restoring a monotonic release line
+  without discarding the new planet artwork or status illumination.
+- Corrects the interrupted-upgrade installer regression test to use the actual
+  package version instead of the stale 1.5.24 development marker.
 
 - Displays the complete approved concept artwork without hue shifts or circular
   masking in the destination profile; the catalogue uses the same artwork in
@@ -14,6 +20,31 @@
   FAN and LAN totals and preserves the two current shared-address aliases.
 - Preserves lazy image loading, managed add-on maintenance integration and the
   existing address, DHD, navigation, routing and live-status behaviour.
+
+## 1.5.20
+
+- Added Visual Volume Meter to the managed catalogue and preserved the normal
+  percentage volume display when its colour overlay is removed.
+- Added in-page install and update confirmation with visible progress, matching
+  the existing embedded-WebView-safe uninstall flow.
+- Preserved catalogue-owned detection and Archive integration declarations when
+  an add-on repository supplies a smaller maintenance manifest.
+- Refreshes only the three owned maintenance blocks when upgrading an older
+  universal installation, so new catalogue endpoints are added without
+  replacing unrelated backend integrations.
+- Updated Dynamic Wormhole and FAN113 Home detection to their verified owned
+  runtime/state markers, preventing false Installed or Available results.
+- Declared LAN Discovery's shared status manager so verified LAN changes update
+  the managed Archive snapshot instead of blocking a later Archive upgrade.
+- Verified all 15 catalogue add-ons through sequential install/uninstall tests
+  on the fully virtual FAN113 gate, including navigation cleanup, preserved
+  settings/history, current gate status, Retro rendering and Seed Ship dialing.
+- Preserved host-specific Archive HOME and DIAL routing after every managed
+  add-on change.
+- Added viewport-driven catalogue image loading and stopped live status refresh
+  from rebuilding the complete world list, eliminating duplicate image traffic.
+
+## 1.5.19
 
 - Short desktop windows now scroll the complete left catalogue panel, matching
   the destination panel on the right. Search and filter controls can move out
