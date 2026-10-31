@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 .DS_Store
 tests/validation-*.png
+/work/archive-image-builder/

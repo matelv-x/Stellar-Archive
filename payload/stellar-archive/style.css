@@ -12,7 +12,7 @@ button,a,select{ -webkit-tap-highlight-color:transparent}
 button{cursor:pointer}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--cyan);outline-offset:4px}
 button{color:inherit}
- .masthead{height:100px;flex:0 0 100px;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 3%;border-block:1px solid var(--line);background:linear-gradient(100deg,#06141cdd,#06141c66,#06141cdd);position:relative;z-index:100;overflow:visible}
+ .masthead{height:100px;flex:0 0 100px;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 3%;border-block:1px solid var(--line);background:linear-gradient(100deg,#06141cdd,#06141c66,#06141cdd);position:relative;z-index:200;overflow:visible}
 .masthead:after{content:'';position:absolute;bottom:6px;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
 .masthead-inner{width:100%;display:flex;align-items:center;justify-content:space-between;gap:24px;transform-origin:left center}
 .brand{text-decoration:none;color:#e9dfc6;display:flex;align-items:center;gap:22px;font:28px Georgia,serif;letter-spacing:.24em;white-space:nowrap;flex:0 0 auto}
@@ -41,6 +41,9 @@ button{color:inherit}
 .update-notice>div>span:last-child{font-size:10px;line-height:1.5;color:#a9c7ce}
 .update-notice button{border:1px solid #d5bd7d;background:#5c4828;color:#fff0cf;padding:9px 11px;font-size:9px;letter-spacing:.12em;white-space:nowrap}
 .update-notice .update-notice-close{position:absolute;right:9px;top:8px;border:0;background:transparent;padding:3px 6px;font-size:20px;line-height:1;color:#a9c7ce}
+.pending-destinations-notice{top:108px;border-color:#6cc8d7;background:linear-gradient(90deg,#062532f2,#0b3440f2);box-shadow:0 10px 35px #000b,0 0 18px #72ddeb30}
+.pending-destinations-notice.update-stacked{top:218px}
+.pending-destinations-notice strong{color:#aef4ff}
 .workspace{display:grid;grid-template-columns:minmax(0,23fr) minmax(0,52fr) minmax(0,25fr);gap:14px;padding:22px 20px 14px;min-height:0;height:auto;max-height:none;flex:1 1 auto}
 .panel{position:relative;border:1px solid #9c8e6470;background:linear-gradient(145deg,#04151ddd,#020f16e8);box-shadow:inset 0 0 24px #0008,0 0 12px #79dbe509;min-width:0}
 .panel:before,.panel:after{content:'';position:absolute;width:35px;height:23px;border-color:var(--gold);pointer-events:none;z-index:5}
@@ -192,6 +195,13 @@ dialog p{font-size:14px;line-height:1.9}
 .dialog-maintenance button:hover{border-color:#73d5e8;color:#fff}
 .dialog-maintenance button.danger{border-color:#a65a5f;color:#ffb9bc}
 .dialog-maintenance button:disabled{opacity:.38;cursor:not-allowed}
+.pending-destinations-list{display:grid;gap:8px;max-height:42vh;overflow:auto;padding-right:6px}
+.pending-destination{padding:10px 12px;border:1px solid #31515c;background:#020d14a8}
+.pending-destination strong{display:block;color:#e7d7ad;font:15px Georgia,serif;letter-spacing:.08em}
+.pending-destination span{display:block;margin-top:5px;color:#8fcad5;font-size:9px;letter-spacing:.12em}
+#pending-destinations-dialog .dialog-actions{justify-content:flex-start}
+#pending-destinations-dialog .dialog-actions button{border:1px solid #4d9aae;background:#071d27;color:#c9edf2;padding:10px 13px;font-size:9px;letter-spacing:.12em;cursor:pointer}
+#close-pending-destinations{position:absolute;right:12px;top:8px;background:none;border:0;font-size:30px;color:#d7c69a}
 .addon-manager{margin-top:16px;padding-top:14px;border-top:1px solid #31515c}
 .addon-manager-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .addon-manager-heading h3{margin:0}

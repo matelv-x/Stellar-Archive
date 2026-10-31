@@ -113,6 +113,66 @@ http://DEVICE-HOSTNAME.local/stellar-archive/
 The Gaia artwork, credits and licence remain documented in
 `GAIA-ASSET-LICENCE.md`.
 
+## Archive Image Builder
+
+The Archive compares its packaged records with the read-only live address book.
+An unfamiliar name/address pair, changed address, or new alias produces an
+`ARCHIVE IMAGE BUILDER` notice. The browser can export only the destination
+name, category and stored glyph sequence; live IP addresses and credentials are
+never included. Detection does not add a record or modify the running gate.
+
+Move the downloaded JSON to a trusted Mac checkout and prepare a review:
+
+```bash
+python3 archive_image_builder.py detect \
+  --address-book ~/Downloads/stellar-archive-pending-YYYY-MM-DD.json \
+  --output work/archive-image-builder/pending.json
+python3 archive_image_builder.py research \
+  --pending work/archive-image-builder/pending.json \
+  --output work/archive-image-builder/review.json
+open work/archive-image-builder/review.html
+```
+
+Research failures do not block the review: the candidate is marked as an
+independent fictional concept. Source matches and generated descriptions are
+always candidates, never automatically accepted facts.
+
+Image creation is locked until a person approves the generation stage. The
+optional OpenAI provider reads `OPENAI_API_KEY` only from the Mac environment;
+the key is never stored in the repository, browser or Raspberry Pi:
+
+```bash
+python3 archive_image_builder.py approve \
+  --review work/archive-image-builder/review.json --id DESTINATION \
+  --stage generation --yes
+OPENAI_API_KEY=... python3 archive_image_builder.py generate \
+  --review work/archive-image-builder/review.json --id DESTINATION
+```
+
+An image made by another reviewed tool can be imported instead:
+
+```bash
+python3 archive_image_builder.py import-image \
+  --review work/archive-image-builder/review.json --id DESTINATION \
+  --image /path/to/candidate.png
+```
+
+After inspecting the refreshed HTML approval page, a separate Archive approval
+is required. Applying it updates only local release sources, preserves the
+stored glyph sequence, appends Earth point-of-origin glyph 1 only to the full
+display address, copies a new versioned PNG, and rebuilds the thumbnail sprite:
+
+```bash
+python3 archive_image_builder.py approve \
+  --review work/archive-image-builder/review.json --id DESTINATION \
+  --stage archive --yes
+python3 archive_image_builder.py apply \
+  --review work/archive-image-builder/review.json --id DESTINATION
+```
+
+The builder never commits, pushes, publishes a release, deploys to a gate,
+restarts a service, dials an address, or sends a hardware command.
+
 ## License
 
 Original Stellar Archive software is released under the MIT License. See

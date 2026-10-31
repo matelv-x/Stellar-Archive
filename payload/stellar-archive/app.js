@@ -14,6 +14,7 @@ function integrationHomeHref(){
 }
 let selected=worlds[0],visible=[];
 let liveGateStatuses=new Map(),liveStatusState='checking',liveStatusSignature='';
+let pendingDestinations=[];
 const motionEpoch=performance.now();
 let motionNodes=[],motionFrame=0,lastMotionUpdate=0;
 const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -61,6 +62,59 @@ function gateGlowClass(world,live=gateStatus(world)){
  if(world.category==='lan')return 'status-lan';
  if(world.category==='fan')return `status-${live.className}`;
  return 'status-unknown';
+}
+const normalizedDestinationName=value=>String(value||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function pendingDestinationCandidates(entries){
+ const candidates=[];
+ const seen=new Set();
+ for(const entry of entries){
+  const name=String(entry.name||entry.gate_name||entry.gateName||'').trim();
+  if(!name||!Array.isArray(entry.gate_address)||!entry.gate_address.length)continue;
+  const storedAddress=entry.gate_address.map(Number);
+  if(storedAddress.some(glyph=>!Number.isInteger(glyph)||glyph<1||glyph>39))continue;
+  const nameKey=normalizedDestinationName(name);
+  const address=addressKey(storedAddress);
+  const exact=worlds.find(world=>normalizedDestinationName(world.name)===nameKey&&addressKey(world.storedAddress)===address);
+  if(exact)continue;
+  const sameAddress=worlds.filter(world=>addressKey(world.storedAddress)===address);
+  const sameName=worlds.filter(world=>normalizedDestinationName(world.name)===nameKey);
+  const reason=sameAddress.length?'alias-or-renamed':sameName.length?'address-changed':'new-address';
+  const identity=`${nameKey}|${address}`;
+  if(seen.has(identity))continue;
+  seen.add(identity);
+  candidates.push({
+   name,
+   category:['standard','fan','lan'].includes(entry.type)?entry.type:'fan',
+   storedAddress,
+   reason,
+   existingMatches:[...new Set([...sameAddress,...sameName].map(world=>world.name))]
+  });
+ }
+ return candidates;
+}
+function renderPendingDestinations(entries){
+ pendingDestinations=pendingDestinationCandidates(entries);
+ const notice=$('#pending-destinations-notice');
+ notice.hidden=!pendingDestinations.length;
+ syncPendingNoticePosition();
+ if(!pendingDestinations.length)return;
+ const count=pendingDestinations.length;
+ $('#pending-destinations-title').textContent=`${count} ${count===1?'DESTINATION':'DESTINATIONS'} AWAITING REVIEW`;
+ $('#pending-destinations-copy').textContent='Detected in the live address book; Archive data and artwork remain unchanged.';
+ $('#pending-destinations-list').innerHTML=pendingDestinations.map(candidate=>`<article class="pending-destination"><strong>${escapeHtml(candidate.name)}</strong><span>${escapeHtml(candidate.category.toUpperCase())} · ${candidate.storedAddress.join(' · ')} · ${escapeHtml(candidate.reason.replaceAll('-',' ').toUpperCase())}</span>${candidate.existingMatches.length?`<span>RELATED ARCHIVE RECORDS: ${escapeHtml(candidate.existingMatches.join(' · '))}</span>`:''}</article>`).join('');
+}
+function syncPendingNoticePosition(){
+ const pending=$('#pending-destinations-notice');
+ if(pending)pending.classList.toggle('update-stacked',!$('#update-notice').hidden);
+}
+function pendingDestinationsExport(){
+ return {
+  schemaVersion:1,
+  generatedAt:new Date().toISOString(),
+  source:'Stellar Archive read-only live address-book comparison',
+  archiveRecordCount:worlds.length,
+  destinations:pendingDestinations.map(candidate=>({...candidate}))
+ };
 }
 function renderGateSummary(counts){
  $('#online-count').textContent=counts?.online??'—';
@@ -403,11 +457,11 @@ function showAutomaticUpdateSummary(summary){
  automaticUpdateSummary=summary?.count?summary:null;
  const notice=$('#update-notice');
  updateAboutUpdateIndicator();
- if(!automaticUpdateSummary){notice.hidden=true;return}
+ if(!automaticUpdateSummary){notice.hidden=true;syncPendingNoticePosition();return}
  const signature=updateSummarySignature(automaticUpdateSummary);
  let dismissed='';
  try{dismissed=sessionStorage.getItem(dismissedUpdateStorageKey)||''}catch(error){}
- if(dismissed===signature){notice.hidden=true;return}
+ if(dismissed===signature){notice.hidden=true;syncPendingNoticePosition();return}
  const archiveCount=automaticUpdateSummary.archiveLatest?1:0;
  const addonCount=automaticUpdateSummary.addonUpdates.length;
  const parts=[];
@@ -416,6 +470,7 @@ function showAutomaticUpdateSummary(summary){
  $('#update-notice-title').textContent=automaticUpdateSummary.count===1?'1 UPDATE AVAILABLE':`${automaticUpdateSummary.count} UPDATES AVAILABLE`;
  $('#update-notice-copy').textContent=`${parts.join(' and ')} ${automaticUpdateSummary.count===1?'is':'are'} ready to review.`;
  notice.hidden=false;
+ syncPendingNoticePosition();
 }
 function cachedAutomaticUpdateSummary(){
  try{
@@ -453,10 +508,11 @@ async function checkUpdatesAutomatically({force=false}={}){
  showAutomaticUpdateSummary(summary);
  return summary;
 }
-$('#update-notice-open').addEventListener('click',()=>{$('#update-notice').hidden=true;showAboutDialog()});
+$('#update-notice-open').addEventListener('click',()=>{$('#update-notice').hidden=true;syncPendingNoticePosition();showAboutDialog()});
 $('#update-notice-close').addEventListener('click',()=>{
  if(automaticUpdateSummary){try{sessionStorage.setItem(dismissedUpdateStorageKey,updateSummarySignature(automaticUpdateSummary))}catch(error){}}
  $('#update-notice').hidden=true;
+ syncPendingNoticePosition();
 });
 function setMaintenanceBusy(busy,message){
  $('#check-archive-update').disabled=busy;
@@ -739,6 +795,18 @@ $('#uninstall-archive').addEventListener('click',async()=>{
 });
 $('#close-dialog').addEventListener('click',()=>$('#details').close());
 $('#details').addEventListener('click',event=>{if(event.target===$('#details')){const r=event.target.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)event.target.close()}});
+$('#pending-destinations-open').addEventListener('click',()=>$('#pending-destinations-dialog').showModal());
+$('#close-pending-destinations').addEventListener('click',()=>$('#pending-destinations-dialog').close());
+$('#pending-destinations-dialog').addEventListener('click',event=>{if(event.target===$('#pending-destinations-dialog')){const r=event.target.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)event.target.close()}});
+$('#download-pending-destinations').addEventListener('click',()=>{
+ const blob=new Blob([`${JSON.stringify(pendingDestinationsExport(),null,2)}\n`],{type:'application/json'});
+ const url=URL.createObjectURL(blob);
+ const link=document.createElement('a');
+ link.href=url;
+ link.download=`stellar-archive-pending-${new Date().toISOString().slice(0,10)}.json`;
+ link.click();
+ window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
 async function refreshGateStatuses(){
  const controller=new AbortController();
  const timeout=window.setTimeout(()=>controller.abort(),5000);
@@ -752,6 +820,7 @@ async function refreshGateStatuses(){
   const [payload,dialingStatus]=await Promise.all([bookResponse.json(),statusResponse.json()]);
   updateInstalledGateName(dialingStatus.gate_name);
   const entries=Object.values(payload.address_book||{});
+  renderPendingDestinations(entries);
   const directoryFresh=payload.status_freshness?.stale===false;
   const localAddress=Array.isArray(dialingStatus.local_address)?addressKey(dialingStatus.local_address):'';
   const v3=dialingStatus.platform==='sg1_v3'||payload.platform==='sg1_v3';

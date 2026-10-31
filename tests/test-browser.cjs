@@ -24,12 +24,13 @@ const server=http.createServer((request,response)=>{
   if(requestPath==='/stargate/get/address_book'){
     response.writeHead(200,{'content-type':'application/json'});
     response.end(JSON.stringify({status_freshness:{stale:false},address_book:{
-      standard:{type:'standard',gate_address:[27,7,15,32,12,30]},
-      local:{type:'fan',gate_address:[7,5,20,27,32,21],is_gate_online:0},
-      remote:{type:'fan',gate_address:[21,12,19,3,23,33],is_gate_online:statusRevision},
-      lan:{type:'lan',gate_address:[3,7,11,19,22,30,34,36],is_gate_online:1},
-      highlander:{type:'lan',gate_address:[14,3,4,22,38,35],is_gate_online:1},
-      solarTalon:{type:'fan',gate_address:[21,5,29,10,14,34],is_gate_online:1}
+      standard:{name:'ABYDOS',type:'standard',gate_address:[27,7,15,32,12,30]},
+      local:{name:'Kristian Tysse',type:'fan',gate_address:[7,5,20,27,32,21],is_gate_online:0},
+      remote:{name:'Tesseract',type:'fan',gate_address:[21,12,19,3,23,33],is_gate_online:statusRevision},
+      lan:{name:'Seed Ship#1',type:'lan',gate_address:[3,7,11,19,22,30,34,36],is_gate_online:1},
+      highlander:{name:'Highlander',type:'lan',gate_address:[14,3,4,22,38,35],is_gate_online:1},
+      solarTalon:{name:'Solar Talon',type:'fan',gate_address:[21,5,29,10,14,34],is_gate_online:1},
+      pending:{name:'New Test World',type:'fan',gate_address:[2,4,6,8,10,12],is_gate_online:0,ip:'192.0.2.44'}
     }}));
     return;
   }
@@ -116,6 +117,25 @@ const server=http.createServer((request,response)=>{
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=original`);
     await page.waitForSelector('#select-address');
     await page.waitForTimeout(500);
+    await page.waitForSelector('#pending-destinations-notice:not([hidden])');
+    assert.strictEqual(await page.locator('#pending-destinations-title').textContent(),'1 DESTINATION AWAITING REVIEW');
+    assert.deepStrictEqual(await page.evaluate(()=>pendingDestinationsExport().destinations),[{
+      name:'New Test World',category:'fan',storedAddress:[2,4,6,8,10,12],reason:'new-address',existingMatches:[]
+    }]);
+    assert(!(await page.evaluate(()=>JSON.stringify(pendingDestinationsExport()))).includes('192.0.2.44'),'pending export must not include live private fields');
+    await page.locator('#pending-destinations-open').click();
+    await page.waitForSelector('#pending-destinations-dialog[open]');
+    assert((await page.locator('#pending-destinations-list').textContent()).includes('New Test World'));
+    const [pendingDownload]=await Promise.all([
+      page.waitForEvent('download'),
+      page.locator('#download-pending-destinations').click()
+    ]);
+    const downloadedPending=JSON.parse(await fs.promises.readFile(await pendingDownload.path(),'utf8'));
+    assert.deepStrictEqual(downloadedPending.destinations,[{
+      name:'New Test World',category:'fan',storedAddress:[2,4,6,8,10,12],reason:'new-address',existingMatches:[]
+    }]);
+    assert(!JSON.stringify(downloadedPending).includes('192.0.2.44'),'downloaded pending file must not include live private fields');
+    await page.locator('#close-pending-destinations').click();
     assert.deepStrictEqual(await page.locator('#category option').allTextContents(),['ALL 131 RECORDS','STANDARD · 35','FAN · 94','LAN · 2']);
     const spriteThumbnails=await page.locator('#worlds .mini-planet > .mini-planet-image').count();
     const archiveImageData=await page.evaluate(()=>({

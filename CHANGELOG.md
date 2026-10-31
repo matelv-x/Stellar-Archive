@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Detects live address-book destinations that are new, renamed aliases or use a
+  changed glyph sequence, and exposes a privacy-bounded JSON export without
+  modifying the packaged Archive.
+- Adds the Mac-only Archive Image Builder workflow for source research, prompt
+  preparation, explicit generation approval, optional image generation or PNG
+  import, visual review, separate Archive approval and transactional local
+  source updates. The tool never publishes, deploys, restarts or dials.
+
 ## 1.5.22
 
 - Checks GitHub automatically for a newer Stellar Archive release and newer
