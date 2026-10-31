@@ -342,9 +342,8 @@ dialog p{font-size:14px;line-height:1.9}
 .planet:after{content:'';position:absolute;inset:0;border-radius:18px;background:linear-gradient(135deg,#ffffff12,transparent 42%,#01080b45);pointer-events:none}
 .planet{position:relative;background-image:var(--planet-image)!important;background-size:cover!important;background-position:center!important;filter:none}
 .mini-planet{overflow:visible}
-.mini-planet>img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;filter:none;z-index:1}
+.mini-planet-image{position:absolute;inset:0;border-radius:50%;background-image:url('assets/optimized/e5e7a3cbc719d11091d92f37573dd9940e5f0e5ae9919f77acb404530957fa49.webp');background-size:1200% 1100%;background-position:var(--thumb-x) var(--thumb-y);background-repeat:no-repeat;z-index:1}
 .mini-planet.object-visual{border-radius:50%;background-size:contain!important;background-color:#020b14;box-shadow:0 0 0 2px #020b14,0 0 11px currentColor}
-.mini-planet.object-visual>img{object-fit:contain}
 .planet.object-visual{width:100%;height:100%;aspect-ratio:auto;border-radius:18px;background-size:contain!important;background-repeat:no-repeat!important;background-color:#020b14;box-shadow:inset 0 0 30px #020b147d,0 0 32px #8fc6dc28}
 .planet.object-visual:after{border-radius:18px}
 .planet.black-hole,.mini-planet.black-hole{background:radial-gradient(circle,#000 0 45%,#ffd99a 47%,#da6f20 50%,#44210d 56%,transparent 62%),conic-gradient(from 20deg,transparent,#f2a65255,transparent,#ffe2a588,transparent)!important;box-shadow:0 0 28px #e98b4050}

@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""Build one small WebP sprite for every catalogue thumbnail."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent
+ARCHIVE = ROOT / "payload" / "stellar-archive"
+ASSETS = ARCHIVE / "assets"
+DATA = ARCHIVE / "data" / "worlds.json"
+OUTPUT = ASSETS / "optimized"
+TILE_SIZE = 128
+COLUMNS = 12
+
+
+def run(*args: str | Path) -> None:
+    subprocess.run([str(arg) for arg in args], check=True)
+
+
+def main() -> None:
+    if shutil.which("magick") is None:
+        raise SystemExit("ImageMagick 'magick' is required")
+
+    worlds = json.loads(DATA.read_text(encoding="utf-8"))["worlds"]
+    if not worlds:
+        raise SystemExit("catalogue has no worlds")
+
+    with tempfile.TemporaryDirectory(prefix="stellar-catalogue-sprite-") as temp:
+        temp_path = Path(temp)
+        tiles: list[Path] = []
+        for index, world in enumerate(worlds):
+            source = ASSETS / world["visualAsset"]
+            if not source.is_file():
+                raise SystemExit(f"missing visual asset: {source}")
+            tile = temp_path / f"{index:03d}.png"
+            geometry = f"{TILE_SIZE - 16}x{TILE_SIZE - 16}" if world.get("visualMode") == "object" else f"{TILE_SIZE}x{TILE_SIZE}^"
+            run(
+                "magick",
+                source,
+                "-auto-orient",
+                "-thumbnail",
+                geometry,
+                "-gravity",
+                "center",
+                "-background",
+                "#020b14",
+                "-extent",
+                f"{TILE_SIZE}x{TILE_SIZE}",
+                tile,
+            )
+            tiles.append(tile)
+
+        blank = temp_path / "blank.png"
+        run("magick", "-size", f"{TILE_SIZE}x{TILE_SIZE}", "xc:#020b14", blank)
+        rows: list[Path] = []
+        for row_index in range(0, len(tiles), COLUMNS):
+            row_tiles = tiles[row_index : row_index + COLUMNS]
+            row_tiles.extend([blank] * (COLUMNS - len(row_tiles)))
+            row = temp_path / f"row-{len(rows):02d}.png"
+            run("magick", *row_tiles, "+append", row)
+            rows.append(row)
+
+        sprite = temp_path / "catalogue-planets.webp"
+        run("magick", *rows, "-append", "-quality", "82", sprite)
+        digest = hashlib.sha256(sprite.read_bytes()).hexdigest()
+        OUTPUT.mkdir(parents=True, exist_ok=True)
+        destination = OUTPUT / f"{digest}.webp"
+        shutil.copyfile(sprite, destination)
+
+    rows = (len(worlds) + COLUMNS - 1) // COLUMNS
+    print(f"worlds={len(worlds)} columns={COLUMNS} rows={rows} tile={TILE_SIZE}")
+    print(destination.relative_to(ARCHIVE))
+
+
+if __name__ == "__main__":
+    main()

@@ -14,8 +14,8 @@ function integrationHomeHref(){
 }
 let selected=worlds[0],visible=[];
 let liveGateStatuses=new Map(),liveStatusState='checking',liveStatusSignature='';
-let miniPlanetObserver=null;
-let miniPlanetObserverLayout='';
+const thumbnailSpriteColumns=12;
+const thumbnailSpriteRows=Math.ceil(worlds.length/thumbnailSpriteColumns);
 const motionEpoch=performance.now();
 let motionNodes=[],motionFrame=0,lastMotionUpdate=0;
 const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -74,8 +74,13 @@ function worldButton(w){
  const live=gateStatus(w);
  const status=live?`<span class="owner-status ${live.className}">${live.label}</span>`:'';
  const objectClass=w.visualMode==='object'?' object-visual':'';
- const image=w.visualAsset?`<img data-src="assets/${escapeHtml(w.visualAsset)}" loading="lazy" decoding="async" alt="">`:'';
- return `<button class="world ${w.id===selected.id?'active':''}" data-id="${escapeHtml(w.id)}" aria-pressed="${w.id===selected.id}" aria-label="Explore ${escapeHtml(w.name)}"><span class="mini-planet ${visualClass(w)}${objectClass} ${gateGlowClass(w,live)}" aria-hidden="true">${image}</span><span class="world-text"><span class="world-name">${escapeHtml(w.name)}</span><span class="world-symbols">${w.category.toUpperCase()} · ${w.addressLength} SYMBOLS</span>${status}</span><span class="world-arrow">›</span></button>`;
+ const spriteIndex=worlds.indexOf(w);
+ const column=spriteIndex%thumbnailSpriteColumns;
+ const row=Math.floor(spriteIndex/thumbnailSpriteColumns);
+ const x=column*100/(thumbnailSpriteColumns-1);
+ const y=row*100/(thumbnailSpriteRows-1);
+ const thumbnail=w.visualAsset?`<span class="mini-planet-image" style="--thumb-x:${x.toFixed(6)}%;--thumb-y:${y.toFixed(6)}%"></span>`:'';
+ return `<button class="world ${w.id===selected.id?'active':''}" data-id="${escapeHtml(w.id)}" aria-pressed="${w.id===selected.id}" aria-label="Explore ${escapeHtml(w.name)}"><span class="mini-planet ${visualClass(w)}${objectClass} ${gateGlowClass(w,live)}" aria-hidden="true">${thumbnail}</span><span class="world-text"><span class="world-name">${escapeHtml(w.name)}</span><span class="world-symbols">${w.category.toUpperCase()} · ${w.addressLength} SYMBOLS</span>${status}</span><span class="world-arrow">›</span></button>`;
 }
 function glyphBox(n,i,total){
  const origin=i===total-1;
@@ -133,30 +138,12 @@ function updateRenderedGateStatuses(){
  const live=gateStatus(selected);
  $('#record-state').innerHTML=`<i></i> ${live.label}`;
 }
-function observeMiniPlanetImages(){
- const images=[...document.querySelectorAll('#worlds .mini-planet > img[data-src]')];
- if(!('IntersectionObserver' in window)){images.forEach(image=>{image.src=image.dataset.src;delete image.dataset.src});return}
- miniPlanetObserver?.disconnect();
- const mobile=document.documentElement.classList.contains('mobile-layout');
- const shortWindow=document.documentElement.classList.contains('short-window-layout');
- const root=shortWindow?$('.catalogue'):$('#worlds');
- const rootMargin=mobile?'0px 600px':'600px 0px';
- miniPlanetObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
-  if(!entry.isIntersecting)return;
-  const image=entry.target;
-  image.src=image.dataset.src;
-  delete image.dataset.src;
-  miniPlanetObserver.unobserve(image);
- }),{root,rootMargin});
- images.forEach(image=>miniPlanetObserver.observe(image));
-}
 function render(){
  visible=filtered();
  if(visible.length&&!visible.some(w=>w.id===selected.id))selected=visible[0];
  $('#world-count').textContent=String(visible.length).padStart(3,'0');
  $('#empty').hidden=visible.length>0;
  $('#worlds').innerHTML=visible.map(worldButton).join('');
- observeMiniPlanetImages();
  renderSelection();
 }
 function renderAddressPath(world){
@@ -277,13 +264,8 @@ function fitArchiveToWindow(){
  const height=window.innerHeight;
  const mobile=window.matchMedia('(max-width:600px)').matches;
  const shortWindow=!mobile&&height<900;
- const imageLayout=mobile?'mobile':shortWindow?'short':'desktop';
  document.documentElement.classList.toggle('mobile-layout',mobile);
  document.documentElement.classList.toggle('short-window-layout',shortWindow);
- if(miniPlanetObserverLayout!==imageLayout){
-  miniPlanetObserverLayout=imageLayout;
-  window.requestAnimationFrame(observeMiniPlanetImages);
- }
  if(mobile){
   shell.style.zoom='1';
   shell.style.width='100%';

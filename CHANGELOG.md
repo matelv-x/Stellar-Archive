@@ -7,6 +7,9 @@
   without discarding the new planet artwork or status illumination.
 - Corrects the interrupted-upgrade installer regression test to use the actual
   package version instead of the stale 1.5.24 development marker.
+- Replaces 131 independently deferred catalogue thumbnails with one preloaded,
+  content-addressed WebP sprite, so rapid full-screen scrolling never exposes
+  the fallback colour spheres and still avoids downloading full-size artwork.
 
 - Displays the complete approved concept artwork without hue shifts or circular
   masking in the destination profile; the catalogue uses the same artwork in

@@ -80,7 +80,7 @@ const server=http.createServer((request,response)=>{
     return;
   }
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/stellar-archive\/?/,'').replace(/^\//,'');
-  if(/^assets\/.*\.png$/.test(relative))staticImageRequests.push(relative);
+  if(/^assets\/.*\.(?:png|webp)$/.test(relative))staticImageRequests.push(relative);
   if(relative.startsWith('data/integration-nav.js')){
     const items=[
       {label:'HOME',href:'/retro/dial.html'},
@@ -115,17 +115,27 @@ const server=http.createServer((request,response)=>{
     await page.waitForSelector('#select-address');
     await page.waitForTimeout(500);
     assert.deepStrictEqual(await page.locator('#category option').allTextContents(),['ALL 131 RECORDS','STANDARD · 35','FAN · 94','LAN · 2']);
-    const lazyThumbnails=await page.locator('#worlds .mini-planet > img[loading="lazy"][decoding="async"]').count();
+    const spriteThumbnails=await page.locator('#worlds .mini-planet > .mini-planet-image').count();
     const archiveImageData=await page.evaluate(()=>({
       assetCount:window.STELLAR_ARCHIVE_DATA.worlds.filter(world=>world.visualAsset).length,
       assets:window.STELLAR_ARCHIVE_DATA.worlds.map(world=>world.visualAsset).filter(Boolean)
     }));
-    assert.strictEqual(lazyThumbnails,archiveImageData.assetCount);
+    assert.strictEqual(spriteThumbnails,archiveImageData.assetCount);
     const visualAssets=new Set(archiveImageData.assets.map(asset=>`assets/${asset}`));
     const initialVisualRequests=staticImageRequests.filter(asset=>visualAssets.has(asset));
-    assert(initialVisualRequests.length<20,`expected lazy initial planet loading, received ${initialVisualRequests.length} requests`);
+    assert(initialVisualRequests.length<=2,`catalogue loaded more than the selected full-size planet artwork: ${initialVisualRequests.length} requests`);
     const requestCounts=initialVisualRequests.reduce((counts,asset)=>counts.set(asset,(counts.get(asset)||0)+1),new Map());
     assert(Math.max(0,...requestCounts.values())<=2,'the same planet asset was downloaded more than twice');
+    const spriteRequests=staticImageRequests.filter(asset=>/^assets\/optimized\/[a-f0-9]{64}\.webp$/.test(asset));
+    assert.strictEqual(spriteRequests.length,1,'the content-addressed catalogue sprite must be downloaded exactly once');
+    await page.evaluate(()=>{const list=document.querySelector('#worlds');for(const ratio of [.95,.15,.75,.35,1])list.scrollTop=(list.scrollHeight-list.clientHeight)*ratio});
+    const rapidScrollThumbnails=await page.evaluate(()=>{
+      const list=document.querySelector('#worlds');
+      const bounds=list.getBoundingClientRect();
+      return [...list.querySelectorAll('.world')].filter(row=>{const rect=row.getBoundingClientRect();return rect.bottom>bounds.top&&rect.top<bounds.bottom}).map(row=>getComputedStyle(row.querySelector('.mini-planet-image')).backgroundImage);
+    });
+    assert(rapidScrollThumbnails.length>0&&rapidScrollThumbnails.every(image=>image.includes('/assets/optimized/')),'rapid full-screen scrolling must keep every visible planet thumbnail assigned');
+    await page.evaluate(()=>{document.querySelector('#worlds').scrollTop=0});
     assert.strictEqual(new Set(archiveImageData.assets).size,131,'each archive record must have its own visual asset');
     assert.deepStrictEqual(await page.evaluate(()=>{
       const approved={
@@ -140,7 +150,7 @@ const server=http.createServer((request,response)=>{
     }),[],'one or more records did not receive its mapped concept image');
     const artworkPresentation=await page.evaluate(()=>{
       const thumbnail=document.querySelector('[data-id="standard-001-abydos"] .mini-planet');
-      const image=thumbnail.querySelector('img');
+      const image=thumbnail.querySelector('.mini-planet-image');
       const profile=document.querySelector('#planet');
       return {
         thumbnailRadius:getComputedStyle(thumbnail).borderRadius,
@@ -393,15 +403,9 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(layout.worldsOverflow,'visible','planet list must not trap scrolling inside its own viewport');
     assert(layout.worldsOverflowAmount<=40,'planet list must expand to its complete height apart from the decorative status corona');
     assert(layout.bodyScroll.width<=1256+1&&layout.bodyScroll.height<=768+1,'application must remain bounded by the small window');
-    await page.waitForTimeout(200);
-    const deferredShortWindowImages=await page.locator('#worlds .mini-planet > img[data-src]').count();
-    assert(deferredShortWindowImages>60,'short-window layout must not request every full-size planet image at once');
+    assert.strictEqual(await page.locator('#worlds .mini-planet > .mini-planet-image').count(),131,'short-window layout must retain every sprite thumbnail');
     await page.locator('#worlds .world').last().scrollIntoViewIfNeeded();
-    await page.locator('#worlds .world').last().locator('.mini-planet > img').evaluate(image=>new Promise((resolve,reject)=>{
-      if(image.complete&&image.naturalWidth)return resolve();
-      image.addEventListener('load',resolve,{once:true});
-      image.addEventListener('error',()=>reject(new Error('last planet thumbnail failed to load after scrolling')),{once:true});
-    }));
+    assert((await page.locator('#worlds .world').last().locator('.mini-planet-image').evaluate(node=>getComputedStyle(node).backgroundImage)).includes('/assets/optimized/'),'last planet must use the preloaded sprite after scrolling');
     const lastRecordScroll=await page.evaluate(()=>({
       scrollY:window.scrollY,
       catalogueScrollTop:document.querySelector('.catalogue').scrollTop,
@@ -416,7 +420,7 @@ const server=http.createServer((request,response)=>{
     assert(lastRecordScroll.last.top>=lastRecordScroll.catalogue.top-1&&lastRecordScroll.last.bottom<=lastRecordScroll.catalogue.bottom+1,'last planet must be reachable inside the left-panel scroll area');
     assert(lastRecordScroll.chartTop>=0&&lastRecordScroll.destinationTop>=0,'galaxy and destination panels must remain fixed while the catalogue scrolls');
     await page.evaluate(()=>{document.querySelector('.catalogue').scrollTop=0});
-    assert(await page.locator('#worlds .world').first().locator('.mini-planet > img').evaluate(image=>image.complete&&image.naturalWidth>0),'a loaded planet thumbnail must remain visible after scrolling away and back');
+    assert((await page.locator('#worlds .world').first().locator('.mini-planet-image').evaluate(node=>getComputedStyle(node).backgroundImage)).includes('/assets/optimized/'),'first planet thumbnail must remain assigned after scrolling away and back');
     await page.screenshot({path:path.join(__dirname,'validation-header-small.png'),fullPage:false});
     await page.setViewportSize({width:980,height:700});
     await page.waitForFunction(()=>Math.abs(Number(document.querySelector('#archive-shell').dataset.scale)-.7)<.002);
