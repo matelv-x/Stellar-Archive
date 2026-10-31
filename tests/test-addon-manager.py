@@ -165,15 +165,22 @@ class AddonManagerTests(unittest.TestCase):
         updater.mkdir(parents=True)
         archive_data.mkdir(parents=True)
         (state / "current-mode").write_text("both\n", encoding="utf-8")
+        (state / "home-routes.json").write_text(
+            '{"ll.highlandergate.com":"/stargate/dial"}\n',
+            encoding="utf-8",
+        )
         (updater / "build_navigation.py").write_text(
             "import argparse, pathlib\n"
-            "p=argparse.ArgumentParser(); p.add_argument('--target'); p.add_argument('--mode'); p.add_argument('--output')\n"
-            "a=p.parse_args(); pathlib.Path(a.output).write_text(a.mode + ':' + a.target, encoding='utf-8')\n",
+            "p=argparse.ArgumentParser(); p.add_argument('--target'); p.add_argument('--mode'); p.add_argument('--output'); p.add_argument('--home-routes-file')\n"
+            "a=p.parse_args(); routes=pathlib.Path(a.home_routes_file).read_text(encoding='utf-8').strip(); pathlib.Path(a.output).write_text(a.mode + ':' + a.target + ':' + routes, encoding='utf-8')\n",
             encoding="utf-8",
         )
         self.assertTrue(self.manager._refresh_archive_navigation(self.manager.config()))
         result = (archive_data / "integration-nav.js").read_text(encoding="utf-8")
-        self.assertEqual(result, "both:" + str(self.web.resolve()))
+        self.assertEqual(
+            result,
+            "both:" + str(self.web.resolve()) + ':{"ll.highlandergate.com":"/stargate/dial"}',
+        )
 
     def test_refreshes_managed_snapshots_after_verified_addon_changes(self):
         managed = self.web / ".stellar-archive-addon" / "managed"

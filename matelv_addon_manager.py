@@ -75,13 +75,17 @@ class MatelvAddonManager:
         if mode not in ("original", "retro", "both", "standalone"):
             raise RuntimeError("Archive integration mode is invalid")
         temporary = output.with_name(output.name + ".tmp")
-        result = self._run([
+        command = [
             sys.executable,
             str(builder),
             "--target", str(target),
             "--mode", mode,
             "--output", str(temporary),
-        ], timeout=30)
+        ]
+        home_routes = state_dir / "home-routes.json"
+        if home_routes.is_file():
+            command.extend(["--home-routes-file", str(home_routes)])
+        result = self._run(command, timeout=30)
         if result.returncode:
             try:
                 temporary.unlink()
