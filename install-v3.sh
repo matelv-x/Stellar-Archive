@@ -193,14 +193,14 @@ for file in install.sh install-v3.sh install-v4.sh patch_v3_main.py patch_v4_web
 done
 chmod 755 "$updater/install.sh" "$updater/install-v3.sh" "$updater/install-v4.sh"
 cat > "$MAINTENANCE_CONFIG" <<EOF
-{"version":"1.5.22","platform":"v3","target":"$TARGET","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh","restart_service":"$RESTART_SERVICE"}
+{"version":"1.5.23","platform":"v3","target":"$TARGET","repository":"matelv-x/Stellar-Archive","installer":"$updater/install.sh","restart_service":"$RESTART_SERVICE"}
 EOF
 chmod 644 "$MAINTENANCE_CONFIG"
-printf '1.5.22\n' > "$STATE/version"
+printf '1.5.23\n' > "$STATE/version"
 
 host_name="$(hostname -s 2>/dev/null || true)"
 host_ip="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
-note 'Installed Stellar Archive 1.5.22 for SG1_v3.'
+note 'Installed Stellar Archive 1.5.23 for SG1_v3.'
 [[ -n "$host_ip" ]] && note "LAN URL after restart: http://$host_ip/stellar-archive/"
 [[ -n "$host_name" ]] && note "Local-name URL after restart: http://$host_name.local/stellar-archive/"
 note "Safety backup: $backup"

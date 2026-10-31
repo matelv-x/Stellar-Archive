@@ -36,11 +36,11 @@ if grep -q 'STELLAR_ARCHIVE_GATE_STATUS' "$TARGET/js/address_book.js" "$TEST_ROO
 fi
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace standalone >/dev/null
-grep -q '^1.5.22$' "$TARGET/.stellar-archive-addon/version"
+grep -q '^1.5.23$' "$TARGET/.stellar-archive-addon/version"
 grep -q 'STELLAR_ARCHIVE_GATE_STATUS START' "$TARGET/js/address_book.js"
 grep -q 'STELLAR_ARCHIVE_GATE_STATUS_BEGIN' "$TEST_ROOT/home/pi/sg1_v4/classes/web_server.py"
 grep -q 'STELLAR_ARCHIVE_DIRECTORY_RETRY_BEGIN' "$TEST_ROOT/home/pi/sg1_v4/classes/stargate_address_manager.py"
-grep -q 'address_book.js?v=stellar-archive-1.5.22-status' "$TARGET/address_book.htm"
+grep -q 'address_book.js?v=stellar-archive-1.5.23-status' "$TARGET/address_book.htm"
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --uninstall >/dev/null
 [[ "$original_page" = "$(shasum -a 256 "$TARGET/address_book.htm" | awk '{print $1}')" ]]

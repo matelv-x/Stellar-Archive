@@ -31,7 +31,7 @@ grep -q '^1.3.1$' "$TARGET/.stellar-archive-addon/version"
 [[ ! -e "$TEST_ROOT/home/pi/sg1_v4/classes/matelv_addon_manager.py" ]]
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace both >/dev/null
-grep -q '^1.5.22$' "$TARGET/.stellar-archive-addon/version"
+grep -q '^1.5.23$' "$TARGET/.stellar-archive-addon/version"
 [[ -f "$TEST_ROOT/home/pi/sg1_v4/classes/matelv_addon_manager.py" ]]
 [[ -f "$TEST_ROOT/home/pi/sg1_v4/classes/matelv_addons.json" ]]
 grep -q 'stellar_archive_addons' "$TEST_ROOT/home/pi/sg1_v4/classes/web_server.py"

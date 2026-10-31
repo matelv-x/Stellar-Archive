@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.23
 
 - Detects live address-book destinations that are new, renamed aliases or use a
   changed glyph sequence, and exposes a privacy-bounded JSON export without
