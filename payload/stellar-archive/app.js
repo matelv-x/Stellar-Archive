@@ -14,10 +14,18 @@ function integrationHomeHref(){
 }
 let selected=worlds[0],visible=[];
 let liveGateStatuses=new Map(),liveStatusState='checking',liveStatusSignature='';
+let miniPlanetObserver=null;
+let miniPlanetObserverLayout='';
 const motionEpoch=performance.now();
 let motionNodes=[],motionFrame=0,lastMotionUpdate=0;
 const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 const $=selector=>document.querySelector(selector);
+function renderCategoryCounts(){
+ const counts={all:worlds.length,standard:0,fan:0,lan:0};
+ worlds.forEach(world=>{if(Object.hasOwn(counts,world.category))counts[world.category]++});
+ const labels={all:`ALL ${counts.all} RECORDS`,standard:`STANDARD · ${counts.standard}`,fan:`FAN · ${counts.fan}`,lan:`LAN · ${counts.lan}`};
+ $('#category').querySelectorAll('option').forEach(option=>{if(labels[option.value])option.textContent=labels[option.value]});
+}
 const escapeHtml=value=>String(value).replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
 const glyphPath=n=>`assets/glyphs/milkyway/${String(n).padStart(3,'0')}.svg`;
 const fandomSearch=name=>`https://stargate.fandom.com/wiki/Special:Search?query=${encodeURIComponent(name)}`;
@@ -49,6 +57,13 @@ function gateStatus(world){
  if(typeof online==='boolean')return {label:online?'ONLINE':'OFFLINE',className:online?'online':'offline'};
  return {label:liveStatusState==='checking'?'CHECKING…':'STATUS UNKNOWN',className:'unknown'};
 }
+const gateGlowClasses=['status-online','status-offline','status-standard','status-lan','status-unknown'];
+function gateGlowClass(world,live=gateStatus(world)){
+ if(world.category==='standard')return 'status-standard';
+ if(world.category==='lan')return 'status-lan';
+ if(world.category==='fan')return `status-${live.className}`;
+ return 'status-unknown';
+}
 function renderGateSummary(counts){
  $('#online-count').textContent=counts?.online??'—';
  $('#offline-count').textContent=counts?.offline??'—';
@@ -59,19 +74,20 @@ function worldButton(w){
  const live=gateStatus(w);
  const status=live?`<span class="owner-status ${live.className}">${live.label}</span>`:'';
  const objectClass=w.visualMode==='object'?' object-visual':'';
- return `<button class="world ${w.id===selected.id?'active':''}" data-id="${escapeHtml(w.id)}" aria-pressed="${w.id===selected.id}" aria-label="Explore ${escapeHtml(w.name)}"><span class="mini-planet ${visualClass(w)}${objectClass}" aria-hidden="true"></span><span class="world-text"><span class="world-name">${escapeHtml(w.name)}</span><span class="world-symbols">${w.category.toUpperCase()} · ${w.addressLength} SYMBOLS</span>${status}</span><span class="world-arrow">›</span></button>`;
+ const image=w.visualAsset?`<img data-src="assets/${escapeHtml(w.visualAsset)}" loading="lazy" decoding="async" alt="">`:'';
+ return `<button class="world ${w.id===selected.id?'active':''}" data-id="${escapeHtml(w.id)}" aria-pressed="${w.id===selected.id}" aria-label="Explore ${escapeHtml(w.name)}"><span class="mini-planet ${visualClass(w)}${objectClass} ${gateGlowClass(w,live)}" aria-hidden="true">${image}</span><span class="world-text"><span class="world-name">${escapeHtml(w.name)}</span><span class="world-symbols">${w.category.toUpperCase()} · ${w.addressLength} SYMBOLS</span>${status}</span><span class="world-arrow">›</span></button>`;
 }
 function glyphBox(n,i,total){
  const origin=i===total-1;
  return `<div class="glyph-box ${origin?'origin':''}" aria-label="${origin?'Earth point of origin':`Address symbol ${i+1}`}: glyph ${n}"><img src="${glyphPath(n)}" alt=""><span class="glyph-number">${n}</span></div>`;
 }
-function render(){
- visible=filtered();
- if(visible.length&&!visible.some(w=>w.id===selected.id))selected=visible[0];
- $('#world-count').textContent=String(visible.length).padStart(3,'0');
- $('#empty').hidden=visible.length>0;
- $('#worlds').innerHTML=visible.map(worldButton).join('');
+function renderSelection(){
  if(!visible.length){$('#nodes').innerHTML='';$('#connections').innerHTML='';return;}
+ document.querySelectorAll('#worlds .world').forEach(button=>{
+  const active=button.dataset.id===selected.id;
+  button.classList.toggle('active',active);
+  button.setAttribute('aria-pressed',String(active));
+ });
  $('#map-galaxy').textContent=selected.galaxy.toUpperCase();
  $('#network-count').textContent=`${selected.addressLength} ADDRESS POINTS`;
  renderAddressPath(selected);
@@ -92,12 +108,56 @@ function render(){
  $('#record-id').textContent=String(worlds.indexOf(selected)+1).padStart(3,'0');
  $('#evidence-label').textContent=selected.evidenceLevel.replaceAll('-',' ').toUpperCase();
  const live=gateStatus(selected);
- $('#record-state').innerHTML=`<i></i> ${live?live.label:'ARCHIVED'}`;
+ $('#record-state').innerHTML=`<i></i> ${live.label}`;
  $('#glyphs').className=`glyphs glyph-count-${selected.addressLength}`;
  $('#glyphs').innerHTML=selected.fullAddress.map((n,i)=>glyphBox(n,i,selected.fullAddress.length)).join('');
  const correction=selected.addressStatus==='episode-frame-corrected-local'?' · LOCAL FRAME CORRECTION APPLIED':selected.addressStatus==='disputed-source-preserved'?' · DISPUTED SOURCE VALUE PRESERVED':'';
  $('#numeric-address').textContent=`SOURCE STORED: ${selected.storedAddress.join(' · ')}  |  ARCHIVE COMPLETE: ${selected.fullAddress.join(' · ')}  |  ${selected.addressLength} SYMBOLS${correction}`;
  $('#select-address').href=dialHref(selected);
+}
+function updateRenderedGateStatuses(){
+ document.querySelectorAll('#worlds .world').forEach(button=>{
+  const world=worlds.find(entry=>entry.id===button.dataset.id);
+  if(!world)return;
+  const live=gateStatus(world);
+  let status=button.querySelector('.owner-status');
+  if(!status){status=document.createElement('span');button.querySelector('.world-text')?.append(status)}
+  status.className=`owner-status ${live.className}`;
+  status.textContent=live.label;
+  const thumbnail=button.querySelector('.mini-planet');
+  if(thumbnail){
+   thumbnail.classList.remove(...gateGlowClasses);
+   thumbnail.classList.add(gateGlowClass(world,live));
+  }
+ });
+ const live=gateStatus(selected);
+ $('#record-state').innerHTML=`<i></i> ${live.label}`;
+}
+function observeMiniPlanetImages(){
+ const images=[...document.querySelectorAll('#worlds .mini-planet > img[data-src]')];
+ if(!('IntersectionObserver' in window)){images.forEach(image=>{image.src=image.dataset.src;delete image.dataset.src});return}
+ miniPlanetObserver?.disconnect();
+ const mobile=document.documentElement.classList.contains('mobile-layout');
+ const shortWindow=document.documentElement.classList.contains('short-window-layout');
+ const root=shortWindow?$('.catalogue'):$('#worlds');
+ const rootMargin=mobile?'0px 600px':'600px 0px';
+ miniPlanetObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
+  if(!entry.isIntersecting)return;
+  const image=entry.target;
+  image.src=image.dataset.src;
+  delete image.dataset.src;
+  miniPlanetObserver.unobserve(image);
+ }),{root,rootMargin});
+ images.forEach(image=>miniPlanetObserver.observe(image));
+}
+function render(){
+ visible=filtered();
+ if(visible.length&&!visible.some(w=>w.id===selected.id))selected=visible[0];
+ $('#world-count').textContent=String(visible.length).padStart(3,'0');
+ $('#empty').hidden=visible.length>0;
+ $('#worlds').innerHTML=visible.map(worldButton).join('');
+ observeMiniPlanetImages();
+ renderSelection();
 }
 function renderAddressPath(world){
  const full=world.fullAddress;
@@ -158,7 +218,7 @@ reduceMotion.addEventListener?.('change',()=>{
 document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState==='visible'&&!reduceMotion.matches&&!motionFrame)motionFrame=requestAnimationFrame(animateDifferentialMotion);
 });
-function choose(event){const button=event.target.closest('[data-id]');if(!button)return;selected=worlds.find(w=>w.id===button.dataset.id);render()}
+function choose(event){const button=event.target.closest('[data-id]');if(!button)return;selected=worlds.find(w=>w.id===button.dataset.id);renderSelection()}
 $('#worlds').addEventListener('click',choose);
 $('#nodes').addEventListener('click',choose);
 $('#search').addEventListener('input',render);
@@ -217,8 +277,13 @@ function fitArchiveToWindow(){
  const height=window.innerHeight;
  const mobile=window.matchMedia('(max-width:600px)').matches;
  const shortWindow=!mobile&&height<900;
+ const imageLayout=mobile?'mobile':shortWindow?'short':'desktop';
  document.documentElement.classList.toggle('mobile-layout',mobile);
  document.documentElement.classList.toggle('short-window-layout',shortWindow);
+ if(miniPlanetObserverLayout!==imageLayout){
+  miniPlanetObserverLayout=imageLayout;
+  window.requestAnimationFrame(observeMiniPlanetImages);
+ }
  if(mobile){
   shell.style.zoom='1';
   shell.style.width='100%';
@@ -399,18 +464,19 @@ async function loadInstalledAddons(){
 let addonProgressContext=null;
 let addonConfirmResolve=null;
 const addonProgressPhases=['download','verify','install','complete'];
-function confirmAddonUninstall(addon){
- addonProgressContext={id:addon.id,name:addon.name,action:'uninstall',restartRequired:Boolean(addon.restart_required)};
+function confirmAddonAction(addon,action,message){
+ addonProgressContext={id:addon.id,name:addon.name,action,restartRequired:Boolean(addon.restart_required)};
  const overlay=$('#addon-progress-overlay');
  overlay.hidden=false;
  overlay.dataset.running='false';
  overlay.dataset.state='confirm';
- $('#addon-progress-title').textContent='CONFIRM UNINSTALL';
+ overlay.dataset.action=action;
+ $('#addon-progress-title').textContent=`CONFIRM ${action.toUpperCase()}`;
  $('#addon-progress-name').textContent=addon.name;
- $('#addon-progress-status').textContent='Check GitHub for the newest surgical uninstaller, then remove only this add-on?';
+ $('#addon-progress-status').textContent=message;
  $('#addon-progress-close').textContent='CANCEL';
  $('#addon-progress-close').hidden=false;
- $('#addon-progress-restart').textContent='UNINSTALL';
+ $('#addon-progress-restart').textContent=action.toUpperCase();
  $('#addon-progress-restart').hidden=false;
  return new Promise(resolve=>{addonConfirmResolve=resolve});
 }
@@ -420,6 +486,7 @@ function showAddonProgress(addon,action){
  overlay.hidden=false;
  overlay.dataset.running='true';
  overlay.dataset.state='running';
+ overlay.dataset.action=action;
  $('#addon-progress-title').textContent=`${action.toUpperCase()} IN PROGRESS`;
  $('#addon-progress-name').textContent=addon.name;
  $('#addon-progress-status').textContent='Preparing secure operation…';
@@ -557,12 +624,12 @@ async function handleAddonAction(event){
   const question=addon.update_available===true
    ?`Update ${addon.name} from ${addon.current_revision||'unknown'} to ${addon.latest_revision||'latest'}?`
    :`The installed ${addon.name} revision is unknown. Install the latest GitHub revision ${addon.latest_revision||''}?`;
-  if(!window.confirm(question))return;
+  if(!await confirmAddonAction(addon,'update',question))return;
  }else if(action==='install'){
   if(!reviewedAddonRepositories.has(addon.id)){ $('#addon-manager-status').textContent='Open the information link before installation.';return }
   if(!addon.can_install){$('#addon-manager-status').textContent=`${addon.name} cannot be installed until a safe uninstall procedure is verified.`;return}
-  if(!window.confirm(`Install ${addon.name} from its verified matelv-x repository? A Stargate software restart may be required afterward.`))return;
- }else if(!await confirmAddonUninstall(addon))return;
+  if(!await confirmAddonAction(addon,'install',`Install ${addon.name} from its verified matelv-x repository? A Stargate software restart may be required afterward.`))return;
+ }else if(!await confirmAddonAction(addon,'uninstall','Check GitHub for the newest surgical uninstaller, then remove only this add-on?'))return;
  button.disabled=true;
  $('#addon-manager-status').textContent=`Starting ${action} for ${addon.name}…`;
  showAddonProgress(addon,action);
@@ -644,9 +711,9 @@ async function refreshGateStatuses(){
   liveGateStatuses=next;
   liveStatusState='ready';
   renderGateSummary(counts);
-  if(signature!==liveStatusSignature){liveStatusSignature=signature;render()}
+  if(signature!==liveStatusSignature){liveStatusSignature=signature;updateRenderedGateStatuses()}
  }catch(error){
-  if(liveStatusState!=='error'){liveGateStatuses=new Map();liveStatusState='error';liveStatusSignature='';renderGateSummary(null);render()}
+  if(liveStatusState!=='error'){liveGateStatuses=new Map();liveStatusState='error';liveStatusSignature='';renderGateSummary(null);updateRenderedGateStatuses()}
  }finally{window.clearTimeout(timeout)}
 }
 configureIntegration();
@@ -654,6 +721,7 @@ refreshIntegrationNavigation().catch(()=>{});
 fitArchiveToWindow();
 window.addEventListener('resize',fitArchiveToWindow,{passive:true});
 window.visualViewport?.addEventListener('resize',fitArchiveToWindow,{passive:true});
+renderCategoryCounts();
 render();
 refreshGateStatuses();
 window.setInterval(refreshGateStatuses,15000);

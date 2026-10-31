@@ -2,6 +2,19 @@
 
 ## 1.5.19
 
+- Displays the complete approved concept artwork without hue shifts or circular
+  masking in the destination profile; the catalogue uses the same artwork in
+  clean circular thumbnails.
+- Restores the six original full-resolution source-guided images for Abydos,
+  Chulak, Edora, the Stargate destroyer, Destiny and Seed Ship #1 under new
+  cache-safe asset names while retaining the older files for rollback.
+- Replaces the mechanical status corona with a concentric glow ring and soft
+  radial rays: blue for Standard, orange for LAN, and live green/red for FAN.
+- Keeps the complete 131-record catalogue synchronized with dynamic Standard,
+  FAN and LAN totals and preserves the two current shared-address aliases.
+- Preserves lazy image loading, managed add-on maintenance integration and the
+  existing address, DHD, navigation, routing and live-status behaviour.
+
 - Short desktop windows now scroll the complete left catalogue panel, matching
   the destination panel on the right. Search and filter controls can move out
   of the way without extending the application beyond its window; tall desktop

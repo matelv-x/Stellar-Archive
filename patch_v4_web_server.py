@@ -42,9 +42,22 @@ POST_BLOCK = """            # STELLAR_ARCHIVE_MAINTENANCE_POST_BEGIN
 """
 
 
+def replace_marked_block(source, name, replacement):
+    begin = "# STELLAR_ARCHIVE_MAINTENANCE_{}_BEGIN".format(name)
+    end = "# STELLAR_ARCHIVE_MAINTENANCE_{}_END".format(name)
+    if source.count(begin) != 1 or source.count(end) != 1:
+        raise ValueError("expected exactly one marked block: {}".format(name))
+    start = source.index(begin)
+    finish = source.index(end, start) + len(end)
+    return source[:start] + replacement.strip("\n") + source[finish:]
+
+
 def patch(source):
     if "STELLAR_ARCHIVE_MAINTENANCE_" in source:
-        raise ValueError("web_server.py already contains Stellar Archive maintenance markers")
+        source = replace_marked_block(source, "IMPORT", IMPORT_BLOCK)
+        source = replace_marked_block(source, "GET", GET_BLOCK)
+        source = replace_marked_block(source, "POST", POST_BLOCK)
+        return source
     for anchor in (IMPORT_ANCHOR, GET_ANCHOR, POST_ANCHOR):
         if source.count(anchor) != 1:
             raise ValueError("expected exactly one anchor: {}".format(anchor))

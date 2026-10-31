@@ -13,6 +13,8 @@ let addonPolls=0;
 let aquilaInstalled=false;
 let addonAction='install';
 let restartRequests=0;
+let statusRevision=0;
+let staticImageRequests=[];
 const systemActionRequests={restart:0,reboot:0,shutdown:0};
 
 const server=http.createServer((request,response)=>{
@@ -21,15 +23,17 @@ const server=http.createServer((request,response)=>{
     response.writeHead(200,{'content-type':'application/json'});
     response.end(JSON.stringify({status_freshness:{stale:false},address_book:{
       standard:{type:'standard',gate_address:[27,7,15,32,12,30]},
-      local:{type:'fan',gate_address:[1,2,3,4,5,6],is_gate_online:0},
-      remote:{type:'fan',gate_address:[2,3,4,5,6,7],is_gate_online:0},
-      lan:{type:'lan',gate_address:[3,4,5,6,7,8],is_gate_online:1}
+      local:{type:'fan',gate_address:[7,5,20,27,32,21],is_gate_online:0},
+      remote:{type:'fan',gate_address:[21,12,19,3,23,33],is_gate_online:statusRevision},
+      lan:{type:'lan',gate_address:[3,7,11,19,22,30,34,36],is_gate_online:1},
+      highlander:{type:'lan',gate_address:[14,3,4,22,38,35],is_gate_online:1},
+      solarTalon:{type:'fan',gate_address:[21,5,29,10,14,34],is_gate_online:1}
     }}));
     return;
   }
   if(requestPath==='/stargate/get/dialing_status'){
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({gate_name:'Test Gate',local_address:[1,2,3,4,5,6]}));
+    response.end(JSON.stringify({gate_name:'Test Gate',local_address:[7,5,20,27,32,21]}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_update'){
@@ -76,6 +80,7 @@ const server=http.createServer((request,response)=>{
     return;
   }
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/stellar-archive\/?/,'').replace(/^\//,'');
+  if(/^assets\/.*\.png$/.test(relative))staticImageRequests.push(relative);
   if(relative.startsWith('data/integration-nav.js')){
     const items=[
       {label:'HOME',href:'/retro/dial.html'},
@@ -95,7 +100,7 @@ const server=http.createServer((request,response)=>{
   }
   fs.readFile(file,(error,data)=>{
     if(error){response.writeHead(404);response.end();return;}
-    response.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream'});
+    response.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream','cache-control':'no-store'});
     response.end(data);
   });
 });
@@ -108,6 +113,64 @@ const server=http.createServer((request,response)=>{
   try{
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=original`);
     await page.waitForSelector('#select-address');
+    await page.waitForTimeout(500);
+    assert.deepStrictEqual(await page.locator('#category option').allTextContents(),['ALL 131 RECORDS','STANDARD · 35','FAN · 94','LAN · 2']);
+    const lazyThumbnails=await page.locator('#worlds .mini-planet > img[loading="lazy"][decoding="async"]').count();
+    const archiveImageData=await page.evaluate(()=>({
+      assetCount:window.STELLAR_ARCHIVE_DATA.worlds.filter(world=>world.visualAsset).length,
+      assets:window.STELLAR_ARCHIVE_DATA.worlds.map(world=>world.visualAsset).filter(Boolean)
+    }));
+    assert.strictEqual(lazyThumbnails,archiveImageData.assetCount);
+    const visualAssets=new Set(archiveImageData.assets.map(asset=>`assets/${asset}`));
+    const initialVisualRequests=staticImageRequests.filter(asset=>visualAssets.has(asset));
+    assert(initialVisualRequests.length<20,`expected lazy initial planet loading, received ${initialVisualRequests.length} requests`);
+    const requestCounts=initialVisualRequests.reduce((counts,asset)=>counts.set(asset,(counts.get(asset)||0)+1),new Map());
+    assert(Math.max(0,...requestCounts.values())<=2,'the same planet asset was downloaded more than twice');
+    assert.strictEqual(new Set(archiveImageData.assets).size,131,'each archive record must have its own visual asset');
+    assert.deepStrictEqual(await page.evaluate(()=>{
+      const approved={
+        'standard-001-abydos':'archive-approved-standard-001-abydos-v2.png',
+        'standard-005-chulak':'archive-approved-standard-005-chulak-v2.png',
+        'standard-008-destroyers':'archive-approved-standard-008-destroyers-v3.png',
+        'standard-010-edora':'archive-approved-standard-010-edora-v2.png',
+        'standard-035-destiny':'archive-approved-standard-035-destiny-v4.png',
+        'lan-001-seed-ship-1':'archive-approved-lan-001-seed-ship-1-v2.png'
+      };
+      return window.STELLAR_ARCHIVE_DATA.worlds.filter(world=>world.visualAsset!==(approved[world.id]||`archive-concept-${world.id}-v1.png`)).map(world=>world.id);
+    }),[],'one or more records did not receive its mapped concept image');
+    const artworkPresentation=await page.evaluate(()=>{
+      const thumbnail=document.querySelector('[data-id="standard-001-abydos"] .mini-planet');
+      const image=thumbnail.querySelector('img');
+      const profile=document.querySelector('#planet');
+      return {
+        thumbnailRadius:getComputedStyle(thumbnail).borderRadius,
+        imageFilter:getComputedStyle(image).filter,
+        profileRadius:getComputedStyle(profile).borderRadius,
+        profileFilter:getComputedStyle(profile).filter,
+        profileImage:getComputedStyle(profile).backgroundImage,
+        ringImage:getComputedStyle(thumbnail,'::before').backgroundImage,
+        raysImage:getComputedStyle(thumbnail,'::after').backgroundImage
+      };
+    });
+    assert.strictEqual(artworkPresentation.thumbnailRadius,'50%');
+    assert.strictEqual(artworkPresentation.imageFilter,'none');
+    assert.strictEqual(artworkPresentation.profileRadius,'18px');
+    assert.strictEqual(artworkPresentation.profileFilter,'none');
+    assert(artworkPresentation.profileImage.includes('archive-approved-standard-001-abydos-v2.png'));
+    assert(artworkPresentation.ringImage.includes('radial-gradient'));
+    assert.strictEqual(artworkPresentation.raysImage,'none');
+    assert.strictEqual(await page.locator('[data-id="standard-001-abydos"] .mini-planet').evaluate(node=>node.classList.contains('status-standard')),true);
+    assert.strictEqual(await page.locator('[data-id="fan-001-kristian-tysse"] .mini-planet').evaluate(node=>node.classList.contains('status-online')),true);
+    assert.strictEqual(await page.locator('[data-id="fan-002-tesseract"] .mini-planet').evaluate(node=>node.classList.contains('status-offline')),true);
+    assert.strictEqual(await page.locator('[data-id="lan-001-seed-ship-1"] .mini-planet').evaluate(node=>node.classList.contains('status-lan')),true);
+    assert.strictEqual(await page.locator('[data-id="fan-071-highlander"] .mini-planet').evaluate(node=>node.classList.contains('status-lan')),true);
+    assert.strictEqual(await page.locator('[data-id="fan-094-solar-talon"] .mini-planet').evaluate(node=>node.classList.contains('status-online')),true);
+    assert.strictEqual(await page.locator('[data-id="fan-095-solar-talon-belgium-gate"] .mini-planet').evaluate(node=>node.classList.contains('status-online')),true);
+    await page.evaluate(()=>{window.__firstArchiveWorld=document.querySelector('#worlds .world')});
+    statusRevision=1;
+    await page.evaluate(()=>refreshGateStatuses());
+    assert.strictEqual(await page.evaluate(()=>window.__firstArchiveWorld===document.querySelector('#worlds .world')),true,'status refresh rebuilt the catalogue list');
+    assert.strictEqual(await page.locator('[data-id="fan-002-tesseract"] .mini-planet').evaluate(node=>node.classList.contains('status-online')),true,'live refresh did not update the thumbnail glow');
     const original=await page.evaluate(()=>({
       address:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.join('-'),
       href:document.querySelector('#select-address').getAttribute('href'),
@@ -242,10 +305,15 @@ const server=http.createServer((request,response)=>{
     await page.evaluate(()=>{window.open=()=>({opener:null})});
     await page.locator('#available-addon-list button[data-addon-action="info"]').click();
     assert.strictEqual(await installButton.isDisabled(),false,'repository information must unlock INSTALL');
-    page.once('dialog',dialog=>dialog.accept());
     await installButton.click();
-    await page.waitForSelector('#addon-progress-overlay:not([hidden])');
+    await page.waitForSelector('#addon-progress-overlay[data-state="confirm"]:not([hidden])');
+    assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'CONFIRM INSTALL');
     assert.strictEqual(await page.locator('#addon-progress-name').textContent(),'Aquila Symbol Patch');
+    assert.strictEqual(await page.locator('#addon-progress-close').textContent(),'CANCEL');
+    assert.strictEqual(await page.locator('#addon-progress-restart').textContent(),'INSTALL');
+    await page.locator('#addon-progress-restart').click();
+    await page.waitForSelector('#addon-progress-overlay[data-state="running"]');
+    assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'INSTALL IN PROGRESS');
     await page.waitForSelector('#addon-progress-restart:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'INSTALL COMPLETE');
     assert((await page.locator('#integration-nav').textContent()).includes('AQUILA SYMBOL'),'install must refresh and add its navigation button');
@@ -308,7 +376,7 @@ const server=http.createServer((request,response)=>{
       const summary=[...document.querySelectorAll('.gate-summary p>span')].map(item=>item.getBoundingClientRect().toJSON());
       const glyphBoxes=[...document.querySelectorAll('.glyph-box')].map(item=>item.getBoundingClientRect().toJSON());
       const catalogue=document.querySelector('.catalogue');
-      return {brand:box('.brand'),brandMark:document.querySelector('.brand-mark').getAttribute('src'),nav:box('#integration-nav'),gateName:box('.installed-gate'),gateNameText:document.querySelector('.installed-gate').textContent.trim(),catalogue:box('.catalogue'),catalogueScrollable:catalogue.scrollHeight>catalogue.clientHeight,catalogueOverflow:getComputedStyle(catalogue).overflowY,chart:box('.star-chart'),destination:box('.destination'),planetScene:box('.planet-scene'),planet:box('#planet'),console:box('.address-console'),consoleTitle:box('.console-title'),glyphArea:box('.glyph-area'),glyphBoxes,seal:box('.seal'),sealMark:document.querySelector('.seal>img').getAttribute('src'),selection:box('.selection'),viewport:box('#archive-viewport'),summary,worldsScrollable:worlds.scrollHeight>worlds.clientHeight,worldsOverflow:getComputedStyle(worlds).overflowY,scrollMode:document.querySelector('#archive-shell').dataset.scrollMode,shortLayout:document.documentElement.classList.contains('short-window-layout'),bodyScroll:{width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight}};
+      return {brand:box('.brand'),brandMark:document.querySelector('.brand-mark').getAttribute('src'),nav:box('#integration-nav'),gateName:box('.installed-gate'),gateNameText:document.querySelector('.installed-gate').textContent.trim(),catalogue:box('.catalogue'),catalogueScrollable:catalogue.scrollHeight>catalogue.clientHeight,catalogueOverflow:getComputedStyle(catalogue).overflowY,chart:box('.star-chart'),destination:box('.destination'),planetScene:box('.planet-scene'),planet:box('#planet'),console:box('.address-console'),consoleTitle:box('.console-title'),glyphArea:box('.glyph-area'),glyphBoxes,seal:box('.seal'),sealMark:document.querySelector('.seal>img').getAttribute('src'),selection:box('.selection'),viewport:box('#archive-viewport'),summary,worldsOverflowAmount:worlds.scrollHeight-worlds.clientHeight,worldsOverflow:getComputedStyle(worlds).overflowY,scrollMode:document.querySelector('#archive-shell').dataset.scrollMode,shortLayout:document.documentElement.classList.contains('short-window-layout'),bodyScroll:{width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight}};
     });
     assert(layout.brand.right<=layout.nav.left+1,'scaled masthead brand must not overlap right-side navigation');
     assert(layout.gateName.bottom<=layout.nav.top+1,'installed gate name must appear above navigation buttons');
@@ -323,10 +391,17 @@ const server=http.createServer((request,response)=>{
     assert(layout.shortLayout&&layout.scrollMode==='catalogue-panel','short desktop windows must scroll the complete catalogue panel');
     assert(layout.catalogueScrollable&&layout.catalogueOverflow==='auto','the left panel must provide one scrollbar like the destination panel');
     assert.strictEqual(layout.worldsOverflow,'visible','planet list must not trap scrolling inside its own viewport');
-    assert.strictEqual(layout.worldsScrollable,false,'planet list must expand to its complete height');
+    assert(layout.worldsOverflowAmount<=40,'planet list must expand to its complete height apart from the decorative status corona');
     assert(layout.bodyScroll.width<=1256+1&&layout.bodyScroll.height<=768+1,'application must remain bounded by the small window');
+    await page.waitForTimeout(200);
+    const deferredShortWindowImages=await page.locator('#worlds .mini-planet > img[data-src]').count();
+    assert(deferredShortWindowImages>60,'short-window layout must not request every full-size planet image at once');
     await page.locator('#worlds .world').last().scrollIntoViewIfNeeded();
-    await page.waitForTimeout(100);
+    await page.locator('#worlds .world').last().locator('.mini-planet > img').evaluate(image=>new Promise((resolve,reject)=>{
+      if(image.complete&&image.naturalWidth)return resolve();
+      image.addEventListener('load',resolve,{once:true});
+      image.addEventListener('error',()=>reject(new Error('last planet thumbnail failed to load after scrolling')),{once:true});
+    }));
     const lastRecordScroll=await page.evaluate(()=>({
       scrollY:window.scrollY,
       catalogueScrollTop:document.querySelector('.catalogue').scrollTop,
@@ -341,6 +416,7 @@ const server=http.createServer((request,response)=>{
     assert(lastRecordScroll.last.top>=lastRecordScroll.catalogue.top-1&&lastRecordScroll.last.bottom<=lastRecordScroll.catalogue.bottom+1,'last planet must be reachable inside the left-panel scroll area');
     assert(lastRecordScroll.chartTop>=0&&lastRecordScroll.destinationTop>=0,'galaxy and destination panels must remain fixed while the catalogue scrolls');
     await page.evaluate(()=>{document.querySelector('.catalogue').scrollTop=0});
+    assert(await page.locator('#worlds .world').first().locator('.mini-planet > img').evaluate(image=>image.complete&&image.naturalWidth>0),'a loaded planet thumbnail must remain visible after scrolling away and back');
     await page.screenshot({path:path.join(__dirname,'validation-header-small.png'),fullPage:false});
     await page.setViewportSize({width:980,height:700});
     await page.waitForFunction(()=>Math.abs(Number(document.querySelector('#archive-shell').dataset.scale)-.7)<.002);

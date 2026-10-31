@@ -87,6 +87,21 @@ class AddonManagerTests(unittest.TestCase):
         self.assertEqual(payload["available"], [])
         self.assertEqual(len(payload["addons"][0]["current_revision"]), 12)
 
+    def test_checkout_manifest_inherits_registry_detection_and_integrations(self):
+        checkout_manifest = self.home / "Example-Addon" / "stargate-addon.json"
+        checkout_payload = json.loads(checkout_manifest.read_text(encoding="utf-8"))
+        checkout_payload.pop("detect")
+        checkout_payload.pop("archive_integration_files", None)
+        checkout_manifest.write_text(json.dumps(checkout_payload), encoding="utf-8")
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["archive_integration_files"] = ["web/example.js"]
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+
+        manifests = self.manager._manifests(self.manager._checkout_map(self.home))
+        manifest = manifests["example-addon"]
+        self.assertEqual(manifest["detect"], registry["addons"][0]["detect"])
+        self.assertEqual(manifest["archive_integration_files"], ["web/example.js"])
+
     def test_not_installed_safe_addon_is_available_for_install(self):
         (self.web / "example.js").unlink()
         payload = self.manager.list_addons(check_remote=False)
@@ -150,15 +165,22 @@ class AddonManagerTests(unittest.TestCase):
         updater.mkdir(parents=True)
         archive_data.mkdir(parents=True)
         (state / "current-mode").write_text("both\n", encoding="utf-8")
+        (state / "home-routes.json").write_text(
+            '{"ll.highlandergate.com":"/stargate/dial"}\n',
+            encoding="utf-8",
+        )
         (updater / "build_navigation.py").write_text(
             "import argparse, pathlib\n"
-            "p=argparse.ArgumentParser(); p.add_argument('--target'); p.add_argument('--mode'); p.add_argument('--output')\n"
-            "a=p.parse_args(); pathlib.Path(a.output).write_text(a.mode + ':' + a.target, encoding='utf-8')\n",
+            "p=argparse.ArgumentParser(); p.add_argument('--target'); p.add_argument('--mode'); p.add_argument('--output'); p.add_argument('--home-routes-file')\n"
+            "a=p.parse_args(); routes=pathlib.Path(a.home_routes_file).read_text(encoding='utf-8').strip(); pathlib.Path(a.output).write_text(a.mode + ':' + a.target + ':' + routes, encoding='utf-8')\n",
             encoding="utf-8",
         )
         self.assertTrue(self.manager._refresh_archive_navigation(self.manager.config()))
         result = (archive_data / "integration-nav.js").read_text(encoding="utf-8")
-        self.assertEqual(result, "both:" + str(self.web.resolve()))
+        self.assertEqual(
+            result,
+            "both:" + str(self.web.resolve()) + ':{"ll.highlandergate.com":"/stargate/dial"}',
+        )
 
     def test_refreshes_managed_snapshots_after_verified_addon_changes(self):
         managed = self.web / ".stellar-archive-addon" / "managed"
@@ -189,6 +211,18 @@ class AddonManagerTests(unittest.TestCase):
         manifest = {"archive_integration_files": ["classes/web_server.py"]}
         self.manager._refresh_archive_managed_pages(self.manager.config(), manifest)
         self.assertEqual(snapshot.read_text(encoding="utf-8"), "verified add-on edit")
+
+    def test_refreshes_declared_address_manager_snapshot(self):
+        managed = self.web / ".stellar-archive-addon" / "managed"
+        managed.mkdir(parents=True)
+        address_manager = self.root / "classes" / "stargate_address_manager.py"
+        address_manager.parent.mkdir(parents=True, exist_ok=True)
+        address_manager.write_text("verified LAN edit", encoding="utf-8")
+        snapshot = managed / "stargate_address_manager.py"
+        snapshot.write_text("old", encoding="utf-8")
+        manifest = {"archive_integration_files": ["classes/stargate_address_manager.py"]}
+        self.manager._refresh_archive_managed_pages(self.manager.config(), manifest)
+        self.assertEqual(snapshot.read_text(encoding="utf-8"), "verified LAN edit")
 
     def test_current_cached_uninstaller_uses_no_network_download(self):
         context = self.manager.config()

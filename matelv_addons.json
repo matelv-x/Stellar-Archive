@@ -59,10 +59,7 @@
       "name": "Dynamic Wormhole",
       "repository": "matelv-x/Dynamic-Wormhole",
       "platforms": ["v4"],
-      "detect": {"all": [
-        {"path": "classes/StargateMilkyWay/wormhole_manager.py", "contains": "DYNAMIC_WORMHOLE_FRAME_SECONDS"},
-        {"path": "classes/StargateMilkyWay/wormhole_pattern_manager.py", "contains": "def dynamic_wormhole_step"}
-      ]},
+      "detect": {"all": [{"path": "classes/StargateMilkyWay/dynamic_wormhole_runtime.py"}]},
       "install": {"argv": ["./install.sh", "{sg1_root}"], "timeout": 1200},
       "uninstall": {"argv": ["./restore.sh", "{sg1_root}"], "timeout": 900},
       "archive_integration_files": ["classes/web_server.py"],
@@ -75,8 +72,10 @@
       "name": "FAN113 Home",
       "repository": "matelv-x/FAN113-Home",
       "platforms": ["v4"],
-      "detect": {"all": [
+      "detect": {"any": [
+        {"path": ".fan113-home-addon/state.json"},
         {"path": "web/js/fan113_home_config.js"},
+        {"path": "web/config.htm", "contains": "/js/fan113_home_config.js"},
         {"path": "web/js/home_redirect.js", "contains": "FAN113_HOME_ADDON"}
       ]},
       "install": {"argv": ["./install-fan113-home.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 300},
@@ -94,7 +93,7 @@
       "detect": {"all": [{"path": "classes/stargate_address_book.py", "contains": "lan_gates"}, {"path": "web/retro/js/address_book.js", "contains": "lan"}]},
       "install": {"argv": ["./langate.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
       "uninstall": {"argv": ["./restore-langate.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
-      "archive_integration_files": ["classes/web_server.py", "web/retro/address_book.html", "web/js/address_book.js"],
+      "archive_integration_files": ["classes/web_server.py", "classes/stargate_address_manager.py", "web/retro/address_book.html", "web/js/address_book.js"],
       "restart_required": true
     },
     {
@@ -184,6 +183,19 @@
       "uninstall": {"argv": ["./restore-switch-to-retro.sh"], "env": {"APP_DIR": "{sg1_root}"}, "timeout": 900},
       "archive_integration_files": ["classes/web_server.py", "web/js/address_book.js", "web/retro/js/navigation.js"],
       "restart_required": true
+    },
+    {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
+      "id": "visual-volume-meter",
+      "name": "Visual Volume Meter",
+      "repository": "matelv-x/Visual-Volume-Meter",
+      "platforms": ["v4"],
+      "detect": {"all": [{"path": "web/debug.htm", "contains": "BEGIN STARGATE VISUAL VOLUME METER ADD-ON"}]},
+      "install": {"argv": ["./install.sh", "{web_root}/debug.htm"], "timeout": 900},
+      "uninstall": {"argv": ["./restore.sh", "{web_root}/debug.htm"], "timeout": 900},
+      "archive_integration_files": ["web/debug.htm"],
+      "restart_required": false
     }
   ]
 }

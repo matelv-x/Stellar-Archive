@@ -154,10 +154,9 @@ installed. Its `INSTALL` button remains locked until the adjacent information
 button opens the repository, allowing the user to review the add-on first.
 
 The public catalogue currently includes Alarm Clock, Aquila Symbol Patch,
-Connection History, DHD LED Test, Dynamic Wormhole, LAN Discovery, Lamp Mode,
-Retro Visuals, Retro Wormhole Animation, SG1 Iris, Silence Mode, Stargate Ring
-Symbols and Switch To Retro. Visual Volume Meter is not offered because it is
-already part of the SG1_v4 image. Alarm Clock now has a bounded
+Connection History, DHD LED Test, Dynamic Wormhole, FAN113 Home, LAN Discovery,
+Lamp Mode, Retro Visuals, Retro Wormhole Animation, SG1 Iris, Silence Mode,
+Stargate Ring Symbols, Switch To Retro and Visual Volume Meter. Alarm Clock now has a bounded
 uninstall which removes only its owned files and exact integration blocks; it
 does not restore the complete SG1 tree.
 

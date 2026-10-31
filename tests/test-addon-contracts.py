@@ -13,7 +13,7 @@ class AddonContractTests(unittest.TestCase):
 
     def test_every_registered_addon_requires_surgical_uninstall_v2(self):
         addons = self.registry()
-        self.assertEqual(len(addons), 14)
+        self.assertEqual(len(addons), 15)
         for addon in addons:
             with self.subTest(addon=addon["id"]):
                 self.assertEqual(addon.get("maintenance_contract"), 1)
@@ -38,6 +38,16 @@ class AddonContractTests(unittest.TestCase):
         addon = next(addon for addon in self.registry() if addon["id"] == "alarm-clock")
         self.assertIn("web/address_book.htm", addon["archive_integration_files"])
         self.assertIn("web/retro/js/navigation.js", addon["archive_integration_files"])
+
+    def test_lan_discovery_declares_shared_status_manager(self):
+        addon = next(addon for addon in self.registry() if addon["id"] == "lan-discovery")
+        self.assertIn("classes/stargate_address_manager.py", addon["archive_integration_files"])
+
+    def test_visual_volume_meter_preserves_shared_debug_page(self):
+        addon = next(addon for addon in self.registry() if addon["id"] == "visual-volume-meter")
+        self.assertFalse(addon["restart_required"])
+        self.assertEqual(addon["archive_integration_files"], ["web/debug.htm"])
+        self.assertEqual(addon["detect"]["all"][0]["contains"], "BEGIN STARGATE VISUAL VOLUME METER ADD-ON")
 
 
 if __name__ == "__main__":

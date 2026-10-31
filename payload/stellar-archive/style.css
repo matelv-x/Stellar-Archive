@@ -57,8 +57,15 @@ button{color:inherit}
 .world-name{font:14px Georgia,serif;letter-spacing:.18em}
 .world-symbols{display:block;color:#b9bfaa;font-size:10px;letter-spacing:.3em;margin-top:10px}
 .world-arrow{font-size:26px;color:#a4dae2}
-.mini-planet{height:48px;width:48px;flex-shrink:0;border:1px solid #baad7b60;box-shadow:0 0 15px #59cce514;background:radial-gradient(circle at 30% 28%,#e8d9a2,#a97c42 35%,#54422c 66%,#06111a 75%);border-radius:50%;filter:hue-rotate(var(--hue,0deg));position:relative}
-.mini-planet:after{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse at 55% 40%,transparent 25%,#01080bf5 80%),repeating-conic-gradient(from 30deg,#7e70452a 0deg 18deg,#c4ab6610 18deg 35deg)}
+.mini-planet{height:62px;width:62px;flex-shrink:0;border:1px solid currentColor;box-shadow:0 0 0 2px #020b14,0 0 11px currentColor;background:#020b14;border-radius:50%;filter:none;position:relative}
+.mini-planet:before{content:'';position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,transparent 0 61%,currentColor 62% 65%,transparent 66%);filter:drop-shadow(0 0 4px currentColor) drop-shadow(0 0 9px currentColor);opacity:.82;transform:scale(.98);transform-origin:center;animation:gate-status-ring 2.8s ease-in-out infinite;pointer-events:none;z-index:3}
+.mini-planet.status-online{color:#50e39b}
+.mini-planet.status-offline{color:#ff626b}
+.mini-planet.status-standard{color:#4f9dff}
+.mini-planet.status-lan{color:#ff9b42}
+.mini-planet.status-unknown{color:#708791}
+.mini-planet.status-unknown:before{opacity:.12;animation:none}
+@keyframes gate-status-ring{0%,100%{opacity:.81;transform:scale(.9875);filter:drop-shadow(0 0 4px currentColor) drop-shadow(0 0 10px currentColor)}50%{opacity:1;transform:scale(1.0225);filter:drop-shadow(0 0 5px currentColor) drop-shadow(0 0 13px currentColor)}}
 .catalogue-footer{padding:19px 0 16px;display:flex;align-items:center;justify-content:center;gap:13px;color:var(--muted);border-top:1px solid #806d4c50}
 .catalogue-footer p{display:grid;gap:4px;font-size:8px;letter-spacing:.24em;text-align:center;line-height:1.35;margin:0}
 .catalogue-footer p>span{display:block;white-space:nowrap}
@@ -119,11 +126,11 @@ button{color:inherit}
 .destination-heading h2{font:32px Georgia,serif;letter-spacing:.18em;font-weight:400;margin:15px 0 8px;color:#fff0d8}
 .destination-heading>p{font-size:10px;letter-spacing:.3em;margin-top:12px}
 .planet-scene{position:relative;height:clamp(135px,29vh,265px);min-height:0;flex:0 0 auto;display:grid;place-items:center;margin:4px -5px 14px;overflow:hidden;container-type:size}
-.planet{height:min(100%,265px);width:auto;max-width:100%;max-height:100%;aspect-ratio:1;border-radius:50%;background-image:url('assets/ancient-archive-concept.png');background-size:568% 356%;background-position:99% 29%;box-shadow:inset -22px -15px 35px #020b14a8,0 0 32px #d5c28d22;filter:hue-rotate(var(--hue,0deg));transition:filter 1s,transform 1s;z-index:1;animation:float 12s ease-in-out infinite}
+.planet{height:min(100%,265px);width:auto;max-width:100%;max-height:100%;aspect-ratio:1;border-radius:18px;background-image:url('assets/ancient-archive-concept.png');background-size:cover;background-position:center;box-shadow:inset 0 0 24px #020b145e,0 0 26px #d5c28d22;filter:none;transition:transform 1s;z-index:1;animation:float 12s ease-in-out infinite}
 @supports(width:1cqw){.planet{width:min(100cqw,100cqh,265px);height:min(100cqw,100cqh,265px)}}
 .planet-halo{position:absolute;width:75%;aspect-ratio:1;background:radial-gradient(circle,#ffe1a52b,transparent 70%);filter:blur(15px)}
-.planet-orbit{position:absolute;width:100%;height:50%;border:1px solid #d1b77930;border-radius:50%;transform:rotate(-25deg);z-index:2;pointer-events:none}
-@keyframes float{50%{transform:translateY(-5px) rotate(2deg)}
+.planet-orbit{display:none}
+@keyframes float{50%{transform:translateY(-5px)}
 }
 .profile h3{font-size:9px;letter-spacing:.18em;font-weight:400;padding-bottom:12px;border-bottom:1px solid #aa986180;margin:0}
 .profile dl{font-size:8px;letter-spacing:.1em;line-height:1.5;margin:13px 0}
@@ -213,7 +220,7 @@ dialog p{font-size:14px;line-height:1.9}
 .addon-progress-steps li.done{border-color:#6bc4a3;color:#9df2cf;background:#0a2d28}
 .addon-progress-overlay[data-state="failed"] .addon-progress-track span{background:#d5656d}
 .addon-progress-overlay[data-state="confirm"] .addon-progress-track,.addon-progress-overlay[data-state="confirm"] .addon-progress-steps{display:none}
-.addon-progress-overlay[data-state="confirm"] #addon-progress-restart{border-color:#a65a5f;color:#ffb9bc}
+.addon-progress-overlay[data-state="confirm"][data-action="uninstall"] #addon-progress-restart{border-color:#a65a5f;color:#ffb9bc}
 .addon-progress-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
 .addon-progress-actions button{border:1px solid #4d9aae;background:#071d27;color:#c9edf2;padding:10px 14px;font-size:9px;letter-spacing:.12em;cursor:pointer}
 #addon-progress-restart{border-color:#d4aa55;color:#ffe3a2}
@@ -332,12 +339,12 @@ dialog p{font-size:14px;line-height:1.9}
 .profile dl div{align-items:start}
 .profile dd{max-width:62%}
 .planet,.mini-planet{background-image:radial-gradient(circle at 31% 27%,#fff8 0 2%,transparent 4%),radial-gradient(ellipse at 44% 38%,var(--planet-light) 0 9%,transparent 22%),repeating-radial-gradient(ellipse at 35% 30%,transparent 0 11%,#ffffff09 12% 14%,transparent 15% 23%),radial-gradient(circle at 34% 30%,var(--planet-light),var(--planet-mid) 37%,var(--planet-dark) 69%,#01070b 73%)}
-.planet:after{content:'';position:absolute;inset:0;border-radius:50%;background:linear-gradient(110deg,#ffffff19 0 17%,transparent 33%),repeating-conic-gradient(from calc(var(--seed)*11deg),transparent 0 12deg,#00000016 14deg 25deg);mix-blend-mode:overlay}
-.planet{position:relative;background-image:var(--planet-image)!important;background-size:112% 112%!important;background-position:center!important;filter:hue-rotate(var(--planet-shift,0deg)) saturate(1.05)}
-.mini-planet{background-image:var(--planet-image)!important;background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important;filter:hue-rotate(var(--planet-shift,0deg)) saturate(1.05)}
-.mini-planet:after{background:radial-gradient(ellipse at 55% 42%,transparent 34%,#01080bd4 100%)}
-.mini-planet.object-visual{border-radius:9px;background-size:contain!important;background-color:#020b14;box-shadow:inset 0 0 10px #020b1480,0 0 15px #59cce522}
-.mini-planet.object-visual:after{border-radius:9px;background:linear-gradient(135deg,#ffffff12,transparent 42%,#01080b9e)}
+.planet:after{content:'';position:absolute;inset:0;border-radius:18px;background:linear-gradient(135deg,#ffffff12,transparent 42%,#01080b45);pointer-events:none}
+.planet{position:relative;background-image:var(--planet-image)!important;background-size:cover!important;background-position:center!important;filter:none}
+.mini-planet{overflow:visible}
+.mini-planet>img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;filter:none;z-index:1}
+.mini-planet.object-visual{border-radius:50%;background-size:contain!important;background-color:#020b14;box-shadow:0 0 0 2px #020b14,0 0 11px currentColor}
+.mini-planet.object-visual>img{object-fit:contain}
 .planet.object-visual{width:100%;height:100%;aspect-ratio:auto;border-radius:18px;background-size:contain!important;background-repeat:no-repeat!important;background-color:#020b14;box-shadow:inset 0 0 30px #020b147d,0 0 32px #8fc6dc28}
 .planet.object-visual:after{border-radius:18px}
 .planet.black-hole,.mini-planet.black-hole{background:radial-gradient(circle,#000 0 45%,#ffd99a 47%,#da6f20 50%,#44210d 56%,transparent 62%),conic-gradient(from 20deg,transparent,#f2a65255,transparent,#ffe2a588,transparent)!important;box-shadow:0 0 28px #e98b4050}

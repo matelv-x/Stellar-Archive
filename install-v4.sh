@@ -452,11 +452,8 @@ fi
 run_copy "$SCRIPT_DIR/stellar_archive_maintenance.py" "$MAINTENANCE"
 run_copy "$SCRIPT_DIR/matelv_addon_manager.py" "$ADDON_MANAGER"
 run_copy "$SCRIPT_DIR/matelv_addons.json" "$ADDON_REGISTRY"
-if grep -q 'STELLAR_ARCHIVE_MAINTENANCE_IMPORT_BEGIN' "$WEB_SERVER"; then
-  note 'Preserved combined add-on and Stellar Archive web-server integration.'
-else
-  python3 "$SCRIPT_DIR/patch_v4_web_server.py" --file "$WEB_SERVER"
-fi
+python3 "$SCRIPT_DIR/patch_v4_web_server.py" --file "$WEB_SERVER"
+note 'Refreshed the owned Stellar Archive web-server blocks and preserved all other integrations.'
 python3 "$SCRIPT_DIR/patch_v4_gate_status.py" \
   --web-server "$WEB_SERVER" \
   --address-js "$ORIGINAL_ADDRESS_JS" \
