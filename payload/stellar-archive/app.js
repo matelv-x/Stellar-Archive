@@ -14,8 +14,6 @@ function integrationHomeHref(){
 }
 let selected=worlds[0],visible=[];
 let liveGateStatuses=new Map(),liveStatusState='checking',liveStatusSignature='';
-const thumbnailSpriteColumns=12;
-const thumbnailSpriteRows=Math.ceil(worlds.length/thumbnailSpriteColumns);
 const motionEpoch=performance.now();
 let motionNodes=[],motionFrame=0,lastMotionUpdate=0;
 const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -75,11 +73,7 @@ function worldButton(w){
  const status=live?`<span class="owner-status ${live.className}">${live.label}</span>`:'';
  const objectClass=w.visualMode==='object'?' object-visual':'';
  const spriteIndex=worlds.indexOf(w);
- const column=spriteIndex%thumbnailSpriteColumns;
- const row=Math.floor(spriteIndex/thumbnailSpriteColumns);
- const x=column*100/(thumbnailSpriteColumns-1);
- const y=row*100/(thumbnailSpriteRows-1);
- const thumbnail=w.visualAsset?`<span class="mini-planet-image" style="--thumb-x:${x.toFixed(6)}%;--thumb-y:${y.toFixed(6)}%"></span>`:'';
+ const thumbnail=w.visualAsset?`<span class="mini-planet-image thumbnail-${spriteIndex}"></span>`:'';
  return `<button class="world ${w.id===selected.id?'active':''}" data-id="${escapeHtml(w.id)}" aria-pressed="${w.id===selected.id}" aria-label="Explore ${escapeHtml(w.name)}"><span class="mini-planet ${visualClass(w)}${objectClass} ${gateGlowClass(w,live)}" aria-hidden="true">${thumbnail}</span><span class="world-text"><span class="world-name">${escapeHtml(w.name)}</span><span class="world-symbols">${w.category.toUpperCase()} · ${w.addressLength} SYMBOLS</span>${status}</span><span class="world-arrow">›</span></button>`;
 }
 function glyphBox(n,i,total){

@@ -100,7 +100,7 @@ const server=http.createServer((request,response)=>{
   }
   fs.readFile(file,(error,data)=>{
     if(error){response.writeHead(404);response.end();return;}
-    response.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream','cache-control':'no-store'});
+    response.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream','cache-control':'no-store','content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data:"});
     response.end(data);
   });
 });
@@ -121,6 +121,7 @@ const server=http.createServer((request,response)=>{
       assets:window.STELLAR_ARCHIVE_DATA.worlds.map(world=>world.visualAsset).filter(Boolean)
     }));
     assert.strictEqual(spriteThumbnails,archiveImageData.assetCount);
+    assert.strictEqual(await page.locator('#worlds .mini-planet-image[style]').count(),0,'sprite positions must not use CSP-blocked inline styles');
     const visualAssets=new Set(archiveImageData.assets.map(asset=>`assets/${asset}`));
     const initialVisualRequests=staticImageRequests.filter(asset=>visualAssets.has(asset));
     assert(initialVisualRequests.length<=2,`catalogue loaded more than the selected full-size planet artwork: ${initialVisualRequests.length} requests`);
