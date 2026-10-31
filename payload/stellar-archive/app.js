@@ -14,6 +14,7 @@ function integrationHomeHref(){
 }
 let selected=worlds[0],visible=[];
 let liveGateStatuses=new Map(),liveStatusState='checking',liveStatusSignature='';
+let miniPlanetObserver=null;
 const motionEpoch=performance.now();
 let motionNodes=[],motionFrame=0,lastMotionUpdate=0;
 const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -59,19 +60,20 @@ function worldButton(w){
  const live=gateStatus(w);
  const status=live?`<span class="owner-status ${live.className}">${live.label}</span>`:'';
  const objectClass=w.visualMode==='object'?' object-visual':'';
- return `<button class="world ${w.id===selected.id?'active':''}" data-id="${escapeHtml(w.id)}" aria-pressed="${w.id===selected.id}" aria-label="Explore ${escapeHtml(w.name)}"><span class="mini-planet ${visualClass(w)}${objectClass}" aria-hidden="true"></span><span class="world-text"><span class="world-name">${escapeHtml(w.name)}</span><span class="world-symbols">${w.category.toUpperCase()} · ${w.addressLength} SYMBOLS</span>${status}</span><span class="world-arrow">›</span></button>`;
+ const image=w.visualAsset?`<img data-src="assets/${escapeHtml(w.visualAsset)}" loading="lazy" decoding="async" alt="">`:'';
+ return `<button class="world ${w.id===selected.id?'active':''}" data-id="${escapeHtml(w.id)}" aria-pressed="${w.id===selected.id}" aria-label="Explore ${escapeHtml(w.name)}"><span class="mini-planet ${visualClass(w)}${objectClass}" aria-hidden="true">${image}</span><span class="world-text"><span class="world-name">${escapeHtml(w.name)}</span><span class="world-symbols">${w.category.toUpperCase()} · ${w.addressLength} SYMBOLS</span>${status}</span><span class="world-arrow">›</span></button>`;
 }
 function glyphBox(n,i,total){
  const origin=i===total-1;
  return `<div class="glyph-box ${origin?'origin':''}" aria-label="${origin?'Earth point of origin':`Address symbol ${i+1}`}: glyph ${n}"><img src="${glyphPath(n)}" alt=""><span class="glyph-number">${n}</span></div>`;
 }
-function render(){
- visible=filtered();
- if(visible.length&&!visible.some(w=>w.id===selected.id))selected=visible[0];
- $('#world-count').textContent=String(visible.length).padStart(3,'0');
- $('#empty').hidden=visible.length>0;
- $('#worlds').innerHTML=visible.map(worldButton).join('');
+function renderSelection(){
  if(!visible.length){$('#nodes').innerHTML='';$('#connections').innerHTML='';return;}
+ document.querySelectorAll('#worlds .world').forEach(button=>{
+  const active=button.dataset.id===selected.id;
+  button.classList.toggle('active',active);
+  button.setAttribute('aria-pressed',String(active));
+ });
  $('#map-galaxy').textContent=selected.galaxy.toUpperCase();
  $('#network-count').textContent=`${selected.addressLength} ADDRESS POINTS`;
  renderAddressPath(selected);
@@ -92,12 +94,47 @@ function render(){
  $('#record-id').textContent=String(worlds.indexOf(selected)+1).padStart(3,'0');
  $('#evidence-label').textContent=selected.evidenceLevel.replaceAll('-',' ').toUpperCase();
  const live=gateStatus(selected);
- $('#record-state').innerHTML=`<i></i> ${live?live.label:'ARCHIVED'}`;
+ $('#record-state').innerHTML=`<i></i> ${live.label}`;
  $('#glyphs').className=`glyphs glyph-count-${selected.addressLength}`;
  $('#glyphs').innerHTML=selected.fullAddress.map((n,i)=>glyphBox(n,i,selected.fullAddress.length)).join('');
  const correction=selected.addressStatus==='episode-frame-corrected-local'?' · LOCAL FRAME CORRECTION APPLIED':selected.addressStatus==='disputed-source-preserved'?' · DISPUTED SOURCE VALUE PRESERVED':'';
  $('#numeric-address').textContent=`SOURCE STORED: ${selected.storedAddress.join(' · ')}  |  ARCHIVE COMPLETE: ${selected.fullAddress.join(' · ')}  |  ${selected.addressLength} SYMBOLS${correction}`;
  $('#select-address').href=dialHref(selected);
+}
+function updateRenderedGateStatuses(){
+ document.querySelectorAll('#worlds .world').forEach(button=>{
+  const world=worlds.find(entry=>entry.id===button.dataset.id);
+  if(!world)return;
+  const live=gateStatus(world);
+  let status=button.querySelector('.owner-status');
+  if(!status){status=document.createElement('span');button.querySelector('.world-text')?.append(status)}
+  status.className=`owner-status ${live.className}`;
+  status.textContent=live.label;
+ });
+ const live=gateStatus(selected);
+ $('#record-state').innerHTML=`<i></i> ${live.label}`;
+}
+function observeMiniPlanetImages(){
+ const images=[...document.querySelectorAll('#worlds .mini-planet > img[data-src]')];
+ if(!('IntersectionObserver' in window)){images.forEach(image=>{image.src=image.dataset.src;delete image.dataset.src});return}
+ miniPlanetObserver?.disconnect();
+ miniPlanetObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
+  if(!entry.isIntersecting)return;
+  const image=entry.target;
+  image.src=image.dataset.src;
+  delete image.dataset.src;
+  miniPlanetObserver.unobserve(image);
+ }),{root:null,rootMargin:'120px 0px'});
+ images.forEach(image=>miniPlanetObserver.observe(image));
+}
+function render(){
+ visible=filtered();
+ if(visible.length&&!visible.some(w=>w.id===selected.id))selected=visible[0];
+ $('#world-count').textContent=String(visible.length).padStart(3,'0');
+ $('#empty').hidden=visible.length>0;
+ $('#worlds').innerHTML=visible.map(worldButton).join('');
+ observeMiniPlanetImages();
+ renderSelection();
 }
 function renderAddressPath(world){
  const full=world.fullAddress;
@@ -158,7 +195,7 @@ reduceMotion.addEventListener?.('change',()=>{
 document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState==='visible'&&!reduceMotion.matches&&!motionFrame)motionFrame=requestAnimationFrame(animateDifferentialMotion);
 });
-function choose(event){const button=event.target.closest('[data-id]');if(!button)return;selected=worlds.find(w=>w.id===button.dataset.id);render()}
+function choose(event){const button=event.target.closest('[data-id]');if(!button)return;selected=worlds.find(w=>w.id===button.dataset.id);renderSelection()}
 $('#worlds').addEventListener('click',choose);
 $('#nodes').addEventListener('click',choose);
 $('#search').addEventListener('input',render);
@@ -646,9 +683,9 @@ async function refreshGateStatuses(){
   liveGateStatuses=next;
   liveStatusState='ready';
   renderGateSummary(counts);
-  if(signature!==liveStatusSignature){liveStatusSignature=signature;render()}
+  if(signature!==liveStatusSignature){liveStatusSignature=signature;updateRenderedGateStatuses()}
  }catch(error){
-  if(liveStatusState!=='error'){liveGateStatuses=new Map();liveStatusState='error';liveStatusSignature='';renderGateSummary(null);render()}
+  if(liveStatusState!=='error'){liveGateStatuses=new Map();liveStatusState='error';liveStatusSignature='';renderGateSummary(null);updateRenderedGateStatuses()}
  }finally{window.clearTimeout(timeout)}
 }
 configureIntegration();

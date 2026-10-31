@@ -13,6 +13,8 @@ let addonPolls=0;
 let aquilaInstalled=false;
 let addonAction='install';
 let restartRequests=0;
+let statusRevision=0;
+let staticImageRequests=[];
 const systemActionRequests={restart:0,reboot:0,shutdown:0};
 
 const server=http.createServer((request,response)=>{
@@ -22,7 +24,7 @@ const server=http.createServer((request,response)=>{
     response.end(JSON.stringify({status_freshness:{stale:false},address_book:{
       standard:{type:'standard',gate_address:[27,7,15,32,12,30]},
       local:{type:'fan',gate_address:[1,2,3,4,5,6],is_gate_online:0},
-      remote:{type:'fan',gate_address:[2,3,4,5,6,7],is_gate_online:0},
+      remote:{type:'fan',gate_address:[2,3,4,5,6,7],is_gate_online:statusRevision},
       lan:{type:'lan',gate_address:[3,4,5,6,7,8],is_gate_online:1}
     }}));
     return;
@@ -76,6 +78,7 @@ const server=http.createServer((request,response)=>{
     return;
   }
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/stellar-archive\/?/,'').replace(/^\//,'');
+  if(/^assets\/.*\.png$/.test(relative))staticImageRequests.push(relative);
   if(relative.startsWith('data/integration-nav.js')){
     const items=[
       {label:'HOME',href:'/retro/dial.html'},
@@ -95,7 +98,7 @@ const server=http.createServer((request,response)=>{
   }
   fs.readFile(file,(error,data)=>{
     if(error){response.writeHead(404);response.end();return;}
-    response.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream'});
+    response.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream','cache-control':'no-store'});
     response.end(data);
   });
 });
@@ -108,6 +111,22 @@ const server=http.createServer((request,response)=>{
   try{
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=original`);
     await page.waitForSelector('#select-address');
+    await page.waitForTimeout(500);
+    const lazyThumbnails=await page.locator('#worlds .mini-planet > img[loading="lazy"][decoding="async"]').count();
+    const archiveImageData=await page.evaluate(()=>({
+      assetCount:window.STELLAR_ARCHIVE_DATA.worlds.filter(world=>world.visualAsset).length,
+      assets:window.STELLAR_ARCHIVE_DATA.worlds.map(world=>world.visualAsset).filter(Boolean)
+    }));
+    assert.strictEqual(lazyThumbnails,archiveImageData.assetCount);
+    const visualAssets=new Set(archiveImageData.assets.map(asset=>`assets/${asset}`));
+    const initialVisualRequests=staticImageRequests.filter(asset=>visualAssets.has(asset));
+    assert(initialVisualRequests.length<20,`expected lazy initial planet loading, received ${initialVisualRequests.length} requests`);
+    const requestCounts=initialVisualRequests.reduce((counts,asset)=>counts.set(asset,(counts.get(asset)||0)+1),new Map());
+    assert(Math.max(0,...requestCounts.values())<=2,'the same planet asset was downloaded more than twice');
+    await page.evaluate(()=>{window.__firstArchiveWorld=document.querySelector('#worlds .world')});
+    statusRevision=1;
+    await page.evaluate(()=>refreshGateStatuses());
+    assert.strictEqual(await page.evaluate(()=>window.__firstArchiveWorld===document.querySelector('#worlds .world')),true,'status refresh rebuilt the catalogue list');
     const original=await page.evaluate(()=>({
       address:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.join('-'),
       href:document.querySelector('#select-address').getAttribute('href'),

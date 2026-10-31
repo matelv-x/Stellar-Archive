@@ -334,9 +334,11 @@ dialog p{font-size:14px;line-height:1.9}
 .planet,.mini-planet{background-image:radial-gradient(circle at 31% 27%,#fff8 0 2%,transparent 4%),radial-gradient(ellipse at 44% 38%,var(--planet-light) 0 9%,transparent 22%),repeating-radial-gradient(ellipse at 35% 30%,transparent 0 11%,#ffffff09 12% 14%,transparent 15% 23%),radial-gradient(circle at 34% 30%,var(--planet-light),var(--planet-mid) 37%,var(--planet-dark) 69%,#01070b 73%)}
 .planet:after{content:'';position:absolute;inset:0;border-radius:50%;background:linear-gradient(110deg,#ffffff19 0 17%,transparent 33%),repeating-conic-gradient(from calc(var(--seed)*11deg),transparent 0 12deg,#00000016 14deg 25deg);mix-blend-mode:overlay}
 .planet{position:relative;background-image:var(--planet-image)!important;background-size:112% 112%!important;background-position:center!important;filter:hue-rotate(var(--planet-shift,0deg)) saturate(1.05)}
-.mini-planet{background-image:var(--planet-image)!important;background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important;filter:hue-rotate(var(--planet-shift,0deg)) saturate(1.05)}
+.mini-planet{overflow:hidden}
+.mini-planet>img{position:absolute;inset:0;width:100%;height:100%;border-radius:inherit;object-fit:cover;filter:hue-rotate(var(--planet-shift,0deg)) saturate(1.05)}
 .mini-planet:after{background:radial-gradient(ellipse at 55% 42%,transparent 34%,#01080bd4 100%)}
 .mini-planet.object-visual{border-radius:9px;background-size:contain!important;background-color:#020b14;box-shadow:inset 0 0 10px #020b1480,0 0 15px #59cce522}
+.mini-planet.object-visual>img{object-fit:contain}
 .mini-planet.object-visual:after{border-radius:9px;background:linear-gradient(135deg,#ffffff12,transparent 42%,#01080b9e)}
 .planet.object-visual{width:100%;height:100%;aspect-ratio:auto;border-radius:18px;background-size:contain!important;background-repeat:no-repeat!important;background-color:#020b14;box-shadow:inset 0 0 30px #020b147d,0 0 32px #8fc6dc28}
 .planet.object-visual:after{border-radius:18px}
