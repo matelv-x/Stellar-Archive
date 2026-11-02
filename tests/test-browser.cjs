@@ -18,6 +18,9 @@ let staticImageRequests=[];
 let archiveUpdateAvailable=false;
 let archiveUpdateRequests=0;
 let alarmUpdateAvailable=false;
+let lampUpdateAvailable=false;
+const addonUpdateTasks=new Map();
+const addonUpdateRequests=[];
 const systemActionRequests={restart:0,reboot:0,shutdown:0};
 
 const server=http.createServer((request,response)=>{
@@ -63,9 +66,47 @@ const server=http.createServer((request,response)=>{
       addonTask={state:'running',...stages[Math.min(addonPolls-1,stages.length-1)]};
       if(addonTask.state==='complete')aquilaInstalled=addonAction!=='uninstall';
     }
+    for(const [id,task] of addonUpdateTasks){
+      if(task.state!=='running')continue;
+      task.polls+=1;
+      const stages=[
+        {phase:'download',progress:25,message:'Downloading update'},
+        {phase:'verify',progress:55,message:'Verifying update'},
+        {phase:'install',progress:80,message:'Installing update'},
+        {state:'complete',phase:'complete',progress:100,message:'Update complete'}
+      ];
+      Object.assign(task,{state:'running'},stages[Math.min(task.polls-1,stages.length-1)]);
+      if(task.state==='complete'){
+        if(id==='alarm-clock')alarmUpdateAvailable=false;
+        if(id==='lamp-mode')lampUpdateAvailable=false;
+      }
+    }
+    const taskFor=id=>{
+      const task=addonUpdateTasks.get(id);
+      if(!task)return {state:'idle',message:'Ready'};
+      const {polls,...publicTask}=task;
+      return publicTask;
+    };
+    const installed=[
+      {id:'alarm-clock',name:'Alarm Clock',repository:'matelv-x/Alarm-Clock',repository_url:'https://github.com/matelv-x/Alarm-Clock',installed:true,current_revision:'111111111111',latest_revision:alarmUpdateAvailable?'333333333333':'111111111111',update_available:alarmUpdateAvailable,check_error:'',can_install:false,can_update:true,can_uninstall:true,restart_required:true,task:taskFor('alarm-clock')},
+      {id:'lamp-mode',name:'Lamp Mode',repository:'matelv-x/Lamp-Mode',repository_url:'https://github.com/matelv-x/Lamp-Mode',installed:true,current_revision:'444444444444',latest_revision:lampUpdateAvailable?'555555555555':'444444444444',update_available:lampUpdateAvailable,check_error:'',can_install:false,can_update:true,can_uninstall:true,restart_required:false,task:taskFor('lamp-mode')}
+    ];
     const aquila={id:'aquila-symbol-patch',name:'Aquila Symbol Patch',repository:'matelv-x/Aquila-Symbol-Patch',repository_url:'https://github.com/matelv-x/Aquila-Symbol-Patch',installed:aquilaInstalled,current_revision:aquilaInstalled?'222222222222':null,latest_revision:'222222222222',update_available:false,check_error:'',can_install:!aquilaInstalled,can_update:aquilaInstalled,can_uninstall:aquilaInstalled,restart_required:true,task:addonTask};
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,addons:[{id:'alarm-clock',name:'Alarm Clock',repository:'matelv-x/Alarm-Clock',repository_url:'https://github.com/matelv-x/Alarm-Clock',installed:true,current_revision:'111111111111',latest_revision:alarmUpdateAvailable?'333333333333':'111111111111',update_available:alarmUpdateAvailable,check_error:'',can_install:false,can_update:true,can_uninstall:true,task:{state:'idle',message:'Ready'}},...(aquilaInstalled?[aquila]:[])],available:aquilaInstalled?[]:[aquila]}));
+    response.end(JSON.stringify({success:true,addons:[...installed,...(aquilaInstalled?[aquila]:[])],available:aquilaInstalled?[]:[aquila]}));
+    return;
+  }
+  if(requestPath==='/stargate/do/stellar_archive_addon_update'&&request.method==='POST'){
+    let body='';
+    request.on('data',chunk=>{body+=chunk});
+    request.on('end',()=>{
+      const id=JSON.parse(body||'{}').id;
+      addonUpdateRequests.push(id);
+      const task={state:'running',phase:'prepare',progress:5,message:'Preparing update',polls:0};
+      addonUpdateTasks.set(id,task);
+      response.writeHead(200,{'content-type':'application/json'});
+      response.end(JSON.stringify({success:true,message:'Update started',task}));
+    });
     return;
   }
   if(/^\/stargate\/do\/stellar_archive_addon_(install|uninstall)$/.test(requestPath)&&request.method==='POST'){
@@ -351,7 +392,7 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(await page.locator('#dialog-maintenance:not([hidden])').count(),1);
     await page.waitForSelector('#addon-list .addon-row');
     assert.strictEqual(await page.locator('.maintenance-fold').count(),2);
-    assert.strictEqual(await page.locator('#addon-list .addon-row').count(),1);
+    assert.strictEqual(await page.locator('#addon-list .addon-row').count(),2);
     assert.strictEqual(await page.locator('#available-addon-list .addon-row').count(),1);
     await page.locator('.maintenance-fold').nth(1).locator('summary').click();
     const installButton=page.locator('#available-addon-list button[data-addon-action="install"]');
@@ -586,8 +627,29 @@ const server=http.createServer((request,response)=>{
     await page.waitForSelector('#dialog-maintenance:not([hidden])');
     assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.27 is available.');
     assert((await page.locator('#addon-list').textContent()).includes('UPDATE AVAILABLE'));
+    assert((await page.locator('#addon-manager-status').textContent()).includes('Alarm Clock'),'update review must name the affected add-on');
+    assert.strictEqual(await page.locator('#addon-list .update-row').count(),1,'update review must highlight the affected add-on');
+    assert.strictEqual(await page.locator('#update-all-addons').textContent(),'UPDATE ALL (1)');
     assert.strictEqual(await page.locator('#update-notice').isHidden(),true);
     await page.screenshot({path:path.join(__dirname,'validation-automatic-update-notice.png'),fullPage:false});
+
+    archiveUpdateAvailable=false;
+    lampUpdateAvailable=true;
+    addonUpdateRequests.length=0;
+    addonUpdateTasks.clear();
+    await page.locator('#refresh-addons').click();
+    await page.waitForFunction(()=>document.querySelector('#update-all-addons')?.textContent==='UPDATE ALL (2)');
+    assert((await page.locator('#addon-manager-status').textContent()).includes('Alarm Clock'));
+    assert((await page.locator('#addon-manager-status').textContent()).includes('Lamp Mode'));
+    await page.locator('#update-all-addons').click();
+    await page.waitForSelector('#addon-progress-overlay[data-state="confirm"]:not([hidden])');
+    assert((await page.locator('#addon-progress-status').textContent()).includes('Alarm Clock'));
+    assert((await page.locator('#addon-progress-status').textContent()).includes('Lamp Mode'));
+    await page.locator('#addon-progress-restart').click();
+    await page.waitForFunction(()=>document.querySelector('#addon-progress-overlay')?.dataset.state==='complete',{timeout:20000});
+    assert.deepStrictEqual(addonUpdateRequests,['alarm-clock','lamp-mode'],'UPDATE ALL must update each eligible add-on exactly once and in sequence');
+    assert.strictEqual(await page.locator('#addon-progress-bar').getAttribute('style'),'width: 100%;');
+    assert.strictEqual(await page.locator('#addon-progress-restart').isHidden(),false,'one final restart option must be offered when any updated add-on requires it');
 
     console.log('browser integration tests: PASS');
   } finally {

@@ -444,7 +444,7 @@ function showAboutDialog(){
  links.hidden=false;
  $('#dialog-maintenance').hidden=false;
  $('#details').showModal();
- loadInstalledAddons();
+ return loadInstalledAddons();
 }
 async function maintenanceRequest(url,options={}){
  const headers={...(options.headers||{}),'X-Stellar-Archive-Request':'same-origin'};
@@ -522,7 +522,15 @@ async function checkUpdatesAutomatically({force=false}={}){
  showAutomaticUpdateSummary(summary);
  return summary;
 }
-$('#update-notice-open').addEventListener('click',()=>{$('#update-notice').hidden=true;syncPendingNoticePosition();showAboutDialog()});
+$('#update-notice-open').addEventListener('click',async()=>{
+ $('#update-notice').hidden=true;
+ syncPendingNoticePosition();
+ const installedFold=document.querySelector('#dialog-maintenance .maintenance-fold');
+ if(installedFold)installedFold.open=true;
+ await showAboutDialog();
+ const firstUpdate=document.querySelector('#addon-list .update-row');
+ if(firstUpdate)firstUpdate.scrollIntoView({block:'center'});
+});
 $('#update-notice-close').addEventListener('click',()=>{
  if(automaticUpdateSummary){try{sessionStorage.setItem(dismissedUpdateStorageKey,updateSummarySignature(automaticUpdateSummary))}catch(error){}}
  $('#update-notice').hidden=true;
@@ -548,10 +556,17 @@ function addonRevision(value){return value?escapeHtml(value):'UNKNOWN'}
 function renderAddons(addons,available){
  installedAddons=addons||[];
  availableAddons=available||[];
+ const updateCandidates=installedAddons.filter(addon=>addon.update_available===true&&addon.can_update&&!addon.check_error);
  const host=$('#addon-list');
  $('#installed-addon-count').textContent=`(${installedAddons.length+1})`;
  $('#available-addon-count').textContent=`(${availableAddons.length})`;
- $('#addon-manager-status').textContent=installedAddons.length?`${installedAddons.length} supported matelv-x add-on${installedAddons.length===1?'':'s'} detected.`:'No supported matelv-x add-ons are currently installed.';
+ const updateAll=$('#update-all-addons');
+ updateAll.hidden=!updateCandidates.length;
+ updateAll.disabled=installedAddons.some(addon=>addon.task?.state==='running');
+ updateAll.textContent=`UPDATE ALL (${updateCandidates.length})`;
+ $('#addon-manager-status').textContent=updateCandidates.length
+  ?`${updateCandidates.length} updates: ${updateCandidates.map(addon=>addon.name).join(' · ')}`
+  :(installedAddons.length?`${installedAddons.length} supported matelv-x add-on${installedAddons.length===1?'':'s'} detected; all known revisions are current.`:'No supported matelv-x add-ons are currently installed.');
  host.innerHTML=installedAddons.map(addon=>{
   const task=addon.task||{};
   const running=task.state==='running';
@@ -560,7 +575,7 @@ function renderAddons(addons,available){
   if(task.message&&task.state!=='idle')state=task.message;
   const updateDisabled=running||!addon.can_update;
   const uninstallDisabled=running||!addon.can_uninstall;
-  return `<article class="addon-row" data-addon-id="${escapeHtml(addon.id)}"><div class="addon-row-head"><div><a class="addon-row-name" href="${escapeHtml(addon.repository_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(addon.name)} ↗</a><div class="addon-row-meta${addon.check_error?' error':''}">${escapeHtml(state)} · LOCAL ${addonRevision(addon.current_revision)} · GITHUB ${addonRevision(addon.latest_revision)}</div></div></div><div class="dialog-actions"><button type="button" data-addon-action="update" ${updateDisabled?'disabled':''}>CHECK FOR UPDATES</button><button type="button" class="danger" data-addon-action="uninstall" ${uninstallDisabled?'disabled':''}>UNINSTALL</button></div></article>`
+  return `<article class="addon-row${addon.update_available===true?' update-row':''}" data-addon-id="${escapeHtml(addon.id)}"><div class="addon-row-head"><div><a class="addon-row-name" href="${escapeHtml(addon.repository_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(addon.name)} ↗</a><div class="addon-row-meta${addon.check_error?' error':''}">${escapeHtml(state)} · LOCAL ${addonRevision(addon.current_revision)} · GITHUB ${addonRevision(addon.latest_revision)}</div></div></div><div class="dialog-actions"><button type="button" data-addon-action="update" ${updateDisabled?'disabled':''}>${addon.update_available===true?'UPDATE':'CHECK'}</button><button type="button" class="danger" data-addon-action="uninstall" ${uninstallDisabled?'disabled':''}>UNINSTALL</button></div></article>`
  }).join('');
  $('#available-addon-list').innerHTML=availableAddons.map(addon=>{
   const reviewed=reviewedAddonRepositories.has(addon.id);
@@ -681,6 +696,54 @@ async function pollAddonMaintenance(addonId){
  $('#addon-manager-status').textContent='The add-on operation is still running. Refresh in a moment.';
  failAddonProgress('The operation did not report completion. Check the installed add-on list before trying again.');
 }
+async function waitForAddonMaintenance(addonId,onProgress){
+ for(let attempt=0;attempt<300;attempt++){
+  await new Promise(resolve=>window.setTimeout(resolve,1000));
+  const payload=await maintenanceRequest('/stargate/get/stellar_archive_addons');
+  automaticAddonPayload=payload;
+  addonsLastCheckedAt=Date.now();
+  renderAddons(payload.addons||[],payload.available||[]);
+  const addon=[...(payload.addons||[]),...(payload.available||[])].find(item=>item.id===addonId);
+  if(!addon)throw new Error('add-on status is no longer available');
+  if(onProgress)onProgress(addon.task||{});
+  if(addon.task?.state==='failed')throw new Error(addon.task.message||`${addon.name} update failed`);
+  if(addon.task?.state==='complete')return addon;
+ }
+ throw new Error('the add-on operation did not report completion');
+}
+async function updateAllAddons(){
+ automaticAddonPayload=null;
+ await loadInstalledAddons();
+ const updates=installedAddons.filter(addon=>addon.update_available===true&&addon.can_update&&!addon.check_error);
+ if(!updates.length){$('#addon-manager-status').textContent='All known add-on revisions are current.';return}
+ const bulk={id:'update-all',name:`${updates.length} ADD-ONS`,restart_required:updates.some(addon=>addon.restart_required)};
+ const names=updates.map(addon=>addon.name).join(' · ');
+ if(!await confirmAddonAction(bulk,'update',`Update all ${updates.length} add-ons in sequence? ${names}`))return;
+ showAddonProgress(bulk,'update');
+ automaticAddonPayload=null;
+ try{
+  for(let index=0;index<updates.length;index++){
+   const addon=updates[index];
+   $('#addon-progress-name').textContent=`${index+1} / ${updates.length} · ${addon.name}`;
+   $('#addon-progress-status').textContent=`Starting ${addon.name}…`;
+   await maintenanceRequest('/stargate/do/stellar_archive_addon_update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:addon.id})});
+   await waitForAddonMaintenance(addon.id,task=>{
+    const itemProgress=Number.isFinite(Number(task.progress))?Number(task.progress):5;
+    const totalProgress=Math.min(99,Math.max(5,((index+(itemProgress/100))/updates.length)*100));
+    $('#addon-progress-bar').style.width=`${totalProgress}%`;
+    $('#addon-progress-status').textContent=`${index+1} / ${updates.length} · ${addon.name} · ${task.message||'Updating…'}`;
+    updateAddonProgressSteps(task.phase||'prepare');
+   });
+  }
+  await refreshIntegrationNavigation();
+  await checkUpdatesAutomatically({force:true});
+  addonProgressContext={id:'update-all',name:`${updates.length} add-ons`,action:'update',restartRequired:bulk.restart_required};
+  updateAddonProgress({state:'complete',phase:'complete',progress:100,message:`Updated: ${names}`});
+ }catch(error){
+  $('#addon-manager-status').textContent=`Update all stopped: ${error.message}`;
+  failAddonProgress(`Update all stopped: ${error.message}`);
+ }
+}
 $('#addon-progress-close').addEventListener('click',()=>{
  $('#addon-progress-overlay').hidden=true;
  addonProgressContext=null;
@@ -728,6 +791,7 @@ $('#addon-progress-restart').addEventListener('click',async()=>{
  }catch(error){failAddonProgress(`Restart failed: ${error.message}`)}
 });
 $('#refresh-addons').addEventListener('click',()=>{automaticAddonPayload=null;loadInstalledAddons()});
+$('#update-all-addons').addEventListener('click',updateAllAddons);
 async function handleAddonAction(event){
  const button=event.target.closest('button[data-addon-action]');
  if(!button)return;

@@ -205,9 +205,12 @@ dialog p{font-size:14px;line-height:1.9}
 .addon-manager{margin-top:16px;padding-top:14px;border-top:1px solid #31515c}
 .addon-manager-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .addon-manager-heading h3{margin:0}
-.addon-manager-heading #refresh-addons{padding:6px 9px;font-size:7px}
+.addon-manager-actions{display:flex;align-items:center;gap:7px}
+.addon-manager-heading button{padding:6px 9px;font-size:7px}
+.addon-manager-heading #update-all-addons{border-color:#d5bd7d;background:#5c4828;color:#fff0cf}
 .addon-list{display:grid;gap:8px;margin-top:10px}
 .addon-row{padding:10px;border:1px solid #294751;background:#031019b8}
+.addon-row.update-row{border-color:#d5bd7d;background:linear-gradient(120deg,#382e1fb8,#031019b8)}
 .addon-row-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .addon-row-name{color:#e8d8b5;font:600 11px Georgia,serif;letter-spacing:.08em}
 .addon-row-meta{margin-top:3px;color:#7195a0;font-size:7px;letter-spacing:.08em}
