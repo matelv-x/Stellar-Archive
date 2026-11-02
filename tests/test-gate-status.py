@@ -5,6 +5,7 @@ import sys
 import tempfile
 import types
 import unittest
+from unittest import mock
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -52,9 +53,9 @@ console.log(JSON.stringify({
                 json.loads(result.stdout),
                 {
                     "freshStandard": True,
-                    "staleStandard": False,
+                    "staleStandard": None,
                     "freshFan": True,
-                    "staleFan": False,
+                    "staleFan": None,
                     "staleLan": True,
                     "local": True,
                 },
@@ -221,6 +222,29 @@ console.log(JSON.stringify({
                 manager.get_fan_status_freshness()["source"], "subspace_probe"
             )
             self.assertFalse(manager.get_fan_status_freshness()["stale"])
+
+            config = """[Interface]\nAddress = 172.30.0.77/32\n[Peer]\nAllowedIPs = 172.30.0.0/16\n"""
+            healthy = [
+                subprocess.CompletedProcess([], 0, "3: subspace inet 172.30.0.77/32 scope global subspace\n", ""),
+                subprocess.CompletedProcess([], 0, "172.30.0.0/16 dev subspace scope link\n", ""),
+            ]
+            with mock.patch("builtins.open", mock.mock_open(read_data=config)), mock.patch.object(
+                module.stellar_archive_subprocess, "run", side_effect=healthy
+            ):
+                self.assertEqual(manager._ensure_subspace_network(), "healthy")
+
+            repaired = [
+                subprocess.CompletedProcess([], 0, "", ""),
+                subprocess.CompletedProcess([], 0, "", ""),
+                subprocess.CompletedProcess([], 0, "", ""),
+                subprocess.CompletedProcess([], 0, "3: subspace inet 172.30.0.77/32 scope global subspace\n", ""),
+                subprocess.CompletedProcess([], 0, "172.30.0.0/16 dev subspace scope link\n", ""),
+            ]
+            with mock.patch("builtins.open", mock.mock_open(read_data=config)), mock.patch.object(
+                module.stellar_archive_subprocess, "run", side_effect=repaired
+            ) as run:
+                self.assertEqual(manager._ensure_subspace_network(), "repaired")
+                self.assertEqual(run.call_args_list[2].args[0], ['/usr/bin/systemctl', 'restart', 'wg-quick@subspace.service'])
 
             stargate.net_tools.has_internet_access = lambda: False
             manager.update_fan_gates_from_api()

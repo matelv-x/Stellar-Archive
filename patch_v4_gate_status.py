@@ -30,7 +30,7 @@ function stellarArchiveAddressesMatch(first, second) {
 function stellarArchiveGateIsOnline(value) {
     if (stellarArchiveAddressesMatch(value.gate_address, stellarArchiveLocalAddress)) return true;
     if (value.type === 'lan') return String(value.is_gate_online) === '1';
-    if (stellarArchiveStatusFreshness.stale !== false) return false;
+    if (stellarArchiveStatusFreshness.stale !== false) return null;
     if (value.type === 'standard') return true;
     if (value.type === 'fan') return String(value.is_gate_online) === '1';
     return false;
@@ -131,8 +131,74 @@ MANAGER_METHODS = '''    def get_fan_status_freshness(self):
         except (OSError, ValueError, stellar_archive_subprocess.SubprocessError):
             return None
 
+    @staticmethod
+    def _ensure_subspace_network():
+        """Restore a configured Subspace address/route lost during network resets."""
+        config_path = '/etc/wireguard/subspace.conf'
+        try:
+            address = None
+            network = None
+            with open(config_path, 'r', encoding='utf-8') as config:
+                for line in config:
+                    key, separator, value = line.partition('=')
+                    if not separator:
+                        continue
+                    key = key.strip()
+                    value = value.strip().split(',', 1)[0].strip()
+                    if key == 'Address' and address is None:
+                        address = value
+                    elif key == 'AllowedIPs' and network is None:
+                        network = value
+            interface_address = stellar_archive_ipaddress.ip_interface(address)
+            allowed_network = stellar_archive_ipaddress.ip_network(network, strict=False)
+            subspace_network = stellar_archive_ipaddress.ip_network('172.30.0.0/16')
+            if allowed_network != subspace_network or interface_address.ip not in subspace_network:
+                return 'unmanaged'
+
+            def inspect():
+                address_result = stellar_archive_subprocess.run(
+                    ['/usr/sbin/ip', '-4', '-o', 'address', 'show', 'dev', 'subspace'],
+                    capture_output=True,
+                    text=True,
+                    timeout=3,
+                    check=False,
+                )
+                route_result = stellar_archive_subprocess.run(
+                    ['/usr/sbin/ip', '-4', 'route', 'show', str(allowed_network), 'dev', 'subspace'],
+                    capture_output=True,
+                    text=True,
+                    timeout=3,
+                    check=False,
+                )
+                return (
+                    address_result.returncode == 0
+                    and address in address_result.stdout.split()
+                    and route_result.returncode == 0
+                    and bool(route_result.stdout.strip())
+                )
+
+            if inspect():
+                return 'healthy'
+            restart = stellar_archive_subprocess.run(
+                ['/usr/bin/systemctl', 'restart', 'wg-quick@subspace.service'],
+                stdout=stellar_archive_subprocess.DEVNULL,
+                stderr=stellar_archive_subprocess.DEVNULL,
+                timeout=30,
+                check=False,
+            )
+            return 'repaired' if restart.returncode == 0 and inspect() else 'failed'
+        except (OSError, TypeError, ValueError, stellar_archive_subprocess.SubprocessError):
+            return 'unmanaged' if not address and not network else 'failed'
+
     def update_fan_gate_statuses_from_subspace(self):
         """Probe existing FAN peers and atomically update only their online flags."""
+        network_state = self._ensure_subspace_network()
+        if network_state == 'failed':
+            self._fan_status_probe_error = 'SubspaceRouteUnavailable'
+            self.log.log('Fan Gate Status Probe: FAILED (Subspace address or route unavailable)')
+            return False
+        if network_state == 'repaired':
+            self.log.log('Fan Gate Status Probe: restored Subspace address and route')
         fan_gates = self.address_book.get_fan_gates()
         local_address = self.address_book.get_local_address()
         candidates = {
@@ -370,7 +436,7 @@ def patch_html(path):
     text = path.read_text(encoding="utf-8", errors="replace")
     updated, count = re.subn(
         r'src=["\']/js/address_book\.js(?:\?[^"\']*)?["\']',
-        'src="/js/address_book.js?v=stellar-archive-1.5.26-status"',
+        'src="/js/address_book.js?v=stellar-archive-1.5.27-status"',
         text,
         count=1,
     )

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.27
+
+- Adds `UPDATE ALL (N)` to the add-on maintenance panel. It lists and
+  highlights the exact eligible add-ons, updates them sequentially after one
+  confirmation, and offers one final service restart when required.
+- Restores a missing Subspace WireGuard address and route before a FAN status
+  probe when a network or VPN reset leaves the interface handshaking without
+  layer-3 routing.
+- Treats stale central-directory FAN and Standard status as unknown instead of
+  falsely displaying every destination as offline.
+- Cache-busts the packaged 131-record world catalogue so different clients do
+  not retain an older 129-record dataset.
+
 ## 1.5.26
 
 - Makes catalogue filters mutually exclusive: ONLINE and OFFLINE contain FAN

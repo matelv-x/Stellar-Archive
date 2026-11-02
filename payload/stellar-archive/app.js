@@ -27,8 +27,9 @@ function renderCategoryCounts(){
   standard:worlds.filter(world=>world.category==='standard').length,
   lan:worlds.filter(world=>liveLanAddresses.has(addressKey(world.storedAddress))).length
  };
- const pending=liveStatusState==='checking'||liveStatusState==='error';
- const labels={all:`ALL ${counts.all} RECORDS`,online:`ONLINE · ${pending?'—':counts.online}`,offline:`OFFLINE · ${pending?'—':counts.offline}`,standard:`STANDARD · ${counts.standard}`,lan:`LAN · ${pending?'—':counts.lan}`};
+ const fanPending=['checking','error','stale'].includes(liveStatusState);
+ const lanPending=['checking','error'].includes(liveStatusState);
+ const labels={all:`ALL ${counts.all} RECORDS`,online:`ONLINE · ${fanPending?'—':counts.online}`,offline:`OFFLINE · ${fanPending?'—':counts.offline}`,standard:`STANDARD · ${counts.standard}`,lan:`LAN · ${lanPending?'—':counts.lan}`};
  $('#category').querySelectorAll('option').forEach(option=>{if(labels[option.value])option.textContent=labels[option.value]});
 }
 const escapeHtml=value=>String(value).replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
@@ -46,8 +47,8 @@ function filtered(){
  const matches=worlds.filter(world=>{
   const address=addressKey(world.storedAddress);
   const categoryMatch=category==='all'||
-   (category==='online'&&world.category==='fan'&&liveGateStatuses.get(address)===true)||
-   (category==='offline'&&world.category==='fan'&&liveGateStatuses.get(address)===false)||
+   (category==='online'&&liveStatusState==='ready'&&world.category==='fan'&&liveGateStatuses.get(address)===true)||
+   (category==='offline'&&liveStatusState==='ready'&&world.category==='fan'&&liveGateStatuses.get(address)===false)||
    (category==='standard'&&world.category==='standard')||
    (category==='lan'&&liveLanAddresses.has(address));
   return categoryMatch&&`${world.name} ${world.description} ${world.classification} ${world.fullAddress.join('-')}`.toLowerCase().includes(q);
@@ -61,8 +62,8 @@ function gateOnline(entry,localAddress,directoryFresh){
  const address=addressKey(entry.gate_address);
  if(address===localAddress)return true;
  if(entry.type==='lan')return String(entry.is_gate_online)==='1';
- if(entry.type==='standard')return directoryFresh;
- if(entry.type==='fan')return directoryFresh&&String(entry.is_gate_online)==='1';
+ if(entry.type==='standard')return directoryFresh?true:null;
+ if(entry.type==='fan')return directoryFresh?String(entry.is_gate_online)==='1':null;
  return false;
 }
 function gateStatus(world){
@@ -456,7 +457,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.26';
+const installedArchiveVersion='1.5.27';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -912,14 +913,14 @@ async function refreshGateStatuses(){
   const directoryFresh=payload.status_freshness?.stale===false;
   const localAddress=Array.isArray(dialingStatus.local_address)?addressKey(dialingStatus.local_address):'';
   const v3=dialingStatus.platform==='sg1_v3'||payload.platform==='sg1_v3';
-  const counts={online:v3?'—':0,offline:v3?'—':0,standard:0,lan:0};
+  const counts={online:v3||!directoryFresh?'—':0,offline:v3||!directoryFresh?'—':0,standard:0,lan:0};
   for(const entry of entries){
    if(!Array.isArray(entry.gate_address))continue;
    if(entry.type==='standard'){counts.standard++;continue}
    if(entry.type==='lan'){counts.lan++;continue}
    if(entry.type!=='fan'||v3)continue;
    const online=gateOnline(entry,localAddress,directoryFresh);
-   counts[online?'online':'offline']++;
+   if(typeof online==='boolean')counts[online?'online':'offline']++;
   }
   const statusEntries=v3?entries.filter(entry=>Array.isArray(entry.gate_address)&&addressKey(entry.gate_address)===localAddress):entries.filter(entry=>Array.isArray(entry.gate_address));
   const next=new Map(statusEntries.map(entry=>{
@@ -928,10 +929,10 @@ async function refreshGateStatuses(){
   }));
   const nextLanAddresses=new Set(entries.filter(entry=>entry.type==='lan'&&Array.isArray(entry.gate_address)).map(entry=>addressKey(entry.gate_address)));
   if(!next.size)throw new Error('empty address book');
-  const signature=[...next].sort(([a],[b])=>a.localeCompare(b)).map(([address,online])=>`${address}:${online?1:0}`).join('|')+`|lan:${[...nextLanAddresses].sort().join(',')}`;
+  const signature=[...next].sort(([a],[b])=>a.localeCompare(b)).map(([address,online])=>`${address}:${online===true?1:online===false?0:'?'}`).join('|')+`|lan:${[...nextLanAddresses].sort().join(',')}`;
   liveGateStatuses=next;
   liveLanAddresses=nextLanAddresses;
-  liveStatusState='ready';
+  liveStatusState=directoryFresh?'ready':'stale';
   renderGateSummary(counts);
   renderCategoryCounts();
   if(signature!==liveStatusSignature){
