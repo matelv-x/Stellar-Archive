@@ -209,7 +209,7 @@ class StellarArchiveMaintenance:
         }
 
     def _download(self, url, destination, progress_range=None, message="Downloading update"):
-        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.27"})
+        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.28"})
         total = 0
         with urllib.request.urlopen(request, timeout=30) as response, open(destination, "wb") as output:
             expected = int(response.headers.get("Content-Length") or 0)

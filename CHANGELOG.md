@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.28
+
+- Shows Archive self-update in the full in-page maintenance progress window,
+  including real download percentage, verification, installation, completion,
+  and the target-specific service restart action.
+- Expands the About dialog on large displays to a capped two-column layout
+  while preserving the bounded single-column mobile presentation.
+
 ## 1.5.27
 
 - Adds `UPDATE ALL (N)` to the add-on maintenance panel. It lists and
