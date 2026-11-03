@@ -133,7 +133,13 @@ class StellarArchiveMaintenance:
             config = self.config()
             if self.version_tuple(release["version"]) <= self.version_tuple(config["version"]):
                 return {"success": True, "message": "Stellar Archive is already up to date", "task": dict(self.task)}
-            self.task = {"state": "running", "action": "update", "message": "Downloading {}".format(release["version"])}
+            self.task = {
+                "state": "running",
+                "action": "update",
+                "phase": "download",
+                "progress": 5,
+                "message": "Downloading {}".format(release["version"]),
+            }
             thread = threading.Thread(target=self._run_update, args=(config, release), name="stellar-archive-update")
             thread.daemon = True
             thread.start()
@@ -193,10 +199,20 @@ class StellarArchiveMaintenance:
         except Exception as error:
             return {"success": False, "message": str(error)}
 
-    def _download(self, url, destination):
+    def _set_update_progress(self, phase, progress, message):
+        self.task = {
+            "state": "running",
+            "action": "update",
+            "phase": phase,
+            "progress": max(5, min(99, int(progress))),
+            "message": message,
+        }
+
+    def _download(self, url, destination, progress_range=None, message="Downloading update"):
         request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.27"})
         total = 0
         with urllib.request.urlopen(request, timeout=30) as response, open(destination, "wb") as output:
+            expected = int(response.headers.get("Content-Length") or 0)
             while True:
                 chunk = response.read(1024 * 1024)
                 if not chunk:
@@ -205,6 +221,14 @@ class StellarArchiveMaintenance:
                 if total > MAX_PACKAGE_BYTES:
                     raise ValueError("release asset exceeds the 300 MB safety limit")
                 output.write(chunk)
+                if progress_range and expected > 0:
+                    start, end = progress_range
+                    progress = start + ((end - start) * min(total, expected) / expected)
+                    self._set_update_progress(
+                        "download",
+                        progress,
+                        "{} · {}%".format(message, int(min(total, expected) * 100 / expected)),
+                    )
 
     @staticmethod
     def _sha256(path):
@@ -241,12 +265,20 @@ class StellarArchiveMaintenance:
                 raise RuntimeError("another maintenance operation is already running")
             zip_path = os.path.join(temp, release["zip_name"])
             sha_path = zip_path + ".sha256"
-            self._download(release["zip_url"], zip_path)
+            self._download(
+                release["zip_url"],
+                zip_path,
+                progress_range=(5, 68),
+                message="Downloading {}".format(release["version"]),
+            )
+            self._set_update_progress("download", 70, "Downloading checksum")
             self._download(release["sha_url"], sha_path)
+            self._set_update_progress("verify", 74, "Verifying release checksum")
             checksum_text = Path(sha_path).read_text(encoding="utf-8")
             match = SHA_RE.search(checksum_text)
             if not match or self._sha256(zip_path).lower() != match.group(1).lower():
                 raise ValueError("release SHA-256 verification failed")
+            self._set_update_progress("verify", 82, "Verifying and extracting the release")
             extract_root = os.path.join(temp, "extracted")
             self._safe_extract(zip_path, extract_root)
             installers = list(Path(extract_root).glob("*/install.sh"))
@@ -254,12 +286,19 @@ class StellarArchiveMaintenance:
                 raise ValueError("release ZIP does not contain one universal installer")
             for script in installers[0].parent.glob("install*.sh"):
                 script.chmod(0o755)
+            self._set_update_progress("install", 88, "Installing {}".format(release["version"]))
             result = subprocess.run(self._installer_command(installers[0], config), capture_output=True, text=True, timeout=900)
             if result.returncode:
                 raise RuntimeError("installer failed: {}".format((result.stderr or result.stdout)[-1200:]))
-            self.task = {"state": "complete", "action": "update", "message": "Updated to {}. Restart the Stargate software once.".format(release["version"])}
+            self.task = {
+                "state": "complete",
+                "action": "update",
+                "phase": "complete",
+                "progress": 100,
+                "message": "Updated to {}. Restart the Stargate software once.".format(release["version"]),
+            }
         except Exception as error:
-            self.task = {"state": "failed", "action": "update", "message": str(error)}
+            self.task = {"state": "failed", "action": "update", "phase": "failed", "progress": 100, "message": str(error)}
         finally:
             if acquired:
                 self.operation_lock.release()

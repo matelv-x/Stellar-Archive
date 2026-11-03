@@ -17,6 +17,7 @@ let statusRevision=0;
 let staticImageRequests=[];
 let archiveUpdateAvailable=false;
 let archiveUpdateRequests=0;
+let archiveUpdatePolls=0;
 let alarmUpdateAvailable=false;
 let lampUpdateAvailable=false;
 const addonUpdateTasks=new Map();
@@ -44,14 +45,26 @@ const server=http.createServer((request,response)=>{
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_update'){
+    let archiveTask={state:'idle',message:'Ready'};
+    if(archiveUpdateRequests){
+      archiveUpdatePolls+=1;
+      const stages=[
+        {state:'running',phase:'download',progress:32,message:'Downloading 1.5.28 · 43%'},
+        {state:'running',phase:'verify',progress:76,message:'Verifying release checksum'},
+        {state:'running',phase:'install',progress:88,message:'Installing 1.5.28'},
+        {state:'complete',phase:'complete',progress:100,message:'Updated safely'}
+      ];
+      archiveTask=stages[Math.min(archiveUpdatePolls-1,stages.length-1)];
+    }
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,current_version:'1.5.27',latest_version:archiveUpdateAvailable?'1.5.28':'1.5.27',update_available:archiveUpdateAvailable,task:archiveUpdateRequests?{state:'complete',message:'Updated safely'}:{state:'idle',message:'Ready'}}));
+    response.end(JSON.stringify({success:true,current_version:'1.5.27',latest_version:archiveUpdateAvailable?'1.5.28':'1.5.27',update_available:archiveUpdateAvailable,task:archiveTask}));
     return;
   }
   if(requestPath==='/stargate/do/stellar_archive_update'&&request.method==='POST'){
     archiveUpdateRequests+=1;
+    archiveUpdatePolls=0;
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,message:'Update started'}));
+    response.end(JSON.stringify({success:true,message:'Update started',task:{state:'running',phase:'download',progress:5,message:'Downloading 1.5.28'}}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_addons'){
@@ -380,6 +393,11 @@ const server=http.createServer((request,response)=>{
     await page.locator('.integration-dropdown summary').click();
     await page.getByRole('button',{name:'ABOUT'}).click();
     await page.waitForSelector('#dialog-links:not([hidden])');
+    await page.setViewportSize({width:1920,height:1080});
+    const wideAbout=await page.locator('#details').boundingBox();
+    assert(wideAbout.width>=1000&&wideAbout.width<=1122,'large-screen ABOUT dialog must use the available width without exceeding its cap');
+    assert(wideAbout.height<=972,'large-screen ABOUT dialog must remain inside 90% of the viewport height');
+    assert.strictEqual(await page.locator('#addon-list').evaluate(node=>getComputedStyle(node).gridTemplateColumns.split(' ').length),2,'large-screen installed add-ons must use two columns');
     assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.27');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
@@ -463,8 +481,17 @@ const server=http.createServer((request,response)=>{
     const updateResponse=page.waitForResponse(response=>response.url().endsWith('/stargate/do/stellar_archive_update'));
     await page.locator('#system-action-approve').click();
     await updateResponse;
+    await page.waitForSelector('#addon-progress-overlay[data-state="running"]');
+    assert.strictEqual(await page.locator('#addon-progress-eyebrow').textContent(),'STELLAR ARCHIVE SOFTWARE MAINTENANCE');
+    assert.strictEqual(await page.locator('#addon-progress-name').textContent(),'STELLAR ARCHIVE 1.5.27 → 1.5.28');
+    await page.waitForFunction(()=>document.querySelector('#addon-progress-overlay')?.dataset.state==='complete');
     await page.waitForFunction(()=>document.querySelector('#maintenance-status').textContent==='Updated safely');
     assert.strictEqual(archiveUpdateRequests,1,'approved update must call the backend exactly once');
+    assert.strictEqual(await page.locator('#addon-progress-bar').evaluate(element=>element.style.width),'100%');
+    assert.strictEqual(await page.locator('#addon-progress-restart').isHidden(),false,'Archive update must offer the target-specific service restart');
+    await page.screenshot({path:path.join(__dirname,'validation-archive-update-progress.png'),fullPage:false});
+    await page.locator('#addon-progress-close').click();
+    await page.waitForSelector('#addon-progress-overlay',{state:'hidden'});
     archiveUpdateAvailable=false;
     await page.screenshot({path:path.join(__dirname,'validation-about-addons.png'),fullPage:false});
     await page.locator('#close-dialog').click();

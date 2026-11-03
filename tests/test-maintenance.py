@@ -33,7 +33,9 @@ class TestController(StellarArchiveMaintenance):
     def latest_release(self):
         return dict(self.release)
 
-    def _download(self, url, destination):
+    def _download(self, url, destination, progress_range=None, message="Downloading update"):
+        if progress_range:
+            self._set_update_progress("download", progress_range[1], message + " · 100%")
         shutil.copy2(self.assets[url], destination)
 
 
@@ -84,6 +86,8 @@ class MaintenanceTests(unittest.TestCase):
         self.assertTrue(result["success"])
         self.wait()
         self.assertEqual(self.controller.task["state"], "complete")
+        self.assertEqual(self.controller.task["phase"], "complete")
+        self.assertEqual(self.controller.task["progress"], 100)
         args = self.marker.read_text(encoding="utf-8").splitlines()
         self.assertEqual(args, ["--platform", "v4", "--target", "/tmp/example-web", "--replace", "standalone"])
 

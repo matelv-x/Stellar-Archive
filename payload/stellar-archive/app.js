@@ -274,7 +274,7 @@ $('#nodes').addEventListener('click',choose);
 $('#search').addEventListener('input',render);
 $('#category').addEventListener('change',render);
 $('#sort-order').addEventListener('change',render);
-function showDialog(title,copy){$('#dialog-title').textContent=title;$('#dialog-copy').textContent=copy;$('#dialog-maintenance').hidden=true;$('#dialog-links').hidden=true;$('#dialog-links').innerHTML='';$('#details').showModal()}
+function showDialog(title,copy){$('#details').classList.remove('about-dialog');$('#dialog-title').textContent=title;$('#dialog-copy').textContent=copy;$('#dialog-maintenance').hidden=true;$('#dialog-links').hidden=true;$('#dialog-links').innerHTML='';$('#details').showModal()}
 function dialHref(world){
   const address=world.storedAddress.join('-');
   const hostReceiver=configuredHostHomeHref();
@@ -437,6 +437,7 @@ const archiveLinks=[
  ['ADDITIONAL PAGES','GateWorld Site History','https://www.gateworld.net/site-history/']
 ];
 function showAboutDialog(){
+ $('#details').classList.add('about-dialog');
  $('#dialog-title').textContent='STARGATE · LIST OF WEBSITES';
  $('#dialog-copy').textContent=`A local archive of ${archive.count} destinations. Galaxy visual adapted from ESA/Gaia/DPAC and Stefan Payne-Wardenaar, CC BY-SA 3.0 IGO. Differential motion is accelerated and illustrative; destination coordinates are not Gaia measurements. Some archived external links may no longer work.`;
  const links=$('#dialog-links');
@@ -630,6 +631,7 @@ function showAddonProgress(addon,action){
  overlay.dataset.running='true';
  overlay.dataset.state='running';
  overlay.dataset.action=action;
+ $('#addon-progress-eyebrow').textContent=addon.id==='stellar-archive'?'STELLAR ARCHIVE SOFTWARE MAINTENANCE':'MATELV-X ADD-ON MAINTENANCE';
  $('#addon-progress-title').textContent=`${action.toUpperCase()} IN PROGRESS`;
  $('#addon-progress-name').textContent=addon.name;
  $('#addon-progress-status').textContent='Preparing secure operation…';
@@ -847,10 +849,21 @@ async function pollMaintenance(){
    const payload=await maintenanceRequest('/stargate/get/stellar_archive_update');
    const task=payload.task||{};
    if(task.message)$('#maintenance-status').textContent=task.message;
-   if(task.state==='complete'||task.state==='failed'){setMaintenanceBusy(false,task.message);return}
-  }catch(error){setMaintenanceBusy(false,`Maintenance status unavailable: ${error.message}`);return}
+   updateAddonProgress(task);
+   if(task.state==='complete'||task.state==='failed'){
+    setMaintenanceBusy(false,task.message);
+    if(task.state==='complete'){
+     automaticUpdateSummary=null;
+     updateAboutUpdateIndicator();
+     $('#update-notice').hidden=true;
+     syncPendingNoticePosition();
+    }
+    return;
+   }
+  }catch(error){setMaintenanceBusy(false,`Maintenance status unavailable: ${error.message}`);failAddonProgress(`Status unavailable: ${error.message}`);return}
  }
  setMaintenanceBusy(false,'Maintenance is still running. Check again in a moment.');
+ failAddonProgress('The update did not report completion. Check the installed version before trying again.');
 }
 $('#check-archive-update').addEventListener('click',async()=>{
  setMaintenanceBusy(true,'Checking the GitHub release…');
@@ -863,10 +876,13 @@ $('#check-archive-update').addEventListener('click',async()=>{
    label:'UPDATE'
   });
   if(!approved){setMaintenanceBusy(false,'Update cancelled.');return}
+  const archiveUpdate={id:'stellar-archive',name:`STELLAR ARCHIVE ${status.current_version} → ${status.latest_version}`,restart_required:true};
+  showAddonProgress(archiveUpdate,'update');
   const result=await maintenanceRequest('/stargate/do/stellar_archive_update',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
   setMaintenanceBusy(true,result.message||'Update started…');
+  updateAddonProgress(result.task||{state:'running',phase:'download',progress:5,message:result.message||'Update started…'});
   pollMaintenance();
- }catch(error){setMaintenanceBusy(false,`Update check failed: ${error.message}`)}
+ }catch(error){setMaintenanceBusy(false,`Update check failed: ${error.message}`);failAddonProgress(error.message)}
 });
 $('#uninstall-archive').addEventListener('click',async()=>{
  const approved=await confirmSystemAction({

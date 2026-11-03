@@ -172,6 +172,7 @@ button{color:inherit}
 .selection>a:hover,.selection>a:focus-visible{background:#8e6b36;box-shadow:0 0 24px #ffd79c60;outline:none}
 .selection>a span{font-size:19px;margin-left:8px}
 dialog{background:linear-gradient(145deg,#0c2b38,#04131c);color:#dfe7df;border:1px solid var(--gold);max-width:560px;width:calc(100% - 32px);padding:35px;box-shadow:0 0 80px #69d5f51a}
+#details.about-dialog{box-sizing:border-box;width:min(1120px,calc(100vw - 80px));max-width:1120px;max-height:90dvh;overflow:auto}
 dialog::backdrop{background:#000b;backdrop-filter:blur(7px)}
 dialog h2{font:27px Georgia,serif;letter-spacing:.15em;color:#f1dca8;margin:24px 0}
 dialog p{font-size:14px;line-height:1.9}
@@ -250,6 +251,11 @@ dialog p{font-size:14px;line-height:1.9}
 #dial-address:hover{background:#8e6b36;box-shadow:0 0 24px #ffd79c60}
 #dial-address[hidden]{display:none}
 #close-dialog{position:absolute;right:12px;top:8px;background:none;border:0;font-size:30px;color:#d7c69a}
+@media(min-width:1000px){
+ #details.about-dialog #addon-list,#details.about-dialog #available-addon-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #details.about-dialog .dialog-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:30px}
+ #details.about-dialog .dialog-links h3{grid-column:1/-1}
+}
 @media(max-width:1400px){
  .address-console{height:220px;flex-basis:220px}
  .console-body{height:calc(100% - 42px);display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) 54px;align-items:center;column-gap:18px;row-gap:7px;padding:7px 22px 9px}
@@ -324,7 +330,7 @@ dialog p{font-size:14px;line-height:1.9}
  .seal>img{width:44px;height:44px}
  .selection{order:3;width:100%;display:flex;justify-content:center}
  .selection>a{width:min(100%,260px);min-height:48px;padding:13px 10px;font-size:10px}
- dialog{box-sizing:border-box;width:calc(100% - 20px);max-width:none;max-height:94dvh;padding:20px 16px;overflow:auto}
+ dialog,#details.about-dialog{box-sizing:border-box;width:calc(100% - 20px);max-width:none;max-height:94dvh;padding:20px 16px;overflow:auto}
  dialog>.eyebrow{display:block;padding-right:34px;line-height:1.55}
  dialog h2{font-size:22px;margin:18px 0}
  dialog p{font-size:12px;line-height:1.65}
