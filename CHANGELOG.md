@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.30
+
+- Replaces the CSP-blocked inline-width maintenance indicator with a native
+  progress element, so download, verification, installation, and completion
+  percentages are visibly rendered in browsers.
+- Extends browser validation to require visible progress beyond the initial 5%
+  and a final value of 100% without inline styles.
+
 ## 1.5.29
 
 - Accelerates large GitHub release downloads with four independently validated

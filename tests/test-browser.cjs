@@ -49,22 +49,22 @@ const server=http.createServer((request,response)=>{
     if(archiveUpdateRequests){
       archiveUpdatePolls+=1;
       const stages=[
-        {state:'running',phase:'download',progress:32,message:'Downloading 1.5.30 · 43%'},
+        {state:'running',phase:'download',progress:32,message:'Downloading 1.5.31 · 43%'},
         {state:'running',phase:'verify',progress:76,message:'Verifying release checksum'},
-        {state:'running',phase:'install',progress:88,message:'Installing 1.5.30'},
+        {state:'running',phase:'install',progress:88,message:'Installing 1.5.31'},
         {state:'complete',phase:'complete',progress:100,message:'Updated safely'}
       ];
       archiveTask=stages[Math.min(archiveUpdatePolls-1,stages.length-1)];
     }
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,current_version:'1.5.29',latest_version:archiveUpdateAvailable?'1.5.30':'1.5.29',update_available:archiveUpdateAvailable,task:archiveTask}));
+    response.end(JSON.stringify({success:true,current_version:'1.5.30',latest_version:archiveUpdateAvailable?'1.5.31':'1.5.30',update_available:archiveUpdateAvailable,task:archiveTask}));
     return;
   }
   if(requestPath==='/stargate/do/stellar_archive_update'&&request.method==='POST'){
     archiveUpdateRequests+=1;
     archiveUpdatePolls=0;
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,message:'Update started',task:{state:'running',phase:'download',progress:5,message:'Downloading 1.5.30'}}));
+    response.end(JSON.stringify({success:true,message:'Update started',task:{state:'running',phase:'download',progress:5,message:'Downloading 1.5.31'}}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_addons'){
@@ -398,7 +398,7 @@ const server=http.createServer((request,response)=>{
     assert(wideAbout.width>=1000&&wideAbout.width<=1122,'large-screen ABOUT dialog must use the available width without exceeding its cap');
     assert(wideAbout.height<=972,'large-screen ABOUT dialog must remain inside 90% of the viewport height');
     assert.strictEqual(await page.locator('#addon-list').evaluate(node=>getComputedStyle(node).gridTemplateColumns.split(' ').length),2,'large-screen installed add-ons must use two columns');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.29');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.30');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));
@@ -431,7 +431,7 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(await page.locator('#addon-progress-title').textContent(),'INSTALL COMPLETE');
     assert((await page.locator('#integration-nav').textContent()).includes('AQUILA SYMBOL'),'install must refresh and add its navigation button');
     assert.strictEqual(await page.locator('#addon-progress-close').textContent(),'LATER');
-    assert.strictEqual(await page.locator('#addon-progress-bar').evaluate(element=>element.style.width),'100%');
+    assert.strictEqual(await page.locator('#addon-progress-bar').evaluate(element=>element.value),100);
     assert.strictEqual(await page.locator('.addon-progress-steps li.done').count(),3);
     assert.strictEqual(await page.locator('.addon-progress-steps li.active').textContent(),'COMPLETE');
     await page.screenshot({path:path.join(__dirname,'validation-addon-progress.png'),fullPage:false});
@@ -483,12 +483,15 @@ const server=http.createServer((request,response)=>{
     await updateResponse;
     await page.waitForSelector('#addon-progress-overlay[data-state="running"]');
     assert.strictEqual(await page.locator('#addon-progress-eyebrow').textContent(),'STELLAR ARCHIVE SOFTWARE MAINTENANCE');
-    assert.strictEqual(await page.locator('#addon-progress-name').textContent(),'STELLAR ARCHIVE 1.5.29 → 1.5.30');
+    assert.strictEqual(await page.locator('#addon-progress-name').textContent(),'STELLAR ARCHIVE 1.5.30 → 1.5.31');
+    await page.waitForFunction(()=>document.querySelector('#addon-progress-bar')?.value>5);
+    assert.strictEqual(await page.locator('#addon-progress-bar').getAttribute('style'),null,'progress must not rely on CSP-blocked inline styles');
     await page.waitForFunction(()=>document.querySelector('#addon-progress-overlay')?.dataset.state==='complete');
     await page.waitForFunction(()=>document.querySelector('#maintenance-status').textContent==='Updated safely');
     assert.strictEqual(archiveUpdateRequests,1,'approved update must call the backend exactly once');
-    assert.strictEqual(await page.locator('#addon-progress-bar').evaluate(element=>element.style.width),'100%');
+    assert.strictEqual(await page.locator('#addon-progress-bar').evaluate(element=>element.value),100);
     assert.strictEqual(await page.locator('#addon-progress-restart').isHidden(),false,'Archive update must offer the target-specific service restart');
+    await page.waitForTimeout(500);
     await page.screenshot({path:path.join(__dirname,'validation-archive-update-progress.png'),fullPage:false});
     await page.locator('#addon-progress-close').click();
     await page.waitForSelector('#addon-progress-overlay',{state:'hidden'});
@@ -647,12 +650,12 @@ const server=http.createServer((request,response)=>{
     await page.reload();
     await page.waitForSelector('#update-notice:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#update-notice-title').textContent(),'2 UPDATES AVAILABLE');
-    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.30 and 1 add-on update'));
+    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.31 and 1 add-on update'));
     assert(await page.getByRole('button',{name:'ABOUT •'}).evaluate(button=>button.classList.contains('update-available')),'ABOUT must show an update indicator');
     await page.screenshot({path:path.join(__dirname,'validation-automatic-update-banner.png'),fullPage:false});
     await page.locator('#update-notice-open').click();
     await page.waitForSelector('#dialog-maintenance:not([hidden])');
-    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.30 is available.');
+    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.31 is available.');
     assert((await page.locator('#addon-list').textContent()).includes('UPDATE AVAILABLE'));
     assert((await page.locator('#addon-manager-status').textContent()).includes('Alarm Clock'),'update review must name the affected add-on');
     assert.strictEqual(await page.locator('#addon-list .update-row').count(),1,'update review must highlight the affected add-on');
@@ -675,7 +678,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('#addon-progress-restart').click();
     await page.waitForFunction(()=>document.querySelector('#addon-progress-overlay')?.dataset.state==='complete',{timeout:20000});
     assert.deepStrictEqual(addonUpdateRequests,['alarm-clock','lamp-mode'],'UPDATE ALL must update each eligible add-on exactly once and in sequence');
-    assert.strictEqual(await page.locator('#addon-progress-bar').getAttribute('style'),'width: 100%;');
+    assert.strictEqual(await page.locator('#addon-progress-bar').evaluate(element=>element.value),100);
     assert.strictEqual(await page.locator('#addon-progress-restart').isHidden(),false,'one final restart option must be offered when any updated add-on requires it');
 
     console.log('browser integration tests: PASS');

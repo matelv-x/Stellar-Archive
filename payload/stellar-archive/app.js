@@ -458,7 +458,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.29';
+const installedArchiveVersion='1.5.30';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -635,7 +635,8 @@ function showAddonProgress(addon,action){
  $('#addon-progress-title').textContent=`${action.toUpperCase()} IN PROGRESS`;
  $('#addon-progress-name').textContent=addon.name;
  $('#addon-progress-status').textContent='Preparing secure operation…';
- $('#addon-progress-bar').style.width='5%';
+ $('#addon-progress-bar').value=5;
+ $('#addon-progress-bar').textContent='5%';
  $('#addon-progress-close').hidden=true;
  $('#addon-progress-restart').textContent='RESTART SERVICE';
  $('#addon-progress-restart').hidden=true;
@@ -658,7 +659,8 @@ function updateAddonProgress(task){
  const progress=Number.isFinite(Number(task.progress))?Math.max(5,Math.min(100,Number(task.progress))):5;
  overlay.dataset.running=String(task.state==='running');
  overlay.dataset.state=task.state||'running';
- $('#addon-progress-bar').style.width=`${progress}%`;
+ $('#addon-progress-bar').value=progress;
+ $('#addon-progress-bar').textContent=`${progress}%`;
  $('#addon-progress-status').textContent=task.message||'Operation in progress…';
  updateAddonProgressSteps(phase);
  if(task.state==='complete'){
@@ -733,7 +735,8 @@ async function updateAllAddons(){
    await waitForAddonMaintenance(addon.id,task=>{
     const itemProgress=Number.isFinite(Number(task.progress))?Number(task.progress):5;
     const totalProgress=Math.min(99,Math.max(5,((index+(itemProgress/100))/updates.length)*100));
-    $('#addon-progress-bar').style.width=`${totalProgress}%`;
+    $('#addon-progress-bar').value=totalProgress;
+    $('#addon-progress-bar').textContent=`${Math.round(totalProgress)}%`;
     $('#addon-progress-status').textContent=`${index+1} / ${updates.length} · ${addon.name} · ${task.message||'Updating…'}`;
     updateAddonProgressSteps(task.phase||'prepare');
    });
