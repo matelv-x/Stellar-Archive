@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.29
+
+- Accelerates large GitHub release downloads with four independently validated
+  HTTP byte ranges, while retaining the final SHA-256 verification.
+- Falls back automatically to the original single-connection downloader when
+  a release server does not support safe ranged downloads.
+
 ## 1.5.28
 
 - Shows Archive self-update in the full in-page maintenance progress window,
