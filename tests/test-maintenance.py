@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import hashlib
+import io
 import json
 import shutil
 import tempfile
@@ -90,6 +91,77 @@ class MaintenanceTests(unittest.TestCase):
         self.assertEqual(self.controller.task["progress"], 100)
         args = self.marker.read_text(encoding="utf-8").splitlines()
         self.assertEqual(args, ["--platform", "v4", "--target", "/tmp/example-web", "--replace", "standalone"])
+
+    @mock.patch("stellar_archive_maintenance.urllib.request.urlopen")
+    def test_large_download_uses_verified_parallel_ranges(self, urlopen):
+        content = bytes(range(256)) * (40 * 1024)
+
+        class Response(io.BytesIO):
+            def __init__(self, payload, status, headers):
+                super().__init__(payload)
+                self.status = status
+                self.headers = headers
+
+            def getcode(self):
+                return self.status
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                self.close()
+
+        def response_for(request, timeout=0):
+            range_header = request.get_header("Range")
+            self.assertEqual(request.get_header("Accept-encoding"), "identity")
+            self.assertEqual(timeout, 30)
+            self.assertIsNotNone(range_header)
+            start, end = (int(value) for value in range_header[6:].split("-", 1))
+            return Response(
+                content[start:end + 1],
+                206,
+                {"Content-Range": "bytes {}-{}/{}".format(start, end, len(content))},
+            )
+
+        urlopen.side_effect = response_for
+        destination = self.root / "parallel.zip"
+        controller = StellarArchiveMaintenance(self.config_path)
+        controller._download("https://example.invalid/release.zip", destination, (5, 68), "Downloading test")
+        self.assertEqual(destination.read_bytes(), content)
+        ranges = [call.args[0].get_header("Range") for call in urlopen.call_args_list]
+        self.assertEqual(ranges[0], "bytes=0-0")
+        self.assertEqual(len(ranges), 5)
+        self.assertEqual(controller.task["progress"], 68)
+        self.assertIn("4 connections", controller.task["message"])
+
+    @mock.patch("stellar_archive_maintenance.urllib.request.urlopen")
+    def test_download_falls_back_when_ranges_are_unavailable(self, urlopen):
+        content = b"fallback" * (1024 * 1024)
+
+        class Response(io.BytesIO):
+            status = 200
+
+            def __init__(self, payload):
+                super().__init__(payload)
+                self.headers = {"Content-Length": str(len(payload))}
+
+            def getcode(self):
+                return self.status
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                self.close()
+
+        urlopen.side_effect = [Response(content), Response(content)]
+        destination = self.root / "fallback.zip"
+        controller = StellarArchiveMaintenance(self.config_path)
+        controller._download("https://example.invalid/release.zip", destination, (5, 68), "Downloading fallback")
+        self.assertEqual(destination.read_bytes(), content)
+        self.assertEqual(len(urlopen.call_args_list), 2)
+        self.assertIsNotNone(urlopen.call_args_list[0].args[0].get_header("Range"))
+        self.assertIsNone(urlopen.call_args_list[1].args[0].get_header("Range"))
 
     @mock.patch("stellar_archive_maintenance.urllib.request.urlopen")
     def test_latest_release_uses_public_redirect_without_github_api(self, urlopen):

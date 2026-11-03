@@ -13,6 +13,7 @@ import threading
 import sys
 import urllib.request
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from matelv_addon_manager import MatelvAddonManager
@@ -20,9 +21,16 @@ from matelv_addon_manager import MatelvAddonManager
 
 VERSION_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 SHA_RE = re.compile(r"\b([0-9a-fA-F]{64})\b")
+CONTENT_RANGE_RE = re.compile(r"^bytes (\d+)-(\d+)/(\d+)$")
 SERVICE_RE = re.compile(r"^[A-Za-z0-9_.@-]+\.service$")
 MAX_PACKAGE_BYTES = 300 * 1024 * 1024
+PARALLEL_DOWNLOAD_MIN_BYTES = 8 * 1024 * 1024
+PARALLEL_DOWNLOAD_WORKERS = 4
 _controller = None
+
+
+class ParallelDownloadUnavailable(Exception):
+    pass
 
 
 class StellarArchiveMaintenance:
@@ -208,8 +216,18 @@ class StellarArchiveMaintenance:
             "message": message,
         }
 
-    def _download(self, url, destination, progress_range=None, message="Downloading update"):
-        request = urllib.request.Request(url, headers={"User-Agent": "Stellar-Archive-Updater/1.5.28"})
+    @staticmethod
+    def _download_request(url, byte_range=None):
+        headers = {
+            "Accept-Encoding": "identity",
+            "User-Agent": "Stellar-Archive-Updater/1.5.28",
+        }
+        if byte_range:
+            headers["Range"] = "bytes={}-{}".format(*byte_range)
+        return urllib.request.Request(url, headers=headers)
+
+    def _download_sequential(self, url, destination, progress_range=None, message="Downloading update"):
+        request = self._download_request(url)
         total = 0
         with urllib.request.urlopen(request, timeout=30) as response, open(destination, "wb") as output:
             expected = int(response.headers.get("Content-Length") or 0)
@@ -229,6 +247,92 @@ class StellarArchiveMaintenance:
                         progress,
                         "{} · {}%".format(message, int(min(total, expected) * 100 / expected)),
                     )
+
+    def _parallel_download_size(self, url):
+        request = self._download_request(url, (0, 0))
+        with urllib.request.urlopen(request, timeout=30) as response:
+            status = getattr(response, "status", response.getcode())
+            match = CONTENT_RANGE_RE.fullmatch(response.headers.get("Content-Range", ""))
+            if status != 206 or not match or match.group(1) != "0" or match.group(2) != "0":
+                return 0
+            if len(response.read(2)) != 1:
+                return 0
+        total = int(match.group(3))
+        if total > MAX_PACKAGE_BYTES:
+            raise ValueError("release asset exceeds the 300 MB safety limit")
+        return total
+
+    def _download_parallel(self, url, destination, total, progress_range, message):
+        workers = min(PARALLEL_DOWNLOAD_WORKERS, max(1, total))
+        segment_size = (total + workers - 1) // workers
+        segments = []
+        for index in range(workers):
+            start = index * segment_size
+            end = min(total - 1, start + segment_size - 1)
+            if start <= end:
+                segments.append((start, end))
+
+        with open(destination, "wb") as output:
+            output.truncate(total)
+
+        progress_lock = threading.Lock()
+        downloaded = [0]
+
+        def download_segment(segment):
+            start, end = segment
+            request = self._download_request(url, segment)
+            with urllib.request.urlopen(request, timeout=30) as response:
+                status = getattr(response, "status", response.getcode())
+                match = CONTENT_RANGE_RE.fullmatch(response.headers.get("Content-Range", ""))
+                if (
+                    status != 206
+                    or not match
+                    or int(match.group(1)) != start
+                    or int(match.group(2)) != end
+                    or int(match.group(3)) != total
+                ):
+                    raise ParallelDownloadUnavailable("release server returned an invalid byte range")
+                remaining = end - start + 1
+                with open(destination, "r+b", buffering=0) as output:
+                    output.seek(start)
+                    while remaining:
+                        chunk = response.read(min(1024 * 1024, remaining))
+                        if not chunk:
+                            raise ParallelDownloadUnavailable("release byte range ended early")
+                        output.write(chunk)
+                        remaining -= len(chunk)
+                        with progress_lock:
+                            downloaded[0] += len(chunk)
+                            low, high = progress_range
+                            progress = low + ((high - low) * downloaded[0] / total)
+                            self._set_update_progress(
+                                "download",
+                                progress,
+                                "{} · {}% · {} connections".format(
+                                    message,
+                                    int(downloaded[0] * 100 / total),
+                                    len(segments),
+                                ),
+                            )
+
+        with ThreadPoolExecutor(max_workers=len(segments), thread_name_prefix="stellar-download") as executor:
+            list(executor.map(download_segment, segments))
+
+        if os.path.getsize(destination) != total or downloaded[0] != total:
+            raise ParallelDownloadUnavailable("parallel release download is incomplete")
+
+    def _download(self, url, destination, progress_range=None, message="Downloading update"):
+        if progress_range:
+            try:
+                total = self._parallel_download_size(url)
+                if total >= PARALLEL_DOWNLOAD_MIN_BYTES:
+                    self._download_parallel(url, destination, total, progress_range, message)
+                    return
+            except ValueError:
+                raise
+            except (ParallelDownloadUnavailable, OSError):
+                self._set_update_progress("download", progress_range[0], "Parallel download unavailable; retrying safely")
+        self._download_sequential(url, destination, progress_range, message)
 
     @staticmethod
     def _sha256(path):
