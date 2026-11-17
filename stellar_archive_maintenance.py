@@ -83,8 +83,19 @@ class StellarArchiveMaintenance:
         }
 
     def check(self):
+        config = self.config()
+        task = dict(self.task)
+        if task.get("action") == "update" and task.get("state") in ("running", "complete", "failed"):
+            latest_version = task.get("target_version") or config["version"]
+            return {
+                "success": True,
+                "current_version": config["version"],
+                "latest_version": latest_version,
+                "update_available": self.version_tuple(latest_version) > self.version_tuple(config["version"]),
+                "release_url": task.get("release_url", ""),
+                "task": task,
+            }
         try:
-            config = self.config()
             latest = self.latest_release()
             current_tuple = self.version_tuple(config["version"])
             latest_tuple = self.version_tuple(latest["version"])
@@ -94,10 +105,10 @@ class StellarArchiveMaintenance:
                 "latest_version": latest["version"],
                 "update_available": latest_tuple > current_tuple,
                 "release_url": latest["release_url"],
-                "task": dict(self.task),
+                "task": task,
             }
         except Exception as error:
-            return {"success": False, "message": str(error), "task": dict(self.task)}
+            return {"success": False, "message": str(error), "task": task}
 
     @staticmethod
     def same_origin(handler):
@@ -146,6 +157,8 @@ class StellarArchiveMaintenance:
                 "action": "update",
                 "phase": "download",
                 "progress": 5,
+                "target_version": release["version"],
+                "release_url": release["release_url"],
                 "message": "Downloading {}".format(release["version"]),
             }
             thread = threading.Thread(target=self._run_update, args=(config, release), name="stellar-archive-update")
@@ -208,11 +221,15 @@ class StellarArchiveMaintenance:
             return {"success": False, "message": str(error)}
 
     def _set_update_progress(self, phase, progress, message):
+        target_version = self.task.get("target_version")
+        release_url = self.task.get("release_url", "")
         self.task = {
             "state": "running",
             "action": "update",
             "phase": phase,
             "progress": max(5, min(99, int(progress))),
+            "target_version": target_version,
+            "release_url": release_url,
             "message": message,
         }
 
@@ -220,7 +237,7 @@ class StellarArchiveMaintenance:
     def _download_request(url, byte_range=None):
         headers = {
             "Accept-Encoding": "identity",
-            "User-Agent": "Stellar-Archive-Updater/1.5.31",
+            "User-Agent": "Stellar-Archive-Updater/1.5.32",
         }
         if byte_range:
             headers["Range"] = "bytes={}-{}".format(*byte_range)
@@ -399,10 +416,20 @@ class StellarArchiveMaintenance:
                 "action": "update",
                 "phase": "complete",
                 "progress": 100,
+                "target_version": release["version"],
+                "release_url": release["release_url"],
                 "message": "Updated to {}. Restart the Stargate software once.".format(release["version"]),
             }
         except Exception as error:
-            self.task = {"state": "failed", "action": "update", "phase": "failed", "progress": 100, "message": str(error)}
+            self.task = {
+                "state": "failed",
+                "action": "update",
+                "phase": "failed",
+                "progress": 100,
+                "target_version": release["version"],
+                "release_url": release["release_url"],
+                "message": str(error),
+            }
         finally:
             if acquired:
                 self.operation_lock.release()

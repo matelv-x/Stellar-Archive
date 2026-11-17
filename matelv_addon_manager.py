@@ -11,6 +11,7 @@ from __future__ import print_function
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -343,13 +344,52 @@ class MatelvAddonManager:
         shutil.rmtree(str(destination), ignore_errors=True)
         os.replace(str(temporary), str(destination))
 
+    def _repository_transport(self, repository, checkout):
+        """Use an optional repository-scoped, read-only deployment identity.
+
+        Credentials live outside the served web tree. Public repositories and
+        installations without an identity retain their existing transport.
+        No personal token, global Git setting, or unchecked host key is used.
+        """
+        origin = checkout["origin"] if checkout else "https://github.com/{}.git".format(repository)
+        if self._repo_from_remote("https://github.com/{}.git".format(repository)) != repository:
+            raise ValueError("invalid repository for scoped Git transport")
+        directory = (self.config()["home_root"] / ".config" / "stellar-archive"
+                     / "git-ssh" / repository.split("/", 1)[1])
+        key = directory / "id_ed25519"
+        hosts = directory / "known_hosts"
+        if not key.exists() and not hosts.exists():
+            return origin, {}
+        if (not key.is_file() or key.is_symlink() or not hosts.is_file()
+                or hosts.is_symlink() or key.stat().st_mode & 0o077):
+            raise ValueError("scoped Git SSH identity is incomplete or has unsafe permissions")
+        command = ["ssh", "-F", "/dev/null", "-i", str(key),
+                   "-o", "IdentitiesOnly=yes", "-o", "IdentityAgent=none",
+                   "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes",
+                   "-o", "UserKnownHostsFile=" + str(hosts),
+                   "-o", "GlobalKnownHostsFile=/dev/null", "-o", "ConnectTimeout=10"]
+        return "git@github.com:{}.git".format(repository), {
+            "GIT_SSH_COMMAND": " ".join(shlex.quote(part) for part in command),
+        }
+
     def _remote_revision(self, repository, checkout):
         now = time.time()
         cached = self.remote_cache.get(repository.lower())
-        if cached and now - cached[0] < 300:
+        cache_seconds = 300 if cached and cached[1] else 5
+        if cached and now - cached[0] < cache_seconds:
             return cached[1], cached[2]
-        origin = checkout["origin"] if checkout else "https://github.com/{}.git".format(repository)
-        result = self._run(["git", "ls-remote", origin, "HEAD"], timeout=20)
+        origin, transport_env = self._repository_transport(repository, checkout)
+        result = None
+        for attempt in range(3):
+            result = self._run(["git", "ls-remote", origin, "HEAD"], timeout=20, env=transport_env)
+            diagnostic = (result.stderr or result.stdout).lower()
+            transient_dns = (
+                "could not resolve host" in diagnostic
+                or "temporary failure in name resolution" in diagnostic
+            )
+            if result.returncode == 0 or not transient_dns or attempt == 2:
+                break
+            time.sleep(0.25 * (attempt + 1))
         value = result.stdout.split()[0].lower() if result.returncode == 0 and result.stdout.split() else ""
         revision = value if SHA_RE.fullmatch(value) else None
         error = "" if revision else ((result.stderr or result.stdout).strip()[-400:] or "repository access unavailable")
@@ -366,7 +406,7 @@ class MatelvAddonManager:
         ]
         remote_results = {}
         if check_remote and platform_manifests:
-            workers = min(4, len(platform_manifests))
+            workers = min(2, len(platform_manifests))
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 futures = {
                     executor.submit(
@@ -646,7 +686,7 @@ class MatelvAddonManager:
             acquired = self.operation_lock.acquire(timeout=1)
             if not acquired:
                 raise RuntimeError("another maintenance operation is already running")
-            origin = checkout["origin"] if checkout else "https://github.com/{}.git".format(manifest["repository"])
+            origin, transport_env = self._repository_transport(manifest["repository"], checkout)
             clone = Path(temp) / "repository"
             latest_revision = None
             local_source = None
@@ -678,7 +718,11 @@ class MatelvAddonManager:
                         if action == "uninstall" else "Downloading repository"
                     ),
                 }
-                cloned = self._run(["git", "clone", "--depth", "1", origin, str(clone)], timeout=180)
+                cloned = self._run(
+                    ["git", "clone", "--depth", "1", origin, str(clone)],
+                    timeout=180,
+                    env=transport_env,
+                )
             if cloned.returncode:
                 raise RuntimeError("repository download failed: {}".format((cloned.stderr or cloned.stdout)[-600:]))
             self.tasks[addon_id] = {

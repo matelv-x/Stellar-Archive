@@ -458,7 +458,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.31';
+const installedArchiveVersion='1.5.32';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -856,10 +856,12 @@ async function handleAddonAction(event){
 $('#addon-list').addEventListener('click',handleAddonAction);
 $('#available-addon-list').addEventListener('click',handleAddonAction);
 async function pollMaintenance(){
+ let consecutiveFailures=0;
  for(let attempt=0;attempt<180;attempt++){
   await new Promise(resolve=>window.setTimeout(resolve,2000));
   try{
    const payload=await maintenanceRequest('/stargate/get/stellar_archive_update');
+   consecutiveFailures=0;
    const task=payload.task||{};
    if(task.message)$('#maintenance-status').textContent=task.message;
    updateAddonProgress(task);
@@ -873,7 +875,17 @@ async function pollMaintenance(){
     }
     return;
    }
-  }catch(error){setMaintenanceBusy(false,`Maintenance status unavailable: ${error.message}`);failAddonProgress(`Status unavailable: ${error.message}`);return}
+  }catch(error){
+   consecutiveFailures+=1;
+   if(consecutiveFailures<10){
+    $('#maintenance-status').textContent=`Status temporarily unavailable; retrying (${consecutiveFailures}/9)…`;
+    $('#addon-progress-status').textContent='Local status temporarily unavailable; retrying without stopping the update…';
+    continue;
+   }
+   setMaintenanceBusy(false,`Maintenance status unavailable: ${error.message}`);
+   failAddonProgress(`Status unavailable after repeated retries: ${error.message}`);
+   return;
+  }
  }
  setMaintenanceBusy(false,'Maintenance is still running. Check again in a moment.');
  failAddonProgress('The update did not report completion. Check the installed version before trying again.');

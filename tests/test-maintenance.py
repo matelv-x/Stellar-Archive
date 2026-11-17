@@ -89,8 +89,27 @@ class MaintenanceTests(unittest.TestCase):
         self.assertEqual(self.controller.task["state"], "complete")
         self.assertEqual(self.controller.task["phase"], "complete")
         self.assertEqual(self.controller.task["progress"], 100)
+        self.assertEqual(self.controller.task["target_version"], "1.5.30")
         args = self.marker.read_text(encoding="utf-8").splitlines()
         self.assertEqual(args, ["--platform", "v4", "--target", "/tmp/example-web", "--replace", "standalone"])
+
+    def test_active_update_status_is_local_and_does_not_query_github(self):
+        self.controller.task = {
+            "state": "running",
+            "action": "update",
+            "phase": "download",
+            "progress": 42,
+            "target_version": "1.5.30",
+            "release_url": "https://example.invalid/releases/tag/v1.5.30",
+            "message": "Downloading",
+        }
+        self.controller.latest_release = mock.Mock(side_effect=AssertionError("GitHub must not be queried"))
+        status = self.controller.check()
+        self.assertTrue(status["success"])
+        self.assertEqual(status["latest_version"], "1.5.30")
+        self.assertTrue(status["update_available"])
+        self.assertEqual(status["task"]["progress"], 42)
+        self.controller.latest_release.assert_not_called()
 
     @mock.patch("stellar_archive_maintenance.urllib.request.urlopen")
     def test_large_download_uses_verified_parallel_ranges(self, urlopen):

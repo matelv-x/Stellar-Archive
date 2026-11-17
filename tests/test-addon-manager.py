@@ -87,6 +87,71 @@ class AddonManagerTests(unittest.TestCase):
         self.assertEqual(payload["available"], [])
         self.assertEqual(len(payload["addons"][0]["current_revision"]), 12)
 
+    def scoped_identity(self):
+        directory = self.home / ".config" / "stellar-archive" / "git-ssh" / "Example-Addon"
+        directory.mkdir(parents=True)
+        key = directory / "id_ed25519"
+        key.write_text("test fixture, not a private key\n", encoding="utf-8")
+        key.chmod(0o600)
+        (directory / "known_hosts").write_text("github.com fixture\n", encoding="utf-8")
+        return directory
+
+    def test_public_transport_is_unchanged_without_scoped_identity(self):
+        origin, env = self.manager._repository_transport("matelv-x/Example-Addon", None)
+        self.assertEqual(origin, "https://github.com/matelv-x/Example-Addon.git")
+        self.assertEqual(env, {})
+
+    def test_private_transport_does_not_require_unmigrated_home_checkout(self):
+        directory = self.scoped_identity()
+        origin, env = self.manager._repository_transport("matelv-x/Example-Addon", None)
+        self.assertEqual(origin, "git@github.com:matelv-x/Example-Addon.git")
+        self.assertIn(str(directory / "id_ed25519"), env["GIT_SSH_COMMAND"])
+        self.assertIn("StrictHostKeyChecking=yes", env["GIT_SSH_COMMAND"])
+        self.assertIn("IdentityAgent=none", env["GIT_SSH_COMMAND"])
+        self.assertEqual(self.manager._repository_transport("matelv-x/Other-Addon", None)[1], {})
+
+    def test_scoped_identity_rejects_exposed_key_and_missing_host_keys(self):
+        directory = self.scoped_identity()
+        (directory / "id_ed25519").chmod(0o644)
+        with self.assertRaises(ValueError):
+            self.manager._repository_transport("matelv-x/Example-Addon", None)
+        (directory / "id_ed25519").chmod(0o600)
+        (directory / "known_hosts").unlink()
+        with self.assertRaises(ValueError):
+            self.manager._repository_transport("matelv-x/Example-Addon", None)
+
+    def test_remote_check_uses_repository_scoped_transport(self):
+        self.scoped_identity()
+        result = subprocess.CompletedProcess([], 0, stdout="a" * 40 + "\tHEAD\n", stderr="")
+        with mock.patch.object(self.manager, "_run", return_value=result) as run:
+            self.assertEqual(self.manager._remote_revision("matelv-x/Example-Addon", None), ("a" * 40, ""))
+        self.assertEqual(run.call_args.args[0][2], "git@github.com:matelv-x/Example-Addon.git")
+        self.assertIn("GIT_SSH_COMMAND", run.call_args.kwargs["env"])
+
+    def test_remote_revision_retries_transient_dns_failure(self):
+        revision = "a" * 40
+        failed = subprocess.CompletedProcess([], 128, "", "fatal: Could not resolve host: github.com")
+        succeeded = subprocess.CompletedProcess([], 0, revision + "\tHEAD\n", "")
+        with mock.patch.object(self.manager, "_run", side_effect=[failed, succeeded]) as run, mock.patch(
+            "matelv_addon_manager.time.sleep"
+        ) as sleep:
+            result = self.manager._remote_revision("matelv-x/Example-Addon", None)
+        self.assertEqual(result, (revision, ""))
+        self.assertEqual(run.call_count, 2)
+        sleep.assert_called_once_with(0.25)
+
+    def test_failed_remote_revision_cache_expires_quickly(self):
+        key = "matelv-x/example-addon"
+        self.manager.remote_cache[key] = (100, None, "temporary DNS failure")
+        revision = "b" * 40
+        succeeded = subprocess.CompletedProcess([], 0, revision + "\tHEAD\n", "")
+        with mock.patch("matelv_addon_manager.time.time", return_value=106), mock.patch.object(
+            self.manager, "_run", return_value=succeeded
+        ) as run:
+            result = self.manager._remote_revision("matelv-x/Example-Addon", None)
+        self.assertEqual(result, (revision, ""))
+        run.assert_called_once()
+
     def test_checkout_manifest_inherits_registry_detection_and_integrations(self):
         checkout_manifest = self.home / "Example-Addon" / "stargate-addon.json"
         checkout_payload = json.loads(checkout_manifest.read_text(encoding="utf-8"))

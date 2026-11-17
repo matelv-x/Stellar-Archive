@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.32
+
+- Keeps Archive update progress polling local while an update is running or
+  has reached a terminal state, avoiding repeated GitHub DNS lookups.
+- Retries temporary local status-read failures instead of falsely declaring a
+  successfully running background update failed after the first error.
+- Retries transient GitHub DNS failures, reduces simultaneous repository
+  checks, and expires failed revision results after five seconds instead of
+  displaying them from cache for five minutes.
+- Carries forward the previously validated repository-scoped, read-only SSH
+  transport for private add-ons while leaving public repositories on anonymous
+  HTTPS and never embedding credentials in Archive.
+
 ## 1.5.31
 
 - Adds SG1 Iris Lights to the managed add-on catalogue as an optional companion
