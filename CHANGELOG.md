@@ -13,6 +13,10 @@
   directly from the confirmation click before closing the dialog, avoiding a
   Safari/WebKit continuation loss that could accept the dialog without sending
   any POST request.
+- Recognizes both the legacy integrated and current runtime-file layouts of
+  Dynamic Wormhole by checking its active configuration, endpoint, and runtime
+  integration markers. This prevents an installed legacy copy from appearing
+  in the available-to-install list.
 
 ## 1.5.35
 

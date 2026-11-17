@@ -72,7 +72,11 @@
       "name": "Dynamic Wormhole",
       "repository": "matelv-x/Dynamic-Wormhole",
       "platforms": ["v4"],
-      "detect": {"all": [{"path": "classes/StargateMilkyWay/dynamic_wormhole_runtime.py"}]},
+      "detect": {"all": [
+        {"path": "classes/StargateMilkyWay/wormhole_manager.py", "contains": "manual_dynamic_override"},
+        {"path": "classes/web_server.py", "contains": "/do/dynamic_wormhole_on"},
+        {"path": "config/milkyway-config.json", "contains": "\"use_dynamic_wormhole\""}
+      ]},
       "install": {"argv": ["./install.sh", "{sg1_root}"], "timeout": 1200},
       "uninstall": {"argv": ["./restore.sh", "{sg1_root}"], "timeout": 900},
       "archive_integration_files": ["classes/web_server.py"],

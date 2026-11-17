@@ -28,6 +28,14 @@ class AddonContractTests(unittest.TestCase):
             {"path": "classes/web_server.py", "contains": "# LAMP_MODE_WEB_START"},
         ]})
 
+    def test_dynamic_wormhole_detection_supports_legacy_and_current_installs(self):
+        addon = next(addon for addon in self.registry() if addon["id"] == "dynamic-wormhole")
+        self.assertEqual(addon["detect"], {"all": [
+            {"path": "classes/StargateMilkyWay/wormhole_manager.py", "contains": "manual_dynamic_override"},
+            {"path": "classes/web_server.py", "contains": "/do/dynamic_wormhole_on"},
+            {"path": "config/milkyway-config.json", "contains": '"use_dynamic_wormhole"'},
+        ]})
+
     def test_fan113_home_has_surgical_static_integration(self):
         addon = next(addon for addon in self.registry() if addon["id"] == "fan113-home")
         self.assertTrue(addon["restart_required"])
