@@ -148,23 +148,35 @@ class StellarArchiveMaintenance:
         with self.lock:
             if self.task.get("state") == "running":
                 return {"success": False, "message": "another maintenance task is already running", "task": dict(self.task)}
-            release = self.latest_release()
-            config = self.config()
-            if self.version_tuple(release["version"]) <= self.version_tuple(config["version"]):
-                return {"success": True, "message": "Stellar Archive is already up to date", "task": dict(self.task)}
-            self.task = {
-                "state": "running",
-                "action": "update",
-                "phase": "download",
-                "progress": 5,
-                "target_version": release["version"],
-                "release_url": release["release_url"],
-                "message": "Downloading {}".format(release["version"]),
-            }
-            thread = threading.Thread(target=self._run_update, args=(config, release), name="stellar-archive-update")
-            thread.daemon = True
-            thread.start()
-            return {"success": True, "message": "Update started", "task": dict(self.task)}
+            if not self.operation_lock.acquire(blocking=False):
+                return {"success": False, "message": "another maintenance operation is already running", "task": dict(self.task)}
+            try:
+                release = self.latest_release()
+                config = self.config()
+                if self.version_tuple(release["version"]) <= self.version_tuple(config["version"]):
+                    self.operation_lock.release()
+                    return {"success": True, "message": "Stellar Archive is already up to date", "task": dict(self.task)}
+                self.task = {
+                    "state": "running",
+                    "action": "update",
+                    "phase": "download",
+                    "progress": 5,
+                    "target_version": release["version"],
+                    "release_url": release["release_url"],
+                    "message": "Downloading {}".format(release["version"]),
+                }
+                thread = threading.Thread(
+                    target=self._run_update,
+                    args=(config, release, True),
+                    name="stellar-archive-update",
+                )
+                thread.daemon = True
+                thread.start()
+                return {"success": True, "message": "Update started", "task": dict(self.task)}
+            except Exception:
+                self.task = {"state": "idle", "message": "Ready"}
+                self.operation_lock.release()
+                raise
 
     def start_uninstall(self, handler):
         if not self.same_origin(handler):
@@ -172,12 +184,19 @@ class StellarArchiveMaintenance:
         with self.lock:
             if self.task.get("state") == "running":
                 return {"success": False, "message": "another maintenance task is already running", "task": dict(self.task)}
-            config = self.config()
-            self.task = {"state": "running", "action": "uninstall", "message": "Restoring pre-install files"}
-            thread = threading.Thread(target=self._run_uninstall, args=(config,), name="stellar-archive-uninstall")
-            thread.daemon = True
-            thread.start()
-            return {"success": True, "message": "Uninstall started", "task": dict(self.task)}
+            if not self.operation_lock.acquire(blocking=False):
+                return {"success": False, "message": "another maintenance operation is already running", "task": dict(self.task)}
+            try:
+                config = self.config()
+                self.task = {"state": "running", "action": "uninstall", "message": "Restoring pre-install files"}
+                thread = threading.Thread(target=self._run_uninstall, args=(config, True), name="stellar-archive-uninstall")
+                thread.daemon = True
+                thread.start()
+                return {"success": True, "message": "Uninstall started", "task": dict(self.task)}
+            except Exception:
+                self.task = {"state": "idle", "message": "Ready"}
+                self.operation_lock.release()
+                raise
 
     def list_addons(self):
         try:
@@ -237,7 +256,7 @@ class StellarArchiveMaintenance:
     def _download_request(url, byte_range=None):
         headers = {
             "Accept-Encoding": "identity",
-            "User-Agent": "Stellar-Archive-Updater/1.5.32",
+            "User-Agent": "Stellar-Archive-Updater/1.5.33",
         }
         if byte_range:
             headers["Range"] = "bytes={}-{}".format(*byte_range)
@@ -377,13 +396,15 @@ class StellarArchiveMaintenance:
             command.extend(["--replace", config.get("mode", "standalone")])
         return command
 
-    def _run_update(self, config, release):
-        temp = tempfile.mkdtemp(prefix="stellar-archive-update-")
-        acquired = False
+    def _run_update(self, config, release, operation_acquired=False):
+        temp = None
+        acquired = operation_acquired
         try:
-            acquired = self.operation_lock.acquire(timeout=1)
+            if not acquired:
+                acquired = self.operation_lock.acquire(timeout=1)
             if not acquired:
                 raise RuntimeError("another maintenance operation is already running")
+            temp = tempfile.mkdtemp(prefix="stellar-archive-update-")
             zip_path = os.path.join(temp, release["zip_name"])
             sha_path = zip_path + ".sha256"
             self._download(
@@ -433,12 +454,14 @@ class StellarArchiveMaintenance:
         finally:
             if acquired:
                 self.operation_lock.release()
-            shutil.rmtree(temp, ignore_errors=True)
+            if temp:
+                shutil.rmtree(temp, ignore_errors=True)
 
-    def _run_uninstall(self, config):
-        acquired = False
+    def _run_uninstall(self, config, operation_acquired=False):
+        acquired = operation_acquired
         try:
-            acquired = self.operation_lock.acquire(timeout=1)
+            if not acquired:
+                acquired = self.operation_lock.acquire(timeout=1)
             if not acquired:
                 raise RuntimeError("another maintenance operation is already running")
             installer = Path(config["installer"])

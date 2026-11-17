@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.33
+
+- Acquires the shared maintenance lock before reporting that a Stellar Archive
+  update, uninstall, or add-on operation has started.
+- Rejects a new operation immediately when another Archive or add-on task is
+  active, leaving its task state idle instead of showing a false failed update.
+
 ## 1.5.32
 
 - Keeps Archive update progress polling local while an update is running or

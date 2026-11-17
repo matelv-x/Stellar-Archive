@@ -93,6 +93,27 @@ class MaintenanceTests(unittest.TestCase):
         args = self.marker.read_text(encoding="utf-8").splitlines()
         self.assertEqual(args, ["--platform", "v4", "--target", "/tmp/example-web", "--replace", "standalone"])
 
+    def test_update_does_not_start_while_another_operation_holds_the_lock(self):
+        self.assertTrue(self.controller.operation_lock.acquire(blocking=False))
+        try:
+            result = self.controller.start_update(Handler())
+            self.assertFalse(result["success"])
+            self.assertEqual(result["message"], "another maintenance operation is already running")
+            self.assertEqual(self.controller.task["state"], "idle")
+            self.assertFalse(self.marker.exists())
+        finally:
+            self.controller.operation_lock.release()
+
+    def test_uninstall_does_not_start_while_another_operation_holds_the_lock(self):
+        self.assertTrue(self.controller.operation_lock.acquire(blocking=False))
+        try:
+            result = self.controller.start_uninstall(Handler())
+            self.assertFalse(result["success"])
+            self.assertEqual(result["message"], "another maintenance operation is already running")
+            self.assertEqual(self.controller.task["state"], "idle")
+        finally:
+            self.controller.operation_lock.release()
+
     def test_active_update_status_is_local_and_does_not_query_github(self):
         self.controller.task = {
             "state": "running",

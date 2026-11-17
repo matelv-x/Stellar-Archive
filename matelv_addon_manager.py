@@ -502,6 +502,8 @@ class MatelvAddonManager:
             return {"success": False, "message": "same-origin request required"}
         if action not in ("install", "update", "uninstall"):
             return {"success": False, "message": "unsupported add-on action"}
+        operation_acquired = False
+        task_created = False
         try:
             if payload is None:
                 addon_id = self._read_request(handler)
@@ -547,6 +549,9 @@ class MatelvAddonManager:
             with self.task_lock:
                 if any(task.get("state") == "running" for task in self.tasks.values()):
                     raise ValueError("another add-on maintenance task is already running")
+                operation_acquired = self.operation_lock.acquire(blocking=False)
+                if not operation_acquired:
+                    raise ValueError("another maintenance operation is already running")
                 self.tasks[addon_id] = {
                     "state": "running",
                     "action": action,
@@ -554,15 +559,21 @@ class MatelvAddonManager:
                     "progress": 5,
                     "message": "Preparing {}".format(action),
                 }
+                task_created = True
             thread = threading.Thread(
                 target=self._run_action,
-                args=(addon_id, action, manifest, context, checkout),
+                args=(addon_id, action, manifest, context, checkout, True),
                 name="matelv-addon-{}-{}".format(addon_id, action),
             )
             thread.daemon = True
             thread.start()
+            operation_acquired = False
             return {"success": True, "message": "{} started".format(action.capitalize()), "task": dict(self.tasks[addon_id])}
         except Exception as error:
+            if operation_acquired:
+                self.operation_lock.release()
+            if task_created and self.tasks.get(addon_id, {}).get("state") == "running":
+                self.tasks.pop(addon_id, None)
             return {"success": False, "message": str(error)}
 
     def _dependency_packages(self, addon_id, context):
@@ -680,12 +691,15 @@ class MatelvAddonManager:
             self._refresh_archive_managed_pages(context, package["manifest"])
         return failures
 
-    def _run_action(self, addon_id, action, manifest, context, checkout):
-        temp = tempfile.mkdtemp(prefix="matelv-addon-{}-".format(action))
+    def _run_action(self, addon_id, action, manifest, context, checkout, operation_acquired=False):
+        temp = None
+        acquired = operation_acquired
         try:
-            acquired = self.operation_lock.acquire(timeout=1)
+            if not acquired:
+                acquired = self.operation_lock.acquire(timeout=1)
             if not acquired:
                 raise RuntimeError("another maintenance operation is already running")
+            temp = tempfile.mkdtemp(prefix="matelv-addon-{}-".format(action))
             origin, transport_env = self._repository_transport(manifest["repository"], checkout)
             clone = Path(temp) / "repository"
             latest_revision = None
@@ -837,6 +851,7 @@ class MatelvAddonManager:
                 "message": str(error),
             }
         finally:
-            if "acquired" in locals() and acquired:
+            if acquired:
                 self.operation_lock.release()
-            shutil.rmtree(temp, ignore_errors=True)
+            if temp:
+                shutil.rmtree(temp, ignore_errors=True)

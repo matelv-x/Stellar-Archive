@@ -202,6 +202,33 @@ class AddonManagerTests(unittest.TestCase):
         result = self.manager.start(Handler("example-addon", origin=False), "uninstall", lambda _handler: False)
         self.assertFalse(result["success"])
 
+    def test_action_does_not_start_while_another_maintenance_operation_holds_the_lock(self):
+        self.assertTrue(self.manager.operation_lock.acquire(blocking=False))
+        try:
+            result = self.manager.start(
+                Handler("example-addon"), "uninstall", lambda _handler: True)
+            self.assertFalse(result["success"])
+            self.assertEqual(
+                result["message"],
+                "another maintenance operation is already running",
+            )
+            self.assertNotIn("example-addon", self.manager.tasks)
+        finally:
+            self.manager.operation_lock.release()
+
+    def test_rejected_duplicate_start_preserves_the_running_task(self):
+        running = {
+            "state": "running", "action": "update", "phase": "install",
+            "progress": 75, "message": "Still updating",
+        }
+        self.manager.tasks["example-addon"] = dict(running)
+        result = self.manager.start(
+            Handler("example-addon"), "uninstall", lambda _handler: True)
+        self.assertFalse(result["success"])
+        self.assertEqual(
+            result["message"], "another add-on maintenance task is already running")
+        self.assertEqual(self.manager.tasks["example-addon"], running)
+
     def test_already_parsed_payload_does_not_read_request_stream_twice(self):
         handler = Handler("wrong-addon")
         handler.rfile = io.BytesIO(b"")
