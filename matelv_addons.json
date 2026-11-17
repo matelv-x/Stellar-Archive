@@ -71,6 +71,7 @@
       "id": "fan113-home",
       "name": "FAN113 Home",
       "repository": "matelv-x/FAN113-Home",
+      "visibility": "private",
       "platforms": ["v4"],
       "detect": {"any": [
         {"path": ".fan113-home-addon/state.json"},

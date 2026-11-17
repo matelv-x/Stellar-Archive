@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.35
+
+- Marks FAN113 Home as a private catalogue entry and hides it before any
+  GitHub request on gates without its repository-scoped read-only identity.
+- Keeps the private add-on visible on authorized gates and rejects direct
+  install or update requests when that scoped identity is absent.
+- Keeps public add-ons on their existing anonymous HTTPS transport.
+
 ## 1.5.34
 
 - Safely removes a complete owned Original-navigation link even when another

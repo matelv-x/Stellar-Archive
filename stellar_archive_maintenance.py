@@ -256,7 +256,7 @@ class StellarArchiveMaintenance:
     def _download_request(url, byte_range=None):
         headers = {
             "Accept-Encoding": "identity",
-            "User-Agent": "Stellar-Archive-Updater/1.5.34",
+            "User-Agent": "Stellar-Archive-Updater/1.5.35",
         }
         if byte_range:
             headers["Range"] = "bytes={}-{}".format(*byte_range)

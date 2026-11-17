@@ -154,6 +154,9 @@ class MatelvAddonManager:
             raise ValueError("add-on repository must belong to matelv-x")
         if not manifest.get("name") or not isinstance(manifest.get("platforms"), list):
             raise ValueError("incomplete add-on manifest")
+        visibility = manifest.get("visibility", "public")
+        if visibility not in ("public", "private"):
+            raise ValueError("invalid add-on visibility")
         dependencies = manifest.get("depends_on", [])
         if (not isinstance(dependencies, list)
                 or any(not isinstance(item, str) or not ADDON_ID_RE.fullmatch(item)
@@ -231,6 +234,10 @@ class MatelvAddonManager:
             if registered:
                 merged = dict(registered)
                 merged.update(manifest)
+                # Repository visibility is an Archive catalogue policy.  A
+                # checkout must not be able to turn a registered private
+                # add-on into a public one.
+                merged["visibility"] = registered.get("visibility", "public")
                 manifest = self._validate_manifest(merged)
             manifests[manifest["id"]] = manifest
         return manifests
@@ -372,6 +379,19 @@ class MatelvAddonManager:
             "GIT_SSH_COMMAND": " ".join(shlex.quote(part) for part in command),
         }
 
+    def _has_scoped_repository_access(self, repository):
+        """Return true only for a complete, safely permissioned identity."""
+        directory = (self.config()["home_root"] / ".config" / "stellar-archive"
+                     / "git-ssh" / repository.split("/", 1)[1])
+        key = directory / "id_ed25519"
+        hosts = directory / "known_hosts"
+        try:
+            return (key.is_file() and not key.is_symlink()
+                    and hosts.is_file() and not hosts.is_symlink()
+                    and not key.stat().st_mode & 0o077)
+        except OSError:
+            return False
+
     def _remote_revision(self, repository, checkout):
         now = time.time()
         cached = self.remote_cache.get(repository.lower())
@@ -404,9 +424,19 @@ class MatelvAddonManager:
             manifest for manifest in self._manifests(checkouts).values()
             if context["platform"] in manifest["platforms"]
         ]
+        installed_by_id = {
+            manifest["id"]: self._is_installed(manifest, context)
+            for manifest in platform_manifests
+        }
+        visible_manifests = [
+            manifest for manifest in platform_manifests
+            if (manifest.get("visibility", "public") != "private"
+                or installed_by_id[manifest["id"]]
+                or self._has_scoped_repository_access(manifest["repository"]))
+        ]
         remote_results = {}
-        if check_remote and platform_manifests:
-            workers = min(2, len(platform_manifests))
+        if check_remote and visible_manifests:
+            workers = min(2, len(visible_manifests))
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 futures = {
                     executor.submit(
@@ -414,7 +444,7 @@ class MatelvAddonManager:
                         manifest["repository"],
                         checkouts.get(manifest["repository"].lower()),
                     ): manifest["repository"]
-                    for manifest in platform_manifests
+                    for manifest in visible_manifests
                 }
                 for future in as_completed(futures):
                     repository = futures[future]
@@ -422,14 +452,10 @@ class MatelvAddonManager:
                         remote_results[repository.lower()] = future.result()
                     except Exception as error:
                         remote_results[repository.lower()] = (None, str(error))
-        installed_by_id = {
-            manifest["id"]: self._is_installed(manifest, context)
-            for manifest in platform_manifests
-        }
-        names_by_id = {manifest["id"]: manifest["name"] for manifest in platform_manifests}
+        names_by_id = {manifest["id"]: manifest["name"] for manifest in visible_manifests}
         installed_addons = []
         available_addons = []
-        for manifest in platform_manifests:
+        for manifest in visible_manifests:
             checkout = checkouts.get(manifest["repository"].lower())
             installed = installed_by_id[manifest["id"]]
             missing_dependencies = [
@@ -518,6 +544,10 @@ class MatelvAddonManager:
             if not manifest or context["platform"] not in manifest["platforms"]:
                 raise ValueError("unknown add-on")
             installed = self._is_installed(manifest, context)
+            if (manifest.get("visibility", "public") == "private"
+                    and action in ("install", "update")
+                    and not self._has_scoped_repository_access(manifest["repository"])):
+                raise ValueError("private add-on is not available on this gate")
             if action in ("update", "uninstall") and not installed:
                 raise ValueError("add-on is not installed")
             if action == "install" and installed:

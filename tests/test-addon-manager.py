@@ -174,6 +174,46 @@ class AddonManagerTests(unittest.TestCase):
         self.assertEqual([item["id"] for item in payload["available"]], ["example-addon"])
         self.assertTrue(payload["available"][0]["can_install"])
 
+    def test_unavailable_private_addon_is_hidden_without_github_check(self):
+        (self.web / "example.js").unlink()
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["visibility"] = "private"
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+        with mock.patch.object(self.manager, "_remote_revision") as remote_revision:
+            payload = self.manager.list_addons(check_remote=True)
+        self.assertEqual(payload["addons"], [])
+        self.assertEqual(payload["available"], [])
+        remote_revision.assert_not_called()
+
+    def test_private_addon_remains_available_with_scoped_identity(self):
+        (self.web / "example.js").unlink()
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["visibility"] = "private"
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+        self.scoped_identity()
+        payload = self.manager.list_addons(check_remote=False)
+        self.assertEqual([item["id"] for item in payload["available"]], ["example-addon"])
+
+    def test_checkout_cannot_override_private_catalogue_visibility(self):
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["visibility"] = "private"
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+        checkout_manifest = self.home / "Example-Addon" / "stargate-addon.json"
+        checkout_payload = json.loads(checkout_manifest.read_text(encoding="utf-8"))
+        checkout_payload["visibility"] = "public"
+        checkout_manifest.write_text(json.dumps(checkout_payload), encoding="utf-8")
+        manifest = self.manager._manifests(self.manager._checkout_map(self.home))["example-addon"]
+        self.assertEqual(manifest["visibility"], "private")
+
+    def test_private_install_request_is_rejected_without_scoped_identity(self):
+        (self.web / "example.js").unlink()
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["visibility"] = "private"
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+        result = self.manager.start(Handler("example-addon"), "install", lambda _handler: True)
+        self.assertFalse(result["success"])
+        self.assertEqual(result["message"], "private add-on is not available on this gate")
+
     def test_install_is_blocked_without_safe_uninstall(self):
         (self.web / "example.js").unlink()
         registry = json.loads(self.registry.read_text(encoding="utf-8"))
@@ -249,6 +289,12 @@ class AddonManagerTests(unittest.TestCase):
                 "repository": "someone-else/Bad",
                 "platforms": ["v4"],
             })
+
+    def test_manifest_rejects_unknown_visibility(self):
+        manifest = self.manager._registry()["example-addon"]
+        manifest["visibility"] = "secret"
+        with self.assertRaisesRegex(ValueError, "visibility"):
+            self.manager._validate_manifest(manifest)
 
     def test_refreshes_archive_navigation_from_current_installed_pages(self):
         state = self.web / ".stellar-archive-addon"
