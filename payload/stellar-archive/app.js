@@ -458,7 +458,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.35';
+const installedArchiveVersion='1.5.36';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -611,7 +611,34 @@ async function loadInstalledAddons(){
 }
 let addonProgressContext=null;
 let addonConfirmResolve=null;
+let pendingAddonOptions={};
 const addonProgressPhases=['download','verify','install','complete'];
+function renderAddonInstallOptions(addon,action){
+ const container=$('#addon-install-options');
+ container.replaceChildren();
+ pendingAddonOptions={};
+ const definitions=action==='install'&&Array.isArray(addon.install_options)?addon.install_options:[];
+ container.hidden=!definitions.length;
+ definitions.forEach(option=>{
+  const label=document.createElement('label');
+  const title=document.createElement('span');
+  const select=document.createElement('select');
+  title.textContent=option.label;
+  select.dataset.installOption=option.id;
+  select.setAttribute('aria-label',option.label);
+  (option.choices||[]).forEach(choice=>{
+   const item=document.createElement('option');
+   item.value=choice.value;
+   item.textContent=choice.label;
+   select.appendChild(item);
+  });
+  select.value=option.default;
+  pendingAddonOptions[option.id]=select.value;
+  select.addEventListener('change',()=>{pendingAddonOptions[option.id]=select.value});
+  label.append(title,select);
+  container.appendChild(label);
+ });
+}
 function confirmAddonAction(addon,action,message){
  addonProgressContext={id:addon.id,name:addon.name,action,restartRequired:Boolean(addon.restart_required)};
  const overlay=$('#addon-progress-overlay');
@@ -621,6 +648,7 @@ function confirmAddonAction(addon,action,message){
  overlay.dataset.action=action;
  $('#addon-progress-title').textContent=`CONFIRM ${action.toUpperCase()}`;
  $('#addon-progress-name').textContent=addon.name;
+ renderAddonInstallOptions(addon,action);
  $('#addon-progress-status').textContent=message;
  $('#addon-progress-close').textContent='CANCEL';
  $('#addon-progress-close').hidden=false;
@@ -638,6 +666,7 @@ function showAddonProgress(addon,action){
  $('#addon-progress-eyebrow').textContent=addon.id==='stellar-archive'?'STELLAR ARCHIVE SOFTWARE MAINTENANCE':'MATELV-X ADD-ON MAINTENANCE';
  $('#addon-progress-title').textContent=`${action.toUpperCase()} IN PROGRESS`;
  $('#addon-progress-name').textContent=addon.name;
+ $('#addon-install-options').hidden=true;
  $('#addon-progress-status').textContent='Preparing secure operation…';
  $('#addon-progress-bar').value=5;
  $('#addon-progress-bar').textContent='5%';
@@ -847,7 +876,9 @@ async function handleAddonAction(event){
  $('#addon-manager-status').textContent=`Starting ${action} for ${addon.name}…`;
  showAddonProgress(addon,action);
  try{
-  const payload=await maintenanceRequest(`/stargate/do/stellar_archive_addon_${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:addonId})});
+  const requestPayload={id:addonId};
+  if(action==='install'&&Object.keys(pendingAddonOptions).length)requestPayload.options={...pendingAddonOptions};
+  const payload=await maintenanceRequest(`/stargate/do/stellar_archive_addon_${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(requestPayload)});
   $('#addon-manager-status').textContent=payload.message||`${action} started.`;
   updateAddonProgress(payload.task||{state:'running',phase:'prepare',progress:5,message:payload.message});
   pollAddonMaintenance(addonId);

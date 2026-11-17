@@ -28,6 +28,8 @@ REPOSITORY_RE = re.compile(
     re.IGNORECASE,
 )
 ADDON_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,63}$")
+OPTION_ID_RE = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
+ENV_NAME_RE = re.compile(r"^[A-Z_][A-Z0-9_]{0,63}$")
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 MAX_BODY_BYTES = 4096
 MAX_OUTPUT_CHARS = 1600
@@ -167,6 +169,43 @@ class MatelvAddonManager:
         if ("reapply_after_dependency_update" in manifest
                 and not isinstance(manifest["reapply_after_dependency_update"], bool)):
             raise ValueError("invalid dependency reapply policy")
+        install_options = manifest.get("install_options", [])
+        if not isinstance(install_options, list) or len(install_options) > 8:
+            raise ValueError("invalid install options")
+        option_ids = set()
+        option_envs = set()
+        for option in install_options:
+            if not isinstance(option, dict):
+                raise ValueError("install option must be an object")
+            option_id = option.get("id")
+            label = option.get("label")
+            env_name = option.get("env")
+            choices = option.get("choices")
+            default = option.get("default")
+            if (not isinstance(option_id, str) or not OPTION_ID_RE.fullmatch(option_id)
+                    or option_id in option_ids):
+                raise ValueError("invalid install option id")
+            if not isinstance(label, str) or not label.strip() or len(label) > 80:
+                raise ValueError("invalid install option label")
+            if (not isinstance(env_name, str) or not ENV_NAME_RE.fullmatch(env_name)
+                    or env_name in option_envs):
+                raise ValueError("invalid install option environment")
+            if not isinstance(choices, list) or not 2 <= len(choices) <= 12:
+                raise ValueError("invalid install option choices")
+            values = set()
+            for choice in choices:
+                if (not isinstance(choice, dict)
+                        or not isinstance(choice.get("value"), str)
+                        or not choice["value"] or len(choice["value"]) > 80
+                        or choice["value"] in values
+                        or not isinstance(choice.get("label"), str)
+                        or not choice["label"].strip() or len(choice["label"]) > 80):
+                    raise ValueError("invalid install option choice")
+                values.add(choice["value"])
+            if default not in values:
+                raise ValueError("install option default must match a choice")
+            option_ids.add(option_id)
+            option_envs.add(env_name)
         for action in ("install", "uninstall"):
             value = manifest.get(action)
             if value is None:
@@ -236,8 +275,10 @@ class MatelvAddonManager:
                 merged.update(manifest)
                 # Repository visibility is an Archive catalogue policy.  A
                 # checkout must not be able to turn a registered private
-                # add-on into a public one.
+                # add-on into a public one or redefine which installer
+                # environment variables its browser choices may control.
                 merged["visibility"] = registered.get("visibility", "public")
+                merged["install_options"] = registered.get("install_options", [])
                 manifest = self._validate_manifest(merged)
             manifests[manifest["id"]] = manifest
         return manifests
@@ -502,6 +543,15 @@ class MatelvAddonManager:
                 ],
                 "installed_dependents": installed_dependents,
                 "restart_required": bool(manifest.get("restart_required", True)),
+                "install_options": [
+                    {
+                        "id": option["id"],
+                        "label": option["label"],
+                        "default": option["default"],
+                        "choices": [dict(choice) for choice in option["choices"]],
+                    }
+                    for option in manifest.get("install_options", [])
+                ],
                 "task": task,
             }
             (installed_addons if installed else available_addons).append(item)
@@ -521,7 +571,35 @@ class MatelvAddonManager:
         addon_id = payload.get("id") if isinstance(payload, dict) else None
         if not isinstance(addon_id, str) or not ADDON_ID_RE.fullmatch(addon_id):
             raise ValueError("invalid add-on id")
-        return addon_id
+        return payload
+
+    @staticmethod
+    def _install_option_env(manifest, action, payload):
+        supplied = payload.get("options", {}) if isinstance(payload, dict) else {}
+        if not isinstance(supplied, dict):
+            raise ValueError("install options must be an object")
+        definitions = manifest.get("install_options", [])
+        if action != "install":
+            if supplied:
+                raise ValueError("install options are supported only during installation")
+            return {}
+        known = {option["id"]: option for option in definitions}
+        unknown = sorted(set(supplied) - set(known))
+        if unknown:
+            raise ValueError("unsupported install option: {}".format(", ".join(unknown)))
+        missing = [option["id"] for option in definitions if option["id"] not in supplied]
+        if missing:
+            raise ValueError("missing install option: {}".format(", ".join(missing)))
+        result = {}
+        for option_id, value in supplied.items():
+            if not isinstance(value, str):
+                raise ValueError("invalid value for install option {}".format(option_id))
+            option = known[option_id]
+            allowed = {choice["value"] for choice in option["choices"]}
+            if value not in allowed:
+                raise ValueError("invalid value for install option {}".format(option_id))
+            result[option["env"]] = value
+        return result
 
     def start(self, handler, action, same_origin, payload=None):
         if not same_origin(handler):
@@ -532,11 +610,13 @@ class MatelvAddonManager:
         task_created = False
         try:
             if payload is None:
-                addon_id = self._read_request(handler)
+                request_payload = self._read_request(handler)
             else:
-                addon_id = payload.get("id") if isinstance(payload, dict) else None
+                request_payload = payload
+                addon_id = request_payload.get("id") if isinstance(request_payload, dict) else None
                 if not isinstance(addon_id, str) or not ADDON_ID_RE.fullmatch(addon_id):
                     raise ValueError("invalid add-on id")
+            addon_id = request_payload["id"]
             context = self.config()
             checkouts = self._checkout_map(context["home_root"])
             manifests = self._manifests(checkouts)
@@ -575,6 +655,7 @@ class MatelvAddonManager:
             command = manifest.get("install" if action in ("install", "update") else "uninstall")
             if not command:
                 raise ValueError("{} is not supported safely for this add-on".format(action))
+            option_env = self._install_option_env(manifest, action, request_payload)
             checkout = checkouts.get(manifest["repository"].lower())
             with self.task_lock:
                 if any(task.get("state") == "running" for task in self.tasks.values()):
@@ -592,7 +673,7 @@ class MatelvAddonManager:
                 task_created = True
             thread = threading.Thread(
                 target=self._run_action,
-                args=(addon_id, action, manifest, context, checkout, True),
+                args=(addon_id, action, manifest, context, checkout, True, option_env),
                 name="matelv-addon-{}-{}".format(addon_id, action),
             )
             thread.daemon = True
@@ -721,7 +802,8 @@ class MatelvAddonManager:
             self._refresh_archive_managed_pages(context, package["manifest"])
         return failures
 
-    def _run_action(self, addon_id, action, manifest, context, checkout, operation_acquired=False):
+    def _run_action(self, addon_id, action, manifest, context, checkout,
+                    operation_acquired=False, option_env=None):
         temp = None
         acquired = operation_acquired
         try:
@@ -823,6 +905,7 @@ class MatelvAddonManager:
                 str(key): self._expand(value, context)
                 for key, value in command_spec.get("env", {}).items()
             }
+            command_env.update(option_env or {})
             command_env["STARGATE_ADDON_NO_RESTART"] = "1"
             suspended = self._suspend_dependents(addon_id, context) if action == "update" else []
             try:

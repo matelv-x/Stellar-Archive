@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.36
+
+- Restores the Alarm Clock background choice during first installation through
+  Stellar Archive: Kristian, PolkaDot, or Custom.
+- Adds a generic, manifest-declared install-options interface so future add-ons
+  can expose reviewed choices without add-on-specific Archive code.
+- Validates every submitted option and maps only declared values to declared
+  installer environment variables; updates keep the existing installation
+  mode and do not prompt again.
+
 ## 1.5.35
 
 - Marks FAN113 Home as a private catalogue entry and hides it before any

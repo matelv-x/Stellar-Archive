@@ -205,6 +205,23 @@ class AddonManagerTests(unittest.TestCase):
         manifest = self.manager._manifests(self.manager._checkout_map(self.home))["example-addon"]
         self.assertEqual(manifest["visibility"], "private")
 
+    def test_checkout_cannot_override_catalogue_install_options(self):
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["install_options"] = [self.background_option()]
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+        checkout_manifest = self.home / "Example-Addon" / "stargate-addon.json"
+        checkout_payload = json.loads(checkout_manifest.read_text(encoding="utf-8"))
+        checkout_payload["install_options"] = [{
+            "id": "unsafe",
+            "label": "Unsafe",
+            "env": "LD_PRELOAD",
+            "default": "a",
+            "choices": [{"value": "a", "label": "A"}, {"value": "b", "label": "B"}],
+        }]
+        checkout_manifest.write_text(json.dumps(checkout_payload), encoding="utf-8")
+        manifest = self.manager._manifests(self.manager._checkout_map(self.home))["example-addon"]
+        self.assertEqual(manifest["install_options"], [self.background_option()])
+
     def test_private_install_request_is_rejected_without_scoped_identity(self):
         (self.web / "example.js").unlink()
         registry = json.loads(self.registry.read_text(encoding="utf-8"))
@@ -533,6 +550,64 @@ class AddonManagerTests(unittest.TestCase):
         manifest = self.manager._registry()["example-addon"]
         manifest["depends_on"] = ["example-addon"]
         with self.assertRaisesRegex(ValueError, "dependencies"):
+            self.manager._validate_manifest(manifest)
+
+    @staticmethod
+    def background_option():
+        return {
+            "id": "background_mode",
+            "label": "Clock background",
+            "env": "ALARM_CLOCK_MODE",
+            "default": "1",
+            "choices": [
+                {"value": "1", "label": "Kristian"},
+                {"value": "2", "label": "PolkaDot"},
+                {"value": "3", "label": "Custom"},
+            ],
+        }
+
+    def test_install_options_are_sanitized_for_browser(self):
+        (self.web / "example.js").unlink()
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["install_options"] = [self.background_option()]
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+        payload = self.manager.list_addons(check_remote=False)
+        option = payload["available"][0]["install_options"][0]
+        self.assertEqual(option["id"], "background_mode")
+        self.assertEqual(option["default"], "1")
+        self.assertNotIn("env", option)
+
+    def test_install_option_maps_only_a_declared_choice_to_environment(self):
+        manifest = self.manager._registry()["example-addon"]
+        manifest["install_options"] = [self.background_option()]
+        self.assertEqual(
+            self.manager._install_option_env(
+                self.manager._validate_manifest(manifest),
+                "install",
+                {"id": "example-addon", "options": {"background_mode": "2"}},
+            ),
+            {"ALARM_CLOCK_MODE": "2"},
+        )
+
+    def test_install_option_rejects_missing_unknown_and_invalid_values(self):
+        manifest = self.manager._registry()["example-addon"]
+        manifest["install_options"] = [self.background_option()]
+        manifest = self.manager._validate_manifest(manifest)
+        with self.assertRaisesRegex(ValueError, "missing install option"):
+            self.manager._install_option_env(manifest, "install", {"id": "example-addon"})
+        with self.assertRaisesRegex(ValueError, "unsupported install option"):
+            self.manager._install_option_env(
+                manifest, "install", {"options": {"other": "1"}})
+        with self.assertRaisesRegex(ValueError, "invalid value"):
+            self.manager._install_option_env(
+                manifest, "install", {"options": {"background_mode": "keep"}})
+
+    def test_manifest_rejects_invalid_install_option_contract(self):
+        manifest = self.manager._registry()["example-addon"]
+        option = self.background_option()
+        option["default"] = "keep"
+        manifest["install_options"] = [option]
+        with self.assertRaisesRegex(ValueError, "default"):
             self.manager._validate_manifest(manifest)
 
 

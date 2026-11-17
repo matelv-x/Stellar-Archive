@@ -1,8 +1,14 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.35 contains one entry-point installer and two isolated adapters. It
+Version 1.5.36 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
+
+Available add-ons may declare reviewed installation choices in their
+maintenance contract. Stellar Archive displays those choices before the first
+install, validates them server-side, and keeps update operations noninteractive.
+Alarm Clock uses this interface to offer Kristian, PolkaDot, and Custom clock
+backgrounds while preserving the selected background during later updates.
 
 For a host that needs a different HOME destination, create
 `.stellar-archive-addon/home-routes.json` in the SG1_v4 web root before running
@@ -15,8 +21,8 @@ follow the selected Original or Retro integration mode.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_1.5.35.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.35
+unzip sg1_v3_v4_stellar_archive_universal_1.5.36.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.36
 ./install.sh
 ```
 
