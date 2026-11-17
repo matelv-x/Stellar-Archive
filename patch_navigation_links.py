@@ -64,7 +64,16 @@ def remove_link(path, kind):
             flags=re.I | re.S,
         )
     else:
-        updated = text.replace("\n" + ORIGINAL_LINK, "\n").replace(ORIGINAL_LINK, "")
+        original_block = re.compile(
+            r'^[ \t]*<!--\s*STELLAR_ARCHIVE_STANDALONE_LINK\s*-->[ \t]*\r?\n'
+            r'[ \t]*<li\b(?=[^>]*class=["\'][^"\']*\bstellar-archive-standalone-link\b[^"\']*["\'])[^>]*>\s*'
+            r'<a\b(?=[^>]*href=["\']/stellar-archive/["\'])[^>]*>\s*Stellar Archive\s*</a>\s*'
+            r'</li>[ \t]*(?:\r?\n)?',
+            re.I | re.M,
+        )
+        updated, matches = original_block.subn("", text)
+        if MARKER in text and matches != 1:
+            raise SystemExit(f"could not safely remove {kind} navigation marker from {path}")
     if updated == text and MARKER in text:
         raise SystemExit(f"could not safely remove {kind} navigation marker from {path}")
     if updated != text:

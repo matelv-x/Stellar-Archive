@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.34
+
+- Safely removes a complete owned Original-navigation link even when another
+  integration has normalized only its indentation, matching the `config.htm`
+  layout observed on gate 200.
+- Keeps fail-closed behaviour for incomplete, duplicated, or otherwise changed
+  navigation markers.
+
 ## 1.5.33
 
 - Acquires the shared maintenance lock before reporting that a Stellar Archive

@@ -46,4 +46,22 @@ if grep -q 'CLOSE IRIS' "$OUTPUT"; then
   exit 1
 fi
 
+# Gate 200: another integration normalized the marker comment to column zero.
+# Removal remains safe because the complete owned element is still exact.
+cat > "$TARGET/config.htm" <<'HTML'
+<ul class="navbar-nav">
+<!-- STELLAR_ARCHIVE_STANDALONE_LINK -->
+          <li class="nav-item stellar-archive-standalone-link">
+            <a class="nav-link" href="/stellar-archive/">Stellar Archive</a>
+          </li>
+          <li class="nav-item"><a class="nav-link" href="help.htm">Help</a></li>
+</ul>
+HTML
+python3 "$PACKAGE_DIR/patch_navigation_links.py" --kind original --file "$TARGET/config.htm" --remove >/dev/null
+if grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK\|stellar-archive-standalone-link' "$TARGET/config.htm"; then
+  printf 'Whitespace-normalized Archive navigation marker survived removal\n' >&2
+  exit 1
+fi
+grep -q 'help.htm' "$TARGET/config.htm"
+
 printf 'navigation detection tests: PASS\n'
