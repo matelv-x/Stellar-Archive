@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.30 contains one entry-point installer and two isolated adapters. It
+Version 1.5.31 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -15,8 +15,8 @@ follow the selected Original or Retro integration mode.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_1.5.30.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.30
+unzip sg1_v3_v4_stellar_archive_universal_1.5.31.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.31
 ./install.sh
 ```
 
@@ -216,9 +216,17 @@ button opens the repository, allowing the user to review the add-on first.
 The public catalogue currently includes Alarm Clock, Aquila Symbol Patch,
 Connection History, DHD LED Test, Dynamic Wormhole, FAN113 Home, LAN Discovery,
 Lamp Mode, Retro Visuals, Retro Wormhole Animation, SG1 Iris, Silence Mode,
-Stargate Ring Symbols, Switch To Retro and Visual Volume Meter. Alarm Clock now has a bounded
+SG1 Iris Lights, Stargate Ring Symbols, Switch To Retro and Visual Volume Meter. Alarm Clock now has a bounded
 uninstall which removes only its owned files and exact integration blocks; it
 does not restore the complete SG1 tree.
+
+Add-ons may declare dependencies. Stellar Archive blocks installation until
+the required add-on is present and blocks removal while an installed dependent
+still needs it. SG1 Iris Lights depends on SG1 Iris. When SG1 Iris is updated,
+Archive temporarily removes Iris Lights and reapplies the exact clean package
+revision it previously verified. If that revision is no longer compatible,
+SG1 Iris remains updated and Iris Lights stays safely disabled instead of
+partially patching the gate.
 
 Before running downloaded code the manager verifies all of the following:
 

@@ -290,6 +290,113 @@ class AddonManagerTests(unittest.TestCase):
         ]
         self.assertEqual(len(github_clones), 1)
 
+    def test_update_is_blocked_when_required_addon_is_missing(self):
+        checkout_manifest = self.home / "Example-Addon" / "stargate-addon.json"
+        checkout_payload = json.loads(checkout_manifest.read_text(encoding="utf-8"))
+        checkout_payload["depends_on"] = ["missing-base"]
+        checkout_manifest.write_text(json.dumps(checkout_payload), encoding="utf-8")
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["depends_on"] = ["missing-base"]
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+
+        payload = self.manager.list_addons(check_remote=False)
+        self.assertEqual(payload["addons"][0]["missing_dependencies"], ["missing-base"])
+        self.assertEqual(payload["addons"][0]["missing_dependency_names"], ["missing-base"])
+        result = self.manager.start(Handler("example-addon"), "update", lambda _handler: True)
+        self.assertFalse(result["success"])
+        self.assertIn("missing-base", result["message"])
+
+    def test_installed_dependent_blocks_dependency_uninstall(self):
+        checkout_manifest = self.home / "Example-Addon" / "stargate-addon.json"
+        checkout_payload = json.loads(checkout_manifest.read_text(encoding="utf-8"))
+        checkout_payload["depends_on"] = ["base-addon"]
+        checkout_manifest.write_text(json.dumps(checkout_payload), encoding="utf-8")
+        (self.web / "base.js").write_text("BASE_ADDON_ACTIVE\n", encoding="utf-8")
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["depends_on"] = ["base-addon"]
+        registry["addons"].append({
+            "id": "base-addon",
+            "maintenance_contract": 1,
+            "uninstall_contract": 2,
+            "name": "Base Add-on",
+            "repository": "matelv-x/Base-Addon",
+            "platforms": ["v4"],
+            "detect": {"all": [{"path": "web/base.js", "contains": "BASE_ADDON_ACTIVE"}]},
+            "install": {"argv": ["./install.sh", "--target", "{sg1_root}"]},
+            "uninstall": {"argv": ["./restore.sh", "--target", "{sg1_root}"]},
+        })
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+
+        payload = self.manager.list_addons(check_remote=False)
+        base = next(item for item in payload["addons"] if item["id"] == "base-addon")
+        self.assertFalse(base["can_uninstall"])
+        self.assertEqual(base["installed_dependents"], ["Example Add-on"])
+        result = self.manager.start(Handler("base-addon"), "uninstall", lambda _handler: True)
+        self.assertFalse(result["success"])
+        self.assertIn("Example Add-on", result["message"])
+
+    def test_verified_dependent_is_suspended_and_reapplied(self):
+        checkout = self.home / "Example-Addon"
+        checkout_manifest = checkout / "stargate-addon.json"
+        checkout_payload = json.loads(checkout_manifest.read_text(encoding="utf-8"))
+        checkout_payload["depends_on"] = ["base-addon"]
+        checkout_payload["reapply_after_dependency_update"] = True
+        checkout_manifest.write_text(json.dumps(checkout_payload), encoding="utf-8")
+        subprocess.run(["git", "-C", str(checkout), "add", "stargate-addon.json"], check=True)
+        subprocess.run(["git", "-C", str(checkout), "commit", "-qm", "dependency contract"], check=True)
+
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["depends_on"] = ["base-addon"]
+        registry["addons"][0]["reapply_after_dependency_update"] = True
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+
+        context = self.manager.config()
+        checkout_info = self.manager._checkout_map(context["home_root"])["matelv-x/example-addon"]
+        revision = self.manager._local_revision(checkout_info)
+        self.manager._cache_verified_checkout(context, "example-addon", checkout_info)
+        self.manager._write_state({
+            "example-addon": {"repository": "matelv-x/Example-Addon", "revision": revision},
+        })
+
+        suspended = self.manager._suspend_dependents("base-addon", context)
+        self.assertEqual([package["id"] for package in suspended], ["example-addon"])
+        self.assertNotIn("example-addon", self.manager._state())
+        self.assertEqual(self.manager._resume_dependents("base-addon", context, suspended), [])
+        self.assertEqual(self.manager._state()["example-addon"]["revision"], revision)
+
+    def test_dirty_exact_revision_is_not_used_for_dependency_reapply(self):
+        checkout = self.home / "Example-Addon"
+        checkout_manifest = checkout / "stargate-addon.json"
+        checkout_payload = json.loads(checkout_manifest.read_text(encoding="utf-8"))
+        checkout_payload["depends_on"] = ["base-addon"]
+        checkout_payload["reapply_after_dependency_update"] = True
+        checkout_manifest.write_text(json.dumps(checkout_payload), encoding="utf-8")
+        subprocess.run(["git", "-C", str(checkout), "add", "stargate-addon.json"], check=True)
+        subprocess.run(["git", "-C", str(checkout), "commit", "-qm", "dependency contract"], check=True)
+        registry = json.loads(self.registry.read_text(encoding="utf-8"))
+        registry["addons"][0]["depends_on"] = ["base-addon"]
+        registry["addons"][0]["reapply_after_dependency_update"] = True
+        self.registry.write_text(json.dumps(registry), encoding="utf-8")
+        context = self.manager.config()
+        checkout_info = self.manager._checkout_map(context["home_root"])["matelv-x/example-addon"]
+        revision = self.manager._local_revision(checkout_info)
+        self.manager._cache_verified_checkout(context, "example-addon", checkout_info)
+        self.manager._write_state({
+            "example-addon": {"repository": "matelv-x/Example-Addon", "revision": revision},
+        })
+        cache = context["target"] / ".stellar-archive-addon" / "addon-packages" / "example-addon"
+        (cache / "install.sh").write_text("#!/bin/sh\nexit 9\n", encoding="utf-8")
+        (checkout / "install.sh").write_text("#!/bin/sh\nexit 8\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(RuntimeError, "verified Example Add-on package is unavailable"):
+            self.manager._dependency_packages("base-addon", context)
+
+    def test_manifest_rejects_self_dependency(self):
+        manifest = self.manager._registry()["example-addon"]
+        manifest["depends_on"] = ["example-addon"]
+        with self.assertRaisesRegex(ValueError, "dependencies"):
+            self.manager._validate_manifest(manifest)
+
 
 if __name__ == "__main__":
     unittest.main()

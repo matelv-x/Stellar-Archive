@@ -13,7 +13,7 @@ class AddonContractTests(unittest.TestCase):
 
     def test_every_registered_addon_requires_surgical_uninstall_v2(self):
         addons = self.registry()
-        self.assertEqual(len(addons), 15)
+        self.assertEqual(len(addons), 16)
         for addon in addons:
             with self.subTest(addon=addon["id"]):
                 self.assertEqual(addon.get("maintenance_contract"), 1)
@@ -48,6 +48,12 @@ class AddonContractTests(unittest.TestCase):
         self.assertFalse(addon["restart_required"])
         self.assertEqual(addon["archive_integration_files"], ["web/debug.htm"])
         self.assertEqual(addon["detect"]["all"][0]["contains"], "BEGIN STARGATE VISUAL VOLUME METER ADD-ON")
+
+    def test_iris_lights_declares_iris_dependency_and_reapply_policy(self):
+        addon = next(addon for addon in self.registry() if addon["id"] == "sg1-iris-lights")
+        self.assertEqual(addon["depends_on"], ["sg1-iris"])
+        self.assertTrue(addon["reapply_after_dependency_update"])
+        self.assertIn("classes/web_server.py", addon["archive_integration_files"])
 
 
 if __name__ == "__main__":

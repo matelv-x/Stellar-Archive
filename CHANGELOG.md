@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.31
+
+- Adds SG1 Iris Lights to the managed add-on catalogue as an optional companion
+  which requires SG1 Iris.
+- Prevents installing or updating an add-on while a declared dependency is
+  missing, and prevents removing a dependency while an installed add-on still
+  requires it.
+- During a compatible dependency update, temporarily removes opted-in
+  dependents and reapplies the exact clean, cached revision that Stellar
+  Archive originally verified. If reapplication is incompatible, the updated
+  dependency remains operational and the dependent stays safely disabled with
+  a visible status message.
+
 ## 1.5.30
 
 - Replaces the CSP-blocked inline-width maintenance indicator with a native

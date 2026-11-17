@@ -150,6 +150,25 @@
     {
       "maintenance_contract": 1,
       "uninstall_contract": 2,
+      "id": "sg1-iris-lights",
+      "name": "SG1 Iris Lights",
+      "repository": "matelv-x/SG1-Iris-Lights",
+      "platforms": ["v4"],
+      "depends_on": ["sg1-iris"],
+      "reapply_after_dependency_update": true,
+      "detect": {"all": [
+        {"path": "web/.sg1-iris-lights/manifest.json"},
+        {"path": "classes/StargateMilkyWay/iris_lights.py"},
+        {"path": "web/retro/js/iris-lights.js"}
+      ]},
+      "install": {"argv": ["./install.sh", "--target", "{sg1_root}", "--update"], "timeout": 900},
+      "uninstall": {"argv": ["./restore.sh", "--target", "{sg1_root}"], "timeout": 900},
+      "archive_integration_files": ["classes/web_server.py"],
+      "restart_required": true
+    },
+    {
+      "maintenance_contract": 1,
+      "uninstall_contract": 2,
       "id": "silence-mode",
       "name": "Silence Mode",
       "repository": "matelv-x/Silence-Mode",

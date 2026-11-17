@@ -153,6 +153,16 @@ class MatelvAddonManager:
             raise ValueError("add-on repository must belong to matelv-x")
         if not manifest.get("name") or not isinstance(manifest.get("platforms"), list):
             raise ValueError("incomplete add-on manifest")
+        dependencies = manifest.get("depends_on", [])
+        if (not isinstance(dependencies, list)
+                or any(not isinstance(item, str) or not ADDON_ID_RE.fullmatch(item)
+                       for item in dependencies)
+                or addon_id in dependencies
+                or len(set(dependencies)) != len(dependencies)):
+            raise ValueError("invalid add-on dependencies")
+        if ("reapply_after_dependency_update" in manifest
+                and not isinstance(manifest["reapply_after_dependency_update"], bool)):
+            raise ValueError("invalid dependency reapply policy")
         for action in ("install", "uninstall"):
             value = manifest.get(action)
             if value is None:
@@ -287,6 +297,15 @@ class MatelvAddonManager:
         value = result.stdout.strip().lower()
         return value if result.returncode == 0 and SHA_RE.fullmatch(value) else None
 
+    def _checkout_is_clean(self, checkout):
+        if not checkout:
+            return False
+        result = self._run(
+            ["git", "-C", str(checkout["path"]), "status", "--porcelain", "--untracked-files=all"],
+            timeout=10,
+        )
+        return result.returncode == 0 and not result.stdout.strip()
+
     def _cached_checkout(self, context, addon_id, expected_repository):
         path = context["target"] / ".stellar-archive-addon" / "addon-packages" / addon_id
         if not (path / ".git").is_dir():
@@ -363,11 +382,25 @@ class MatelvAddonManager:
                         remote_results[repository.lower()] = future.result()
                     except Exception as error:
                         remote_results[repository.lower()] = (None, str(error))
+        installed_by_id = {
+            manifest["id"]: self._is_installed(manifest, context)
+            for manifest in platform_manifests
+        }
+        names_by_id = {manifest["id"]: manifest["name"] for manifest in platform_manifests}
         installed_addons = []
         available_addons = []
         for manifest in platform_manifests:
             checkout = checkouts.get(manifest["repository"].lower())
-            installed = self._is_installed(manifest, context)
+            installed = installed_by_id[manifest["id"]]
+            missing_dependencies = [
+                dependency for dependency in manifest.get("depends_on", [])
+                if not installed_by_id.get(dependency, False)
+            ]
+            installed_dependents = [
+                candidate["name"] for candidate in platform_manifests
+                if installed_by_id.get(candidate["id"], False)
+                and manifest["id"] in candidate.get("depends_on", [])
+            ]
             current = None
             if installed:
                 current = saved_state.get(manifest["id"], {}).get("revision") or self._local_revision(checkout)
@@ -386,9 +419,22 @@ class MatelvAddonManager:
                 "installed": installed,
                 "update_available": None if not installed or not current or not latest else current != latest,
                 "check_error": error,
-                "can_install": not installed and bool(manifest.get("install")) and bool(manifest.get("uninstall")),
-                "can_update": installed and bool(manifest.get("install")),
-                "can_uninstall": installed and bool(manifest.get("uninstall")),
+                "can_install": (not installed and not missing_dependencies
+                                and bool(manifest.get("install")) and bool(manifest.get("uninstall"))),
+                "can_update": installed and not missing_dependencies and bool(manifest.get("install")),
+                "can_uninstall": (installed and not installed_dependents
+                                  and bool(manifest.get("uninstall"))),
+                "depends_on": list(manifest.get("depends_on", [])),
+                "dependency_names": [
+                    names_by_id.get(dependency, dependency)
+                    for dependency in manifest.get("depends_on", [])
+                ],
+                "missing_dependencies": missing_dependencies,
+                "missing_dependency_names": [
+                    names_by_id.get(dependency, dependency)
+                    for dependency in missing_dependencies
+                ],
+                "installed_dependents": installed_dependents,
                 "restart_required": bool(manifest.get("restart_required", True)),
                 "task": task,
             }
@@ -425,7 +471,8 @@ class MatelvAddonManager:
                     raise ValueError("invalid add-on id")
             context = self.config()
             checkouts = self._checkout_map(context["home_root"])
-            manifest = self._manifests(checkouts).get(addon_id)
+            manifests = self._manifests(checkouts)
+            manifest = manifests.get(addon_id)
             if not manifest or context["platform"] not in manifest["platforms"]:
                 raise ValueError("unknown add-on")
             installed = self._is_installed(manifest, context)
@@ -433,6 +480,24 @@ class MatelvAddonManager:
                 raise ValueError("add-on is not installed")
             if action == "install" and installed:
                 raise ValueError("add-on is already installed")
+            if action in ("install", "update"):
+                missing_dependencies = [
+                    dependency for dependency in manifest.get("depends_on", [])
+                    if dependency not in manifests
+                    or not self._is_installed(manifests[dependency], context)
+                ]
+                if missing_dependencies:
+                    raise ValueError("install required add-on(s) first: {}".format(
+                        ", ".join(missing_dependencies)))
+            if action == "uninstall":
+                installed_dependents = [
+                    candidate["name"] for candidate in manifests.values()
+                    if addon_id in candidate.get("depends_on", [])
+                    and self._is_installed(candidate, context)
+                ]
+                if installed_dependents:
+                    raise ValueError("uninstall dependent add-on(s) first: {}".format(
+                        ", ".join(sorted(installed_dependents))))
             if action == "install" and not manifest.get("uninstall"):
                 raise ValueError("installation is blocked until a safe uninstall procedure is available")
             command = manifest.get("install" if action in ("install", "update") else "uninstall")
@@ -459,6 +524,121 @@ class MatelvAddonManager:
             return {"success": True, "message": "{} started".format(action.capitalize()), "task": dict(self.tasks[addon_id])}
         except Exception as error:
             return {"success": False, "message": str(error)}
+
+    def _dependency_packages(self, addon_id, context):
+        """Resolve installed dependents to the exact package revision we installed."""
+        checkouts = self._checkout_map(context["home_root"])
+        manifests = self._manifests(checkouts)
+        state = self._state()
+        packages = []
+        for dependent in manifests.values():
+            if (addon_id not in dependent.get("depends_on", [])
+                    or not dependent.get("reapply_after_dependency_update", False)
+                    or not self._is_installed(dependent, context)):
+                continue
+            revision = state.get(dependent["id"], {}).get("revision")
+            if not revision or not SHA_RE.fullmatch(revision):
+                raise RuntimeError(
+                    "{} is installed but has no verified package revision; update it through Stellar Archive first".format(
+                        dependent["name"]))
+            checkout = None
+            for candidate in (
+                self._cached_checkout(context, dependent["id"], dependent["repository"]),
+                checkouts.get(dependent["repository"].lower()),
+            ):
+                if (candidate and self._local_revision(candidate) == revision
+                        and self._checkout_is_clean(candidate)):
+                    checkout = candidate
+                    break
+            if not checkout:
+                raise RuntimeError(
+                    "the verified {} package is unavailable; refusing to update its dependency".format(
+                        dependent["name"]))
+            contract_path = checkout["path"] / "stargate-addon.json"
+            if not contract_path.is_file():
+                raise RuntimeError("{} has no cached maintenance contract".format(dependent["name"]))
+            contract = self._validate_manifest(json.loads(contract_path.read_text(encoding="utf-8")))
+            if (contract.get("maintenance_contract") != 1
+                    or contract.get("uninstall_contract") != 2
+                    or contract["id"] != dependent["id"]
+                    or contract["repository"].lower() != dependent["repository"].lower()):
+                raise RuntimeError("{} cached maintenance contract is invalid".format(dependent["name"]))
+            merged = dict(dependent)
+            merged.update(contract)
+            packages.append({
+                "id": dependent["id"],
+                "name": dependent["name"],
+                "manifest": self._validate_manifest(merged),
+                "checkout": checkout,
+                "revision": revision,
+            })
+        packages.sort(key=lambda package: package["name"].lower())
+        return packages
+
+    def _run_dependency_command(self, package, action, context):
+        command_spec = package["manifest"].get(
+            "install" if action == "install" else "uninstall")
+        if not command_spec:
+            raise RuntimeError("{} has no safe {} command".format(package["name"], action))
+        argv = [self._expand(part, context) for part in command_spec["argv"]]
+        if argv[0].startswith("./"):
+            executable = package["checkout"]["path"] / argv[0][2:]
+            if not executable.is_file():
+                raise RuntimeError("{} {} command is missing".format(package["name"], action))
+            executable.chmod(executable.stat().st_mode | 0o100)
+            argv[0] = str(executable)
+        command_env = {
+            str(key): self._expand(value, context)
+            for key, value in command_spec.get("env", {}).items()
+        }
+        command_env["STARGATE_ADDON_NO_RESTART"] = "1"
+        return self._run(
+            argv,
+            cwd=package["checkout"]["path"],
+            timeout=int(command_spec.get("timeout", 900)),
+            env=command_env,
+        )
+
+    def _suspend_dependents(self, addon_id, context):
+        packages = self._dependency_packages(addon_id, context)
+        suspended = []
+        for package in packages:
+            self.tasks[addon_id] = {
+                "state": "running", "action": "update", "phase": "dependencies", "progress": 60,
+                "message": "Temporarily removing {}".format(package["name"]),
+            }
+            result = self._run_dependency_command(package, "uninstall", context)
+            if result.returncode:
+                rollback_failures = self._resume_dependents(addon_id, context, suspended)
+                detail = (result.stderr or result.stdout).strip()[-MAX_OUTPUT_CHARS:]
+                suffix = " Rollback failed for: {}.".format(", ".join(rollback_failures)) if rollback_failures else ""
+                raise RuntimeError("could not safely remove {}: {}{}".format(
+                    package["name"], detail or "unknown error", suffix))
+            state = self._state()
+            state.pop(package["id"], None)
+            self._write_state(state)
+            suspended.append(package)
+        return suspended
+
+    def _resume_dependents(self, addon_id, context, packages):
+        failures = []
+        for package in packages:
+            self.tasks[addon_id] = {
+                "state": "running", "action": "update", "phase": "dependencies", "progress": 90,
+                "message": "Reapplying {}".format(package["name"]),
+            }
+            result = self._run_dependency_command(package, "install", context)
+            if result.returncode:
+                failures.append(package["name"])
+                continue
+            state = self._state()
+            state[package["id"]] = {
+                "repository": package["manifest"]["repository"],
+                "revision": package["revision"],
+            }
+            self._write_state(state)
+            self._refresh_archive_managed_pages(context, package["manifest"])
+        return failures
 
     def _run_action(self, addon_id, action, manifest, context, checkout):
         temp = tempfile.mkdtemp(prefix="matelv-addon-{}-".format(action))
@@ -556,15 +736,26 @@ class MatelvAddonManager:
                 for key, value in command_spec.get("env", {}).items()
             }
             command_env["STARGATE_ADDON_NO_RESTART"] = "1"
-            result = self._run(
-                argv,
-                cwd=clone,
-                timeout=int(command_spec.get("timeout", 900)),
-                env=command_env,
-            )
+            suspended = self._suspend_dependents(addon_id, context) if action == "update" else []
+            try:
+                result = self._run(
+                    argv,
+                    cwd=clone,
+                    timeout=int(command_spec.get("timeout", 900)),
+                    env=command_env,
+                )
+            except Exception as error:
+                rollback_failures = self._resume_dependents(addon_id, context, suspended)
+                suffix = " Dependency rollback failed for: {}.".format(
+                    ", ".join(rollback_failures)) if rollback_failures else ""
+                raise RuntimeError("{} failed: {}{}".format(action, error, suffix))
             if result.returncode:
+                rollback_failures = self._resume_dependents(addon_id, context, suspended)
                 detail = (result.stderr or result.stdout)[-MAX_OUTPUT_CHARS:]
-                raise RuntimeError("{} failed: {}".format(action, detail.strip()))
+                suffix = " Dependency rollback failed for: {}.".format(
+                    ", ".join(rollback_failures)) if rollback_failures else ""
+                raise RuntimeError("{} failed: {}{}".format(action, detail.strip(), suffix))
+            reapply_failures = self._resume_dependents(addon_id, context, suspended)
             state = self._state()
             if action in ("install", "update"):
                 if SHA_RE.fullmatch(verified_revision):
@@ -578,12 +769,22 @@ class MatelvAddonManager:
             restart = " Restart Stargate software once." if manifest.get("restart_required", True) else ""
             navigation = " Archive navigation refreshed." if navigation_refreshed else ""
             snapshots = " Archive integration snapshots refreshed." if managed_pages_refreshed else ""
+            dependencies = ""
+            if suspended and not reapply_failures:
+                dependencies = " Reapplied: {}.".format(
+                    ", ".join(package["name"] for package in suspended))
+            elif reapply_failures:
+                dependencies = (
+                    " Updated dependency is operational, but these add-ons remain safely disabled: {}."
+                    .format(", ".join(reapply_failures))
+                )
             self.tasks[addon_id] = {
                 "state": "complete",
                 "action": action,
                 "phase": "complete",
                 "progress": 100,
-                "message": "{} completed.{}{}{}".format(action.capitalize(), snapshots, navigation, restart),
+                "message": "{} completed.{}{}{}{}".format(
+                    action.capitalize(), snapshots, navigation, dependencies, restart),
             }
             self.remote_cache.pop(manifest["repository"].lower(), None)
         except Exception as error:

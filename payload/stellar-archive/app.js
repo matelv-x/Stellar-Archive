@@ -458,7 +458,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.30';
+const installedArchiveVersion='1.5.31';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -573,7 +573,8 @@ function renderAddons(addons,available){
   const task=addon.task||{};
   const running=task.state==='running';
   let state=addon.check_error?`Update check unavailable: ${addon.check_error}`:(addon.update_available===true?'UPDATE AVAILABLE':(addon.update_available===false?'UP TO DATE':'INSTALLED VERSION UNKNOWN'));
-  if(!addon.can_uninstall)state+=` · SAFE AUTOMATIC UNINSTALL UNAVAILABLE`;
+  if(addon.installed_dependents?.length)state+=` · REQUIRED BY ${addon.installed_dependents.join(', ')}`;
+  else if(!addon.can_uninstall)state+=` · SAFE AUTOMATIC UNINSTALL UNAVAILABLE`;
   if(task.message&&task.state!=='idle')state=task.message;
   const updateDisabled=running||!addon.can_update;
   const uninstallDisabled=running||!addon.can_uninstall;
@@ -584,7 +585,10 @@ function renderAddons(addons,available){
   const safe=addon.can_install;
   const task=addon.task||{};
   const running=task.state==='running';
-  const state=task.message&&task.state!=='idle'?task.message:(addon.check_error?`Repository unavailable: ${addon.check_error}`:(safe?'SAFE UNINSTALL VERIFIED':'INSTALLATION BLOCKED · SAFE UNINSTALL REQUIRED'));
+  const dependencyBlock=addon.missing_dependencies?.length
+   ?`INSTALL REQUIRED ADD-ON FIRST: ${(addon.missing_dependency_names||addon.missing_dependencies).join(', ')}`
+   :'';
+  const state=task.message&&task.state!=='idle'?task.message:(addon.check_error?`Repository unavailable: ${addon.check_error}`:(dependencyBlock||(safe?'SAFE UNINSTALL VERIFIED':'INSTALLATION BLOCKED · SAFE UNINSTALL REQUIRED')));
   return `<article class="addon-row" data-addon-id="${escapeHtml(addon.id)}"><div class="addon-row-head"><div><span class="addon-row-name">${escapeHtml(addon.name)}</span><div class="addon-row-meta${addon.check_error||!safe?' error':''}">${escapeHtml(state)} · GITHUB ${addonRevision(addon.latest_revision)}</div></div></div><div class="dialog-actions"><button type="button" class="addon-info" data-addon-action="info" aria-label="Open ${escapeHtml(addon.name)} repository information">ⓘ INFO</button><button type="button" data-addon-action="install" ${running||!reviewed||!safe||!!addon.check_error?'disabled':''}>INSTALL</button></div></article>`;
  }).join('');
 }
@@ -829,7 +833,13 @@ async function handleAddonAction(event){
   if(!await confirmAddonAction(addon,'update',question))return;
  }else if(action==='install'){
   if(!reviewedAddonRepositories.has(addon.id)){ $('#addon-manager-status').textContent='Open the information link before installation.';return }
-  if(!addon.can_install){$('#addon-manager-status').textContent=`${addon.name} cannot be installed until a safe uninstall procedure is verified.`;return}
+  if(!addon.can_install){
+   const reason=addon.missing_dependencies?.length
+    ?`Install required add-on(s) first: ${(addon.missing_dependency_names||addon.missing_dependencies).join(', ')}.`
+    :'Installation is blocked until a safe uninstall procedure is verified.';
+   $('#addon-manager-status').textContent=`${addon.name}: ${reason}`;
+   return;
+  }
   if(!await confirmAddonAction(addon,'install',`Install ${addon.name} from its verified matelv-x repository? A Stargate software restart may be required afterward.`))return;
  }else if(!await confirmAddonAction(addon,'uninstall','Check GitHub for the newest surgical uninstaller, then remove only this add-on?'))return;
  button.disabled=true;
