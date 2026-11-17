@@ -9,6 +9,8 @@ maintenance contract. Stellar Archive displays those choices before the first
 install, validates them server-side, and keeps update operations noninteractive.
 Alarm Clock uses this interface to offer Kristian, PolkaDot, and Custom clock
 backgrounds while preserving the selected background during later updates.
+Confirmed maintenance and system actions are dispatched directly from the
+confirmation click and are covered by both Chromium and WebKit browser tests.
 
 For a host that needs a different HOME destination, create
 `.stellar-archive-addon/home-routes.json` in the SG1_v4 web root before running

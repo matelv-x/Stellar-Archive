@@ -9,6 +9,10 @@
 - Validates every submitted option and maps only declared values to declared
   installer environment variables; updates keep the existing installation
   mode and do not prompt again.
+- Sends confirmed update, uninstall, restart, reboot, and shutdown requests
+  directly from the confirmation click before closing the dialog, avoiding a
+  Safari/WebKit continuation loss that could accept the dialog without sending
+  any POST request.
 
 ## 1.5.35
 

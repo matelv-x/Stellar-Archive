@@ -384,28 +384,39 @@ function navItemHtml(item){
   if(item.href)return `<a class="integration-button${item.addon?' addon':''}" href="${escapeHtml(item.href)}"${item.title?` title="${escapeHtml(item.title)}"`:''}>${label}</a>`;
   return `<button class="integration-button${item.addon?' addon':''}" type="button" data-nav-action="${escapeHtml(item.action||'')}">${label}</button>`;
 }
-function confirmSystemAction(config){
+function confirmSystemAction(config,onApprove,onCancel=()=>{}){
  const dialog=$('#system-action-confirm');
  $('#system-action-title').textContent=config.title;
  $('#system-action-question').textContent=config.question;
  $('#system-action-approve').textContent=config.label;
- return new Promise(resolve=>{
-  let settled=false;
-  const finish=value=>{if(settled)return;settled=true;dialog.close();resolve(value)};
-  $('#system-action-cancel').onclick=()=>finish(false);
-  $('#system-action-approve').onclick=()=>finish(true);
-  dialog.oncancel=event=>{event.preventDefault();finish(false)};
-  dialog.showModal();
- });
+ let settled=false;
+ const finish=approved=>{
+  if(settled)return;
+  settled=true;
+  // Start the approved operation from the user's click handler before closing
+  // the modal. Safari can otherwise drop the async continuation after
+  // HTMLDialogElement.close(), leaving the confirmation visibly accepted but
+  // never sending the POST request.
+  if(approved)onApprove();else onCancel();
+  dialog.close();
+ };
+ $('#system-action-cancel').onclick=()=>finish(false);
+ $('#system-action-approve').onclick=()=>finish(true);
+ dialog.oncancel=event=>{event.preventDefault();finish(false)};
+ dialog.showModal();
 }
-async function runSystemAction(action){
+function runSystemAction(action){
  const config={
   restart:{title:'RESTART SOFTWARE',question:'Restart Stargate software?',label:'RESTART',endpoint:'/stargate/do/stellar_archive_restart'},
   reboot:{title:'REBOOT RASPBERRY PI',question:'Reboot the Raspberry Pi?',label:'REBOOT',endpoint:'/stargate/do/reboot'},
   shutdown:{title:'SHUT DOWN RASPBERRY PI',question:'Shut down the Raspberry Pi?',label:'SHUT DOWN',endpoint:'/stargate/do/shutdown'}
  }[action];
- if(!config||!await confirmSystemAction(config))return;
- try{const response=await fetch(config.endpoint,{method:'POST'});if(!response.ok)throw new Error(`HTTP ${response.status}`)}catch(error){showDialog('ACTION FAILED',`System action failed: ${error.message}`)}
+ if(!config)return;
+ confirmSystemAction(config,async()=>{
+  try{
+   await maintenanceRequest(config.endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  }catch(error){showDialog('ACTION FAILED',`System action failed: ${error.message}`)}
+ });
 }
 const archiveLinks=[
  ['GAIA VISUAL AND SCIENCE','ESA Gaia Milky Way map (2025)','https://www.cosmos.esa.int/web/gaia/milky-way'],
@@ -926,33 +937,35 @@ $('#check-archive-update').addEventListener('click',async()=>{
  try{
   const status=await maintenanceRequest('/stargate/get/stellar_archive_update');
   if(!status.update_available){setMaintenanceBusy(false,`Stellar Archive ${status.current_version} is up to date.`);return}
-  const approved=await confirmSystemAction({
+  confirmSystemAction({
    title:'UPDATE STELLAR ARCHIVE',
    question:`Update Stellar Archive ${status.current_version} to ${status.latest_version}?`,
    label:'UPDATE'
-  });
-  if(!approved){setMaintenanceBusy(false,'Update cancelled.');return}
-  const archiveUpdate={id:'stellar-archive',name:`STELLAR ARCHIVE ${status.current_version} → ${status.latest_version}`,restart_required:true};
-  showAddonProgress(archiveUpdate,'update');
-  const result=await maintenanceRequest('/stargate/do/stellar_archive_update',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-  setMaintenanceBusy(true,result.message||'Update started…');
-  updateAddonProgress(result.task||{state:'running',phase:'download',progress:5,message:result.message||'Update started…'});
-  pollMaintenance();
+  },async()=>{
+   try{
+    const archiveUpdate={id:'stellar-archive',name:`STELLAR ARCHIVE ${status.current_version} → ${status.latest_version}`,restart_required:true};
+    showAddonProgress(archiveUpdate,'update');
+    const result=await maintenanceRequest('/stargate/do/stellar_archive_update',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    setMaintenanceBusy(true,result.message||'Update started…');
+    updateAddonProgress(result.task||{state:'running',phase:'download',progress:5,message:result.message||'Update started…'});
+    pollMaintenance();
+   }catch(error){setMaintenanceBusy(false,`Update failed: ${error.message}`);failAddonProgress(error.message)}
+  },()=>setMaintenanceBusy(false,'Update cancelled.'));
  }catch(error){setMaintenanceBusy(false,`Update check failed: ${error.message}`);failAddonProgress(error.message)}
 });
-$('#uninstall-archive').addEventListener('click',async()=>{
- const approved=await confirmSystemAction({
+$('#uninstall-archive').addEventListener('click',()=>{
+ confirmSystemAction({
   title:'UNINSTALL STELLAR ARCHIVE',
   question:'Uninstall Stellar Archive and restore the files captured before installation?',
   label:'UNINSTALL'
+ },async()=>{
+  setMaintenanceBusy(true,'Starting uninstall…');
+  try{
+   const result=await maintenanceRequest('/stargate/do/stellar_archive_uninstall',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+   setMaintenanceBusy(true,result.message||'Uninstall started…');
+   pollMaintenance();
+  }catch(error){setMaintenanceBusy(false,`Uninstall failed: ${error.message}`)}
  });
- if(!approved)return;
- setMaintenanceBusy(true,'Starting uninstall…');
- try{
-  const result=await maintenanceRequest('/stargate/do/stellar_archive_uninstall',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-  setMaintenanceBusy(true,result.message||'Uninstall started…');
-  pollMaintenance();
- }catch(error){setMaintenanceBusy(false,`Uninstall failed: ${error.message}`)}
 });
 $('#close-dialog').addEventListener('click',()=>$('#details').close());
 $('#details').addEventListener('click',event=>{if(event.target===$('#details')){const r=event.target.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)event.target.close()}});

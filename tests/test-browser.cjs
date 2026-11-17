@@ -4,7 +4,8 @@ const http=require('http');
 const fs=require('fs');
 const path=require('path');
 const assert=require('assert');
-const {chromium}=require('/Users/marcinmagierski/Documents/Codex/2026-09-06/x20-cz/work/test-tools/node_modules/playwright');
+const {chromium,webkit}=require('/Users/marcinmagierski/Documents/Codex/2026-09-06/x20-cz/work/test-tools/node_modules/playwright');
+const browserType=process.env.STELLAR_BROWSER==='webkit'?webkit:chromium;
 
 const root=path.resolve(__dirname,'../payload/stellar-archive');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.png':'image/png','.svg':'image/svg+xml'};
@@ -185,7 +186,9 @@ const server=http.createServer((request,response)=>{
 (async()=>{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const port=server.address().port;
-  const browser=await chromium.launch({headless:true,args:['--host-resolver-rules=MAP archive.example.test 127.0.0.1']});
+  const browser=await browserType.launch(browserType===chromium
+    ?{headless:true,args:['--host-resolver-rules=MAP archive.example.test 127.0.0.1']}
+    :{headless:true});
   const page=await browser.newPage({viewport:{width:1728,height:900}});
   try{
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=original`);
@@ -352,17 +355,19 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(six.home,'/receiver.html');
     assert.strictEqual(six.homeButton,'/receiver.html');
 
-    await page.goto(`http://archive.example.test:${port}/stellar-archive/?mode=retro`);
-    await page.waitForSelector('#select-address');
-    const ll=await page.evaluate(()=>({
-      address:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.join('-'),
-      href:document.querySelector('#select-address').getAttribute('href'),
-      home:document.querySelector('.brand').getAttribute('href'),
-      homeButton:[...document.querySelectorAll('#integration-nav a')].find(link=>link.textContent.trim()==='HOME')?.getAttribute('href')
-    }));
-    assert.strictEqual(ll.href,`/?address=${ll.address}&source=stellar-archive`);
-    assert.strictEqual(ll.home,'/');
-    assert.strictEqual(ll.homeButton,'/');
+    if(browserType===chromium){
+      await page.goto(`http://archive.example.test:${port}/stellar-archive/?mode=retro`);
+      await page.waitForSelector('#select-address');
+      const ll=await page.evaluate(()=>({
+        address:window.STELLAR_ARCHIVE_DATA.worlds[0].storedAddress.join('-'),
+        href:document.querySelector('#select-address').getAttribute('href'),
+        home:document.querySelector('.brand').getAttribute('href'),
+        homeButton:[...document.querySelectorAll('#integration-nav a')].find(link=>link.textContent.trim()==='HOME')?.getAttribute('href')
+      }));
+      assert.strictEqual(ll.href,`/?address=${ll.address}&source=stellar-archive`);
+      assert.strictEqual(ll.home,'/');
+      assert.strictEqual(ll.homeButton,'/');
+    }
 
     await page.goto(`http://127.0.0.1:${port}/stellar-archive/?mode=retro`);
     await page.waitForSelector('#select-address');
@@ -700,7 +705,7 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(await page.locator('#addon-progress-bar').evaluate(element=>element.value),100);
     assert.strictEqual(await page.locator('#addon-progress-restart').isHidden(),false,'one final restart option must be offered when any updated add-on requires it');
 
-    console.log('browser integration tests: PASS');
+    console.log(`browser integration tests (${browserType.name()}): PASS`);
   } finally {
     await browser.close();
     await new Promise(resolve=>server.close(resolve));
