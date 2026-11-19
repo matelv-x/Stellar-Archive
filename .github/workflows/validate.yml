@@ -39,7 +39,7 @@ jobs:
           PYTHONPATH=. python3 tests/test-archive-image-builder.py
       - name: Run installer validation
         run: |
-          bash tests/test-installer.sh
+          PS4='+${LINENO}: ' bash -x tests/test-installer.sh
           bash tests/test-v3-installer.sh
           bash tests/test-navigation.sh
           bash tests/test-original-only.sh
