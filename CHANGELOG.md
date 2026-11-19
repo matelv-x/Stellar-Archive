@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.38
+
+- Treats a temporary HTTP 502, 503, or 504 response after a confirmed restart,
+  reboot, or shutdown as an expected connection interruption instead of a
+  failed system action.
+- Keeps genuine validation and HTTP errors visible while avoiding the false
+  `ACTION FAILED` message observed when the Stargate service or Raspberry Pi
+  successfully stops before the browser receives its response.
+
 ## 1.5.37
 
 - Adds the owner-approved Ankh Nefer Chaapa'ai destination as `FAN · 096`

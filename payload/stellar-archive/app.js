@@ -406,6 +406,9 @@ function confirmSystemAction(config,onApprove,onCancel=()=>{}){
  dialog.oncancel=event=>{event.preventDefault();finish(false)};
  dialog.showModal();
 }
+function isExpectedSystemDisconnect(error){
+ return /HTTP 50[234]|Failed to fetch|Load failed|NetworkError/i.test(String(error?.message||error));
+}
 function runSystemAction(action){
  const config={
   restart:{title:'RESTART SOFTWARE',question:'Restart Stargate software?',label:'RESTART',endpoint:'/stargate/do/stellar_archive_restart'},
@@ -416,7 +419,15 @@ function runSystemAction(action){
  confirmSystemAction(config,async()=>{
   try{
    await maintenanceRequest(config.endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-  }catch(error){showDialog('ACTION FAILED',`System action failed: ${error.message}`)}
+  }catch(error){
+   const message=String(error?.message||error);
+   if(isExpectedSystemDisconnect(error)){
+    const label=action==='restart'?'software restart':action;
+    showDialog('ACTION SENT',`The ${label} command was sent. A temporary connection error is expected while the Stargate service or Raspberry Pi restarts.`);
+    return;
+   }
+   showDialog('ACTION FAILED',`System action failed: ${message}`);
+  }
  });
 }
 const archiveLinks=[
@@ -470,7 +481,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.37';
+const installedArchiveVersion='1.5.38';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -826,7 +837,11 @@ $('#addon-progress-restart').addEventListener('click',async()=>{
  $('#addon-progress-title').textContent='RESTARTING SERVICE';
  $('#addon-progress-status').textContent='Sending a target-specific restart request…';
  try{
-  await maintenanceRequest('/stargate/do/stellar_archive_restart',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  try{
+   await maintenanceRequest('/stargate/do/stellar_archive_restart',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  }catch(error){
+   if(!isExpectedSystemDisconnect(error))throw error;
+  }
   $('#addon-progress-status').textContent='Restart requested. Waiting for the Stargate service…';
   await new Promise(resolve=>window.setTimeout(resolve,1500));
   let online=false;

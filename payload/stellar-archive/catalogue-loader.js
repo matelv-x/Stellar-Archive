@@ -1,6 +1,6 @@
 // Loads revisioned catalogue content before starting the stable Archive app.
 (async()=>{
- const packagedRevision='2026-11-19.1';
+ const packagedRevision='2026-11-19.4';
  const controller=new AbortController();
  const timeout=window.setTimeout(()=>controller.abort(),1500);
  let revision=packagedRevision;
@@ -24,8 +24,8 @@
  });
  await Promise.all([loadStyle('thumbnail-sprite.css'),loadStyle('world-styles.css')]);
  await loadScript(`data/worlds.js?${suffix}`);
- await loadScript('data/integration-nav.js?v=sg1-universal-1.5.37');
- await loadScript('app.js?v=sg1-universal-1.5.37-catalogue-content-1');
+ await loadScript('data/integration-nav.js?v=sg1-universal-1.5.38');
+ await loadScript('app.js?v=sg1-universal-1.5.38-system-action-1');
  document.documentElement.dataset.catalogueReady=revision;
 })().catch(error=>{
  const message=document.createElement('p');
