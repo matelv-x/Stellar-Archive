@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.36 contains one entry-point installer and two isolated adapters. It
+Version 1.5.37 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -23,8 +23,8 @@ follow the selected Original or Retro integration mode.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_1.5.36.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.36
+unzip sg1_v3_v4_stellar_archive_universal_1.5.37.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.37
 ./install.sh
 ```
 
@@ -183,6 +183,22 @@ python3 archive_image_builder.py apply \
 
 The builder never commits, pushes, publishes a release, deploys to a gate,
 restarts a service, dials an address, or sends a hardware command.
+
+After approving any catalogue-only change, set a new `catalogueRevision` in
+`payload/stellar-archive/data/worlds.json`, rebuild the browser data and sprite,
+then generate the public content manifest:
+
+```bash
+python3 build_catalogue_sprite.py
+python3 build_catalogue_manifest.py
+```
+
+Stellar Archive 1.5.37 and later checks `catalogue/manifest.json` in the public
+repository every six hours. It downloads only files whose SHA-256 differs from
+the installed copy, stages and validates the complete catalogue, preserves the
+previous changed files for rollback, and replaces local content only after all
+checks pass. The packaged catalogue remains available offline. Catalogue-only
+commits do not require a new Stellar Archive software version or release ZIP.
 
 ## License
 

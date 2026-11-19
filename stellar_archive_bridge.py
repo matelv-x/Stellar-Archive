@@ -75,6 +75,9 @@ class StellarArchiveBridge:
                 if parsed.path == "/stargate/get/stellar_archive_addons":
                     self.send_json(200, get_maintenance_controller().list_addons())
                     return
+                if parsed.path == "/stargate/get/stellar_archive_catalogue":
+                    self.send_json(200, get_maintenance_controller().catalogue_check())
+                    return
                 if parsed.path == "/stellar-archive":
                     self.redirect("/stellar-archive/")
                     return

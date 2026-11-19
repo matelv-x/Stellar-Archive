@@ -15,6 +15,9 @@ GET_BLOCK = """            # STELLAR_ARCHIVE_MAINTENANCE_GET_BEGIN
             if request_path == "/get/stellar_archive_addons":
                 self.send_json_response(get_maintenance_controller().list_addons())
                 return
+            if request_path == "/get/stellar_archive_catalogue":
+                self.send_json_response(get_maintenance_controller().catalogue_check())
+                return
             # STELLAR_ARCHIVE_MAINTENANCE_GET_END
 
 """

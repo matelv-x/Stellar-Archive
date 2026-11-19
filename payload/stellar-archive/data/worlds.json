@@ -1,5 +1,6 @@
 {
   "schemaVersion": 2,
+  "catalogueRevision": "2026-11-19.1",
   "generatedAt": "2026-11-19",
   "count": 132,
   "addressConvention": "All source sequences omit the final Earth point-of-origin. fullAddress appends symbol 1, matching the active FAN113 DHD speed-dial implementation.",

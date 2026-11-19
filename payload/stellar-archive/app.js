@@ -2,6 +2,7 @@
 // Read-only local archive. SG1 address-book and local-address APIs are polled only for live gate status.
 const archive=window.STELLAR_ARCHIVE_DATA;
 const worlds=archive.worlds;
+const loadedCatalogueRevision=archive.catalogueRevision||'packaged';
 const integrationMode=new URLSearchParams(window.location.search).get('mode');
 let integrationNav=window.STELLAR_ARCHIVE_NAV||{mode:'standalone',items:[]};
 function configuredHostHomeHref(){
@@ -469,7 +470,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.36';
+const installedArchiveVersion='1.5.37';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -1034,6 +1035,15 @@ async function refreshGateStatuses(){
   }
  }finally{window.clearTimeout(timeout)}
 }
+async function refreshCatalogueRevision(){
+ try{
+  const response=await fetch('/stargate/get/stellar_archive_catalogue',{cache:'no-store',credentials:'same-origin'});
+  if(!response.ok)return;
+  const payload=await response.json();
+  const revision=payload?.catalogue?.revision;
+  if(payload?.success&&revision&&revision!==loadedCatalogueRevision)window.location.reload();
+ }catch(error){}
+}
 configureIntegration();
 refreshIntegrationNavigation().catch(()=>{});
 fitArchiveToWindow();
@@ -1043,6 +1053,8 @@ renderCategoryCounts();
 render();
 refreshGateStatuses();
 window.setInterval(refreshGateStatuses,15000);
+window.setTimeout(refreshCatalogueRevision,5000);
+window.setInterval(refreshCatalogueRevision,5*60*1000);
 window.setTimeout(()=>checkUpdatesAutomatically(),1200);
 window.setInterval(()=>checkUpdatesAutomatically({force:true}),automaticUpdateInterval);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!cachedAutomaticUpdateSummary())checkUpdatesAutomatically({force:true})});

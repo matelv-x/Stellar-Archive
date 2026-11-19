@@ -285,6 +285,79 @@ class MaintenanceTests(unittest.TestCase):
         self.assertFalse(result["success"])
         popen.assert_not_called()
 
+    def catalogue_fixture(self, revision):
+        target = self.root / "catalogue-target"
+        archive = target / "stellar-archive"
+        (archive / "data").mkdir(parents=True, exist_ok=True)
+        (archive / "assets").mkdir(parents=True, exist_ok=True)
+        world = {
+            "id": "fan-001-test", "name": "Test", "category": "fan",
+            "storedAddress": [1, 2, 3, 4, 5, 6], "fullAddress": [1, 2, 3, 4, 5, 6, 1],
+            "pointOfOrigin": 1, "visualAsset": "archive-concept-fan-001-test-v1.png",
+        }
+        payload = {"schemaVersion": 2, "catalogueRevision": revision, "count": 1, "worlds": [world]}
+        data = json.dumps(payload, separators=(",", ":"))
+        files = {
+            "data/worlds.json": (json.dumps(payload, indent=2) + "\n").encode(),
+            "data/worlds.js": ("window.STELLAR_ARCHIVE_DATA=" + data + ";\n").encode(),
+            "world-styles.css": b".visual-fan-001-test{}\n",
+            "thumbnail-sprite.css": b":root{--catalogue-sprite:url('assets/optimized/" + (b"a" * 64) + b".webp')}\n",
+            "assets/archive-concept-fan-001-test-v1.png": b"fixture-image",
+            "assets/optimized/" + ("a" * 64) + ".webp": b"fixture-sprite",
+        }
+        return target, archive, files
+
+    @staticmethod
+    def catalogue_manifest(revision, files):
+        records = []
+        for path, content in files.items():
+            records.append({
+                "path": path,
+                "source": "payload/stellar-archive/" + path,
+                "sha256": hashlib.sha256(content).hexdigest(),
+                "size": len(content),
+            })
+        return {"schemaVersion": 1, "revision": revision, "files": records}
+
+    def test_catalogue_sync_applies_verified_content_and_keeps_previous_files(self):
+        target, archive, old_files = self.catalogue_fixture("old")
+        for relative, content in old_files.items():
+            path = archive / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+        _, _, new_files = self.catalogue_fixture("new")
+        manifest = self.catalogue_manifest("new", new_files)
+        config = json.loads(self.config_path.read_text(encoding="utf-8"))
+        config.update({
+            "target": str(target),
+            "catalogue_manifest_url": "https://example.invalid/catalogue/manifest.json",
+            "catalogue_base_url": "https://example.invalid/",
+            "catalogue_autostart": False,
+        })
+        self.config_path.write_text(json.dumps(config), encoding="utf-8")
+        controller = StellarArchiveMaintenance(self.config_path)
+        controller._read_limited_json = lambda url: manifest
+        controller._download_catalogue_file = lambda url, destination, size, digest: (
+            destination.parent.mkdir(parents=True, exist_ok=True),
+            destination.write_bytes(new_files[url.split("payload/stellar-archive/", 1)[1]]),
+        )
+        self.assertTrue(controller.sync_catalogue())
+        installed = json.loads((archive / "data/worlds.json").read_text(encoding="utf-8"))
+        self.assertEqual(installed["catalogueRevision"], "new")
+        state_root = target / ".stellar-archive-addon" / "catalogue-content"
+        self.assertTrue((state_root / "previous" / "data/worlds.json").is_file())
+        self.assertEqual(json.loads((state_root / "state.json").read_text(encoding="utf-8"))["revision"], "new")
+        self.assertEqual(controller.catalogue_check()["catalogue"]["records"], 1)
+
+    def test_catalogue_manifest_rejects_path_traversal(self):
+        manifest = {
+            "schemaVersion": 1,
+            "revision": "bad",
+            "files": [{"path": "../app.js", "source": "payload/stellar-archive/../app.js", "sha256": "0" * 64, "size": 1}],
+        }
+        with self.assertRaisesRegex(ValueError, "unsafe"):
+            StellarArchiveMaintenance._validate_catalogue_manifest(manifest)
+
 
 if __name__ == "__main__":
     unittest.main()

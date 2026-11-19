@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.37
+
+- Adds the owner-approved Ankh Nefer Chaapa'ai destination as `FAN · 096`
+  with the confirmed six-symbol Subspace sequence `[5, 8, 15, 34, 29, 17]`.
+- Includes the owner-landscape concept artwork and records the contributor's
+  permission for its public distribution with Stellar Archive.
+- Rebuilds the catalogue thumbnail sprite for 132 destinations.
+- Separates reviewed catalogue content from software releases. Installed gates
+  now check the public content manifest in the background, verify every file by
+  SHA-256, validate the complete record set, keep the previous changed files
+  for rollback, and reload the browser only after a safe local replacement.
+- Allows future reviewed records, images, styles and thumbnail sprites to be
+  published by updating the catalogue revision and manifest without increasing
+  the Stellar Archive software version.
+
 ## 1.5.36
 
 - Restores the Alarm Clock background choice during first installation through

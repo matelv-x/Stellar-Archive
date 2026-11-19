@@ -11,6 +11,8 @@ import subprocess
 import tempfile
 import threading
 import sys
+import time
+import urllib.parse
 import urllib.request
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
@@ -26,6 +28,14 @@ SERVICE_RE = re.compile(r"^[A-Za-z0-9_.@-]+\.service$")
 MAX_PACKAGE_BYTES = 300 * 1024 * 1024
 PARALLEL_DOWNLOAD_MIN_BYTES = 8 * 1024 * 1024
 PARALLEL_DOWNLOAD_WORKERS = 4
+CATALOGUE_MANIFEST_MAX_BYTES = 1024 * 1024
+CATALOGUE_FILE_MAX_BYTES = 32 * 1024 * 1024
+CATALOGUE_TOTAL_MAX_BYTES = 300 * 1024 * 1024
+CATALOGUE_SYNC_INTERVAL_SECONDS = 6 * 60 * 60
+CATALOGUE_REVISION_RE = re.compile(r"^[0-9A-Za-z._-]{1,64}$")
+CATALOGUE_SHA_RE = re.compile(r"^[0-9a-f]{64}$")
+CATALOGUE_ASSET_RE = re.compile(r"^assets/(?:archive-(?:approved|concept)-[0-9a-z-]+-v[0-9]+\.png|optimized/[0-9a-f]{64}\.webp)$")
+CATALOGUE_CORE_FILES = {"data/worlds.json", "data/worlds.js", "world-styles.css", "thumbnail-sprite.css"}
 _controller = None
 
 
@@ -40,6 +50,9 @@ class StellarArchiveMaintenance:
         self.operation_lock = threading.Lock()
         self.task = {"state": "idle", "message": "Ready"}
         self.addons = MatelvAddonManager(self.config, self.operation_lock)
+        self.catalogue_lock = threading.Lock()
+        self.catalogue_status = {"state": "idle", "message": "Packaged catalogue active"}
+        self._start_catalogue_worker()
 
     def config(self):
         data = json.loads(self.config_path.read_text(encoding="utf-8"))
@@ -109,6 +122,255 @@ class StellarArchiveMaintenance:
             }
         except Exception as error:
             return {"success": False, "message": str(error), "task": task}
+
+    @staticmethod
+    def _archive_root(config):
+        return Path(config["target"]) / "stellar-archive"
+
+    @staticmethod
+    def _catalogue_state_root(config):
+        name = ".stellar-archive-addon-v3" if config["platform"] == "v3" else ".stellar-archive-addon"
+        return Path(config["target"]) / name / "catalogue-content"
+
+    def _start_catalogue_worker(self):
+        try:
+            config = self.config()
+        except Exception:
+            return
+        if config.get("catalogue_autostart", True) is False:
+            return
+        if not config.get("catalogue_manifest_url") or not config.get("catalogue_base_url"):
+            return
+        thread = threading.Thread(target=self._catalogue_loop, name="stellar-catalogue-sync")
+        thread.daemon = True
+        thread.start()
+
+    def _catalogue_loop(self):
+        while True:
+            try:
+                self.sync_catalogue()
+            except Exception as error:
+                self.catalogue_status = {"state": "error", "message": str(error)}
+            time.sleep(CATALOGUE_SYNC_INTERVAL_SECONDS)
+
+    def catalogue_check(self):
+        status = dict(self.catalogue_status)
+        try:
+            worlds = json.loads((self._archive_root(self.config()) / "data" / "worlds.json").read_text(encoding="utf-8"))
+            status["revision"] = worlds.get("catalogueRevision", "packaged")
+            status["records"] = len(worlds.get("worlds", []))
+        except Exception as error:
+            status.setdefault("message", str(error))
+        return {"success": status.get("state") != "error", "catalogue": status}
+
+    @staticmethod
+    def _read_limited_json(url):
+        request = urllib.request.Request(url, headers={
+            "Accept": "application/json",
+            "User-Agent": "Stellar-Archive-Catalogue/1.5.37",
+        })
+        with urllib.request.urlopen(request, timeout=20) as response:
+            content = response.read(CATALOGUE_MANIFEST_MAX_BYTES + 1)
+        if len(content) > CATALOGUE_MANIFEST_MAX_BYTES:
+            raise ValueError("catalogue manifest exceeds the safety limit")
+        return json.loads(content.decode("utf-8"))
+
+    @staticmethod
+    def _valid_catalogue_path(path):
+        return path in CATALOGUE_CORE_FILES or CATALOGUE_ASSET_RE.fullmatch(path) is not None
+
+    @classmethod
+    def _validate_catalogue_manifest(cls, manifest):
+        if not isinstance(manifest, dict) or manifest.get("schemaVersion") != 1:
+            raise ValueError("unsupported catalogue manifest")
+        revision = str(manifest.get("revision", ""))
+        if not CATALOGUE_REVISION_RE.fullmatch(revision):
+            raise ValueError("invalid catalogue revision")
+        files = manifest.get("files")
+        if not isinstance(files, list) or not files or len(files) > 512:
+            raise ValueError("invalid catalogue file list")
+        validated = []
+        seen = set()
+        total = 0
+        for item in files:
+            if not isinstance(item, dict):
+                raise ValueError("invalid catalogue file record")
+            path = str(item.get("path", ""))
+            source = str(item.get("source", ""))
+            digest = str(item.get("sha256", "")).lower()
+            try:
+                size = int(item.get("size", -1))
+            except (TypeError, ValueError):
+                raise ValueError("invalid catalogue file size")
+            if path in seen or not cls._valid_catalogue_path(path):
+                raise ValueError("unsafe or duplicate catalogue path: {}".format(path))
+            if source != "payload/stellar-archive/{}".format(path):
+                raise ValueError("catalogue source does not match its target")
+            if not CATALOGUE_SHA_RE.fullmatch(digest) or size < 0 or size > CATALOGUE_FILE_MAX_BYTES:
+                raise ValueError("invalid catalogue file integrity record")
+            total += size
+            seen.add(path)
+            validated.append({"path": path, "source": source, "sha256": digest, "size": size})
+        if not CATALOGUE_CORE_FILES.issubset(seen) or total > CATALOGUE_TOTAL_MAX_BYTES:
+            raise ValueError("catalogue manifest is incomplete or too large")
+        return revision, validated
+
+    @staticmethod
+    def _download_catalogue_file(url, destination, expected_size, expected_sha):
+        request = urllib.request.Request(url, headers={
+            "Accept-Encoding": "identity",
+            "User-Agent": "Stellar-Archive-Catalogue/1.5.37",
+        })
+        digest = hashlib.sha256()
+        total = 0
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with urllib.request.urlopen(request, timeout=30) as response, destination.open("wb") as output:
+            while True:
+                chunk = response.read(1024 * 1024)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > expected_size or total > CATALOGUE_FILE_MAX_BYTES:
+                    raise ValueError("catalogue file exceeds its declared size")
+                digest.update(chunk)
+                output.write(chunk)
+        if total != expected_size or digest.hexdigest() != expected_sha:
+            raise ValueError("catalogue file integrity verification failed")
+
+    @staticmethod
+    def _candidate_file(archive_root, stage_root, relative):
+        staged = stage_root / relative
+        return staged if staged.is_file() else archive_root / relative
+
+    @classmethod
+    def _validate_catalogue_payload(cls, archive_root, stage_root, file_records):
+        record_by_path = {item["path"]: item for item in file_records}
+        worlds_path = cls._candidate_file(archive_root, stage_root, "data/worlds.json")
+        worlds = json.loads(worlds_path.read_text(encoding="utf-8"))
+        entries = worlds.get("worlds")
+        if not isinstance(entries, list) or worlds.get("count") != len(entries) or not entries:
+            raise ValueError("catalogue record count is invalid")
+        ids = [entry.get("id") for entry in entries]
+        if any(not isinstance(value, str) or not value for value in ids) or len(ids) != len(set(ids)):
+            raise ValueError("catalogue record ids are invalid")
+        for entry in entries:
+            address = entry.get("storedAddress")
+            full = entry.get("fullAddress")
+            if not isinstance(address, list) or not address or any(not isinstance(glyph, int) or glyph < 1 or glyph > 39 for glyph in address):
+                raise ValueError("catalogue address is invalid")
+            if full != address + [entry.get("pointOfOrigin")]:
+                raise ValueError("catalogue full address is invalid")
+            asset_path = "assets/{}".format(entry.get("visualAsset", ""))
+            if asset_path not in record_by_path or not cls._candidate_file(archive_root, stage_root, asset_path).is_file():
+                raise ValueError("catalogue visual asset is missing")
+        js = cls._candidate_file(archive_root, stage_root, "data/worlds.js").read_text(encoding="utf-8")
+        prefix = "window.STELLAR_ARCHIVE_DATA="
+        if not js.startswith(prefix) or not js.rstrip().endswith(";"):
+            raise ValueError("catalogue browser data is invalid")
+        browser_worlds = json.loads(js[len(prefix):].rstrip()[:-1])
+        if browser_worlds != worlds:
+            raise ValueError("catalogue JSON and browser data do not match")
+        return worlds
+
+    def sync_catalogue(self):
+        if not self.catalogue_lock.acquire(blocking=False):
+            return False
+        operation_acquired = False
+        temp = None
+        try:
+            operation_acquired = self.operation_lock.acquire(blocking=False)
+            if not operation_acquired:
+                self.catalogue_status = {"state": "deferred", "message": "Catalogue sync deferred during maintenance"}
+                return False
+            config = self.config()
+            archive_root = self._archive_root(config)
+            state_root = self._catalogue_state_root(config)
+            manifest = self._read_limited_json(config["catalogue_manifest_url"])
+            revision, files = self._validate_catalogue_manifest(manifest)
+            self.catalogue_status = {"state": "checking", "revision": revision, "message": "Checking catalogue content"}
+            state_path = state_root / "state.json"
+            previous_state = {}
+            if state_path.is_file():
+                try:
+                    previous_state = json.loads(state_path.read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    previous_state = {}
+            state_root.parent.mkdir(parents=True, exist_ok=True)
+            temp = tempfile.mkdtemp(prefix="stellar-catalogue-", dir=str(state_root.parent))
+            stage_root = Path(temp) / "stage"
+            changed = []
+            for item in files:
+                destination = archive_root / item["path"]
+                if destination.is_file() and destination.stat().st_size == item["size"] and self._sha256(destination) == item["sha256"]:
+                    continue
+                source_url = urllib.parse.urljoin(config["catalogue_base_url"].rstrip("/") + "/", item["source"])
+                staged = stage_root / item["path"]
+                self._download_catalogue_file(source_url, staged, item["size"], item["sha256"])
+                changed.append(item["path"])
+            # Publish assets and styles first, browser data second, and the
+            # JSON revision marker last.  A browser can therefore never observe
+            # a new revision before every file needed by that revision exists.
+            changed.sort(key=lambda path: 3 if path == "data/worlds.json" else 2 if path == "data/worlds.js" else 1)
+            validated_worlds = self._validate_catalogue_payload(archive_root, stage_root, files)
+            if validated_worlds.get("catalogueRevision") != revision:
+                raise ValueError("catalogue revision does not match the manifest")
+            current_paths = {item["path"] for item in files}
+            removed = [path for path in previous_state.get("files", []) if path not in current_paths and self._valid_catalogue_path(path)]
+            backup_root = state_root / "previous"
+            if changed or removed:
+                if backup_root.exists():
+                    shutil.rmtree(str(backup_root))
+                for relative in changed + removed:
+                    existing = archive_root / relative
+                    if existing.is_file():
+                        backup = backup_root / relative
+                        backup.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(str(existing), str(backup))
+            applied = []
+            try:
+                for relative in changed:
+                    target = archive_root / relative
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    os.replace(str(stage_root / relative), str(target))
+                    os.chmod(str(target), 0o644)
+                    applied.append(relative)
+                for relative in removed:
+                    target = archive_root / relative
+                    if target.is_file():
+                        target.unlink()
+                    applied.append(relative)
+            except Exception:
+                for relative in reversed(applied):
+                    backup = backup_root / relative
+                    target = archive_root / relative
+                    if backup.is_file():
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(str(backup), str(target))
+                    elif target.exists():
+                        target.unlink()
+                raise
+            state_root.mkdir(parents=True, exist_ok=True)
+            state = {"revision": revision, "files": sorted(current_paths), "updatedAt": int(time.time())}
+            temporary_state = state_path.with_suffix(".tmp")
+            temporary_state.write_text(json.dumps(state, separators=(",", ":")) + "\n", encoding="utf-8")
+            os.replace(str(temporary_state), str(state_path))
+            self.catalogue_status = {
+                "state": "current",
+                "revision": revision,
+                "records": len(json.loads((archive_root / "data/worlds.json").read_text(encoding="utf-8"))["worlds"]),
+                "changed": len(changed),
+                "message": "Catalogue content is current",
+            }
+            return True
+        except Exception as error:
+            self.catalogue_status = {"state": "error", "message": str(error)}
+            return False
+        finally:
+            if temp:
+                shutil.rmtree(temp, ignore_errors=True)
+            if operation_acquired:
+                self.operation_lock.release()
+            self.catalogue_lock.release()
 
     @staticmethod
     def same_origin(handler):
@@ -256,7 +518,7 @@ class StellarArchiveMaintenance:
     def _download_request(url, byte_range=None):
         headers = {
             "Accept-Encoding": "identity",
-            "User-Agent": "Stellar-Archive-Updater/1.5.36",
+            "User-Agent": "Stellar-Archive-Updater/1.5.37",
         }
         if byte_range:
             headers["Range"] = "bytes={}-{}".format(*byte_range)
