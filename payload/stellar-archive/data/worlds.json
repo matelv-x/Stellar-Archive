@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "catalogueRevision": "2026-11-19.1",
+  "catalogueRevision": "2026-11-19.2",
   "generatedAt": "2026-11-19",
   "count": 132,
   "addressConvention": "All source sequences omit the final Earth point-of-origin. fullAddress appends symbol 1, matching the active FAN113 DHD speed-dial implementation.",
@@ -5756,12 +5756,10 @@
       "designation": "FAN · 096",
       "environment": "PLANET OF MINERAL SPRINGS / ARTIST CONCEPT",
       "classification": "FAN GATE — OWNER LANDSCAPE CONCEPT",
-      "description": "Artistic reconstruction of the owner's SG-1 style gate on the Planet of Mineral Springs, inspired by a landscape photograph supplied by the owner. The gate and active wormhole are visualized; this is not a photograph of the physical build.",
+      "description": "Artistic reconstruction of the owner's SG-1 style gate on the Planet of Mineral Springs.",
       "evidenceLevel": "owner-landscape-concept",
       "sourceRefs": [
-        "Official Stargate address book: Ankh Nefer Chaapa'ai",
-        "Kristian Tysse confirmed the revised six-symbol Subspace address by email on 19 November 2026 at 19:25 CET.",
-        "Owner-supplied landscape photograph, 19 November 2026"
+        "Official Stargate address book: Ankh Nefer Chaapa'ai"
       ],
       "storedAddress": [
         5,
