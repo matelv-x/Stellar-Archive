@@ -121,6 +121,9 @@ http://DEVICE-HOSTNAME.local/stellar-archive/
 The Gaia artwork, credits and licence remain documented in
 `GAIA-ASSET-LICENCE.md`.
 
+The owner-photo permission for the Ankh Nefer Chaapa'ai concept artwork is
+documented in `ANKH-NEFER-CHAAPA-AI-ASSET-LICENCE.md`.
+
 ## Archive Image Builder
 
 The Archive compares its packaged records with the read-only live address book.

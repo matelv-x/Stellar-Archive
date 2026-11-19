@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-30",
-  "count": 131,
+  "generatedAt": "2026-11-19",
+  "count": 132,
   "addressConvention": "All source sequences omit the final Earth point-of-origin. fullAddress appends symbol 1, matching the active FAN113 DHD speed-dial implementation.",
   "privacy": "Sanitized: no IP addresses, credentials or private network metadata.",
   "glyphPositions": {
@@ -5746,6 +5746,60 @@
       "description": "An alias record sharing the Solar Talon address. The visual represents the same fictional destination and does not claim a profile for its owner.",
       "visualAsset": "archive-concept-fan-095-solar-talon-belgium-gate-v1.png",
       "seed": 1930475826
+    },
+    {
+      "id": "fan-096-ankh-nefer-chaapa-ai",
+      "name": "Ankh Nefer Chaapa'ai",
+      "category": "fan",
+      "galaxy": "Milky Way",
+      "designation": "FAN · 096",
+      "environment": "PLANET OF MINERAL SPRINGS / ARTIST CONCEPT",
+      "classification": "FAN GATE — OWNER LANDSCAPE CONCEPT",
+      "description": "Artistic reconstruction of the owner's SG-1 style gate on the Planet of Mineral Springs, inspired by a landscape photograph supplied by the owner. The gate and active wormhole are visualized; this is not a photograph of the physical build.",
+      "evidenceLevel": "owner-landscape-concept",
+      "sourceRefs": [
+        "Official Stargate address book: Ankh Nefer Chaapa'ai",
+        "Kristian Tysse confirmed the revised six-symbol Subspace address by email on 19 November 2026 at 19:25 CET.",
+        "Owner-supplied landscape photograph, 19 November 2026"
+      ],
+      "storedAddress": [
+        5,
+        8,
+        15,
+        34,
+        29,
+        17
+      ],
+      "verifiedAddress": [
+        5,
+        8,
+        15,
+        34,
+        29,
+        17
+      ],
+      "fullAddress": [
+        5,
+        8,
+        15,
+        34,
+        29,
+        17,
+        1
+      ],
+      "addressLength": 7,
+      "pointOfOrigin": 1,
+      "addressStatus": "source-preserved",
+      "addressNote": "Kristian-confirmed Subspace sequence. Project mnemonic ANKHEE follows letters of the gate name in order, skipping letters without a usable glyph; Earth point of origin 1 is appended only for display.",
+      "blackHole": false,
+      "online": null,
+      "visualStatus": "ARTISTIC RECONSTRUCTION / OWNER PHOTO",
+      "visualAsset": "archive-approved-fan-096-ankh-nefer-chaapa-ai-v2.png",
+      "visualMode": "object",
+      "hue": 27,
+      "x": 61,
+      "y": 56,
+      "seed": 3570624492
     },
     {
       "id": "fan-071-highlander",

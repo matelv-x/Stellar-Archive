@@ -215,7 +215,7 @@ const server=http.createServer((request,response)=>{
     await page.locator('#close-pending-destinations').click();
     await page.waitForFunction(()=>document.querySelector('#category option[value="lan"]').textContent!=='LAN · —');
     assert.deepStrictEqual(await page.locator('#category option').evaluateAll(options=>options.map(option=>option.value)),['all','online','offline','standard','lan']);
-    assert.deepStrictEqual(await page.locator('#category option').allTextContents(),['ALL 131 RECORDS','ONLINE · 3','OFFLINE · 1','STANDARD · 35','LAN · 2']);
+    assert.deepStrictEqual(await page.locator('#category option').allTextContents(),['ALL 132 RECORDS','ONLINE · 3','OFFLINE · 1','STANDARD · 35','LAN · 2']);
     const spriteThumbnails=await page.locator('#worlds .mini-planet > .mini-planet-image').count();
     const archiveImageData=await page.evaluate(()=>({
       assetCount:window.STELLAR_ARCHIVE_DATA.worlds.filter(world=>world.visualAsset).length,
@@ -238,7 +238,7 @@ const server=http.createServer((request,response)=>{
     });
     assert(rapidScrollThumbnails.length>0&&rapidScrollThumbnails.every(image=>image.includes('/assets/optimized/')),'rapid full-screen scrolling must keep every visible planet thumbnail assigned');
     await page.evaluate(()=>{document.querySelector('#worlds').scrollTop=0});
-    assert.strictEqual(new Set(archiveImageData.assets).size,131,'each archive record must have its own visual asset');
+    assert.strictEqual(new Set(archiveImageData.assets).size,132,'each archive record must have its own visual asset');
     assert.deepStrictEqual(await page.evaluate(()=>{
       const approved={
         'standard-001-abydos':'archive-approved-standard-001-abydos-v2.png',
@@ -246,6 +246,7 @@ const server=http.createServer((request,response)=>{
         'standard-008-destroyers':'archive-approved-standard-008-destroyers-v3.png',
         'standard-010-edora':'archive-approved-standard-010-edora-v2.png',
         'standard-035-destiny':'archive-approved-standard-035-destiny-v4.png',
+        'fan-096-ankh-nefer-chaapa-ai':'archive-approved-fan-096-ankh-nefer-chaapa-ai-v2.png',
         'lan-001-seed-ship-1':'archive-approved-lan-001-seed-ship-1-v2.png'
       };
       return window.STELLAR_ARCHIVE_DATA.worlds.filter(world=>world.visualAsset!==(approved[world.id]||`archive-concept-${world.id}-v1.png`)).map(world=>world.id);
@@ -559,7 +560,7 @@ const server=http.createServer((request,response)=>{
     assert.strictEqual(layout.worldsOverflow,'visible','planet list must not trap scrolling inside its own viewport');
     assert(layout.worldsOverflowAmount<=40,'planet list must expand to its complete height apart from the decorative status corona');
     assert(layout.bodyScroll.width<=1256+1&&layout.bodyScroll.height<=768+1,'application must remain bounded by the small window');
-    assert.strictEqual(await page.locator('#worlds .mini-planet > .mini-planet-image').count(),131,'short-window layout must retain every sprite thumbnail');
+    assert.strictEqual(await page.locator('#worlds .mini-planet > .mini-planet-image').count(),132,'short-window layout must retain every sprite thumbnail');
     await page.locator('#worlds .world').last().scrollIntoViewIfNeeded();
     assert((await page.locator('#worlds .world').last().locator('.mini-planet-image').evaluate(node=>getComputedStyle(node).backgroundImage)).includes('/assets/optimized/'),'last planet must use the preloaded sprite after scrolling');
     const lastRecordScroll=await page.evaluate(()=>({
