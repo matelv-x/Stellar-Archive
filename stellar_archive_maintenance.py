@@ -258,7 +258,13 @@ class StellarArchiveMaintenance:
             full = entry.get("fullAddress")
             if not isinstance(address, list) or not address or any(not isinstance(glyph, int) or glyph < 1 or glyph > 39 for glyph in address):
                 raise ValueError("catalogue address is invalid")
-            if full != address + [entry.get("pointOfOrigin")]:
+            if (
+                not isinstance(full, list)
+                or len(full) < 7
+                or len(full) > 9
+                or any(not isinstance(glyph, int) or glyph < 1 or glyph > 39 for glyph in full)
+                or full[-1] != entry.get("pointOfOrigin")
+            ):
                 raise ValueError("catalogue full address is invalid")
             asset_path = "assets/{}".format(entry.get("visualAsset", ""))
             if asset_path not in record_by_path or not cls._candidate_file(archive_root, stage_root, asset_path).is_file():
