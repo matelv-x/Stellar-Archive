@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "catalogueRevision": "2026-11-19.3",
+  "catalogueRevision": "2026-11-19.4",
   "generatedAt": "2026-11-19",
   "count": 132,
   "addressConvention": "All source sequences omit the final Earth point-of-origin. fullAddress appends symbol 1, matching the active FAN113 DHD speed-dial implementation.",
@@ -5789,7 +5789,7 @@
       "addressLength": 7,
       "pointOfOrigin": 1,
       "addressStatus": "source-preserved",
-      "addressNote": "FAN113 source sequence retained; Earth point-of-origin 1 appended for display."
+      "addressNote": "FAN113 source sequence retained; Earth point-of-origin 1 appended for display.",
       "blackHole": false,
       "online": null,
       "visualStatus": "ARTISTIC RECONSTRUCTION / OWNER PHOTO",

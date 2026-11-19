@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "2026-11-19.3",
-  "generatedAt": "2026-11-19T23:16:40+00:00",
+  "revision": "2026-11-19.4",
+  "generatedAt": "2026-11-19T23:37:19+00:00",
   "files": [
     {
       "path": "assets/archive-approved-fan-096-ankh-nefer-chaapa-ai-v2.png",
@@ -804,14 +804,14 @@
     {
       "path": "data/worlds.js",
       "source": "payload/stellar-archive/data/worlds.js",
-      "sha256": "dc82ba72856dc128a65fc3211da89fc70990508d100dac4e86c93f3a3682cec4",
-      "size": 126665
+      "sha256": "33aaf318fd32059f13c12e1cf6ae38a92363301cf64df0327d909329a60af926",
+      "size": 126554
     },
     {
       "path": "data/worlds.json",
       "source": "payload/stellar-archive/data/worlds.json",
-      "sha256": "3a3df662897d5d1fe75f7fa7d6e8bc4c7828cbccb5eb7d176cc6667cc94f8d23",
-      "size": 184203
+      "sha256": "de406a7bcc9fe792c664754fb93b2b8c15c1901324e437946bd080f367363f26",
+      "size": 184092
     },
     {
       "path": "thumbnail-sprite.css",
