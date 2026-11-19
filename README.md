@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.38 contains one entry-point installer and two isolated adapters. It
+Version 1.5.39 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -23,8 +23,8 @@ follow the selected Original or Retro integration mode.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_1.5.38.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.38
+unzip sg1_v3_v4_stellar_archive_universal_1.5.39.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.39
 ./install.sh
 ```
 
@@ -184,21 +184,30 @@ python3 archive_image_builder.py apply \
 The builder never commits, pushes, publishes a release, deploys to a gate,
 restarts a service, dials an address, or sends a hardware command.
 
-After approving any catalogue-only change, set a new `catalogueRevision` in
+After preparing a catalogue-only change, set a new `catalogueRevision` in
 `payload/stellar-archive/data/worlds.json`, rebuild the browser data and sprite,
-then generate the public content manifest:
+then generate the reproducible content manifest:
 
 ```bash
+python3 build_catalogue_data.py
 python3 build_catalogue_sprite.py
 python3 build_catalogue_manifest.py
 ```
 
-Stellar Archive 1.5.37 and later checks `catalogue/manifest.json` in the public
-repository every six hours. It downloads only files whose SHA-256 differs from
-the installed copy, stages and validates the complete catalogue, preserves the
-previous changed files for rollback, and replaces local content only after all
-checks pass. The packaged catalogue remains available offline. Catalogue-only
-commits do not require a new Stellar Archive software version or release ZIP.
+Catalogue changes are reviewed through a pull request. The required validation
+workflow rejects invalid JSON, stale generated data, stale manifest hashes,
+missing assets, unsafe paths, and installer regressions. Publishing is a
+separate manually approved workflow: it signs the manifest with the protected
+Ed25519 production key and writes only validated catalogue files to the
+generated `catalogue-release` branch.
+
+Stellar Archive 1.5.39 and later checks the signed manifest on
+`catalogue-release` every six hours. The pinned public key must validate the
+manifest before any catalogue file is downloaded. SHA-256, size, full payload,
+staging, rollback, and offline last-good checks then apply as before. A rejected
+signature or failed validation leaves the installed catalogue untouched.
+Catalogue-only publications do not require another Stellar Archive software
+version or release ZIP.
 
 ## License
 

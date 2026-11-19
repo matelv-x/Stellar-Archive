@@ -29,6 +29,7 @@ MAX_PACKAGE_BYTES = 300 * 1024 * 1024
 PARALLEL_DOWNLOAD_MIN_BYTES = 8 * 1024 * 1024
 PARALLEL_DOWNLOAD_WORKERS = 4
 CATALOGUE_MANIFEST_MAX_BYTES = 1024 * 1024
+CATALOGUE_SIGNATURE_MAX_BYTES = 1024
 CATALOGUE_FILE_MAX_BYTES = 32 * 1024 * 1024
 CATALOGUE_TOTAL_MAX_BYTES = 300 * 1024 * 1024
 CATALOGUE_SYNC_INTERVAL_SECONDS = 6 * 60 * 60
@@ -36,6 +37,10 @@ CATALOGUE_REVISION_RE = re.compile(r"^[0-9A-Za-z._-]{1,64}$")
 CATALOGUE_SHA_RE = re.compile(r"^[0-9a-f]{64}$")
 CATALOGUE_ASSET_RE = re.compile(r"^assets/(?:archive-(?:approved|concept)-[0-9a-z-]+-v[0-9]+\.png|optimized/[0-9a-f]{64}\.webp)$")
 CATALOGUE_CORE_FILES = {"data/worlds.json", "data/worlds.js", "world-styles.css", "thumbnail-sprite.css"}
+CATALOGUE_PUBLIC_KEY_PEM = b"""-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAkjOlKwzcR4YZNVAyGXhVf3DyRNj27FzPvtEdsA47GeQ=
+-----END PUBLIC KEY-----
+"""
 _controller = None
 
 
@@ -139,7 +144,9 @@ class StellarArchiveMaintenance:
             return
         if config.get("catalogue_autostart", True) is False:
             return
-        if not config.get("catalogue_manifest_url") or not config.get("catalogue_base_url"):
+        if not all(config.get(key) for key in (
+            "catalogue_manifest_url", "catalogue_signature_url", "catalogue_base_url"
+        )):
             return
         thread = threading.Thread(target=self._catalogue_loop, name="stellar-catalogue-sync")
         thread.daemon = True
@@ -164,20 +171,68 @@ class StellarArchiveMaintenance:
         return {"success": status.get("state") != "error", "catalogue": status}
 
     @staticmethod
-    def _read_limited_json(url):
+    def _read_limited_bytes(url, limit, accept="application/octet-stream"):
         request = urllib.request.Request(url, headers={
-            "Accept": "application/json",
-            "User-Agent": "Stellar-Archive-Catalogue/1.5.38",
+            "Accept": accept,
+            "User-Agent": "Stellar-Archive-Catalogue/1.5.39",
         })
         with urllib.request.urlopen(request, timeout=20) as response:
-            content = response.read(CATALOGUE_MANIFEST_MAX_BYTES + 1)
-        if len(content) > CATALOGUE_MANIFEST_MAX_BYTES:
-            raise ValueError("catalogue manifest exceeds the safety limit")
-        return json.loads(content.decode("utf-8"))
+            content = response.read(limit + 1)
+        if len(content) > limit:
+            raise ValueError("catalogue metadata exceeds the safety limit")
+        return content
+
+    @staticmethod
+    def _verify_catalogue_manifest_signature(manifest_bytes, signature_bytes, public_key=CATALOGUE_PUBLIC_KEY_PEM):
+        if len(signature_bytes) != 64:
+            raise ValueError("catalogue manifest signature has an invalid size")
+        openssl = shutil.which("openssl")
+        if not openssl:
+            raise ValueError("OpenSSL is required to verify catalogue signatures")
+        with tempfile.TemporaryDirectory(prefix="stellar-signature-") as temporary:
+            root = Path(temporary)
+            manifest_path = root / "manifest.json"
+            signature_path = root / "manifest.sig"
+            public_key_path = root / "catalogue-public.pem"
+            manifest_path.write_bytes(manifest_bytes)
+            signature_path.write_bytes(signature_bytes)
+            public_key_path.write_bytes(public_key)
+            result = subprocess.run(
+                [openssl, "pkeyutl", "-verify", "-pubin", "-inkey", str(public_key_path),
+                 "-rawin", "-in", str(manifest_path), "-sigfile", str(signature_path)],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=10,
+                check=False,
+            )
+        if result.returncode != 0:
+            raise ValueError("catalogue manifest signature verification failed")
+
+    @classmethod
+    def _read_verified_catalogue_manifest(cls, config):
+        signature_url = config.get("catalogue_signature_url")
+        if not signature_url:
+            raise ValueError("catalogue signature URL is not configured")
+        manifest_bytes = cls._read_limited_bytes(
+            config["catalogue_manifest_url"], CATALOGUE_MANIFEST_MAX_BYTES, "application/json"
+        )
+        signature_bytes = cls._read_limited_bytes(signature_url, CATALOGUE_SIGNATURE_MAX_BYTES)
+        cls._verify_catalogue_manifest_signature(manifest_bytes, signature_bytes)
+        return json.loads(manifest_bytes.decode("utf-8"))
 
     @staticmethod
     def _valid_catalogue_path(path):
         return path in CATALOGUE_CORE_FILES or CATALOGUE_ASSET_RE.fullmatch(path) is not None
+
+    @staticmethod
+    def _catalogue_revision_key(value):
+        """Return a naturally sortable key for validated catalogue revisions."""
+        return tuple(
+            int(part) if part.isdigit() else part.lower()
+            for part in re.split(r"([0-9]+)", str(value))
+            if part
+        )
 
     @classmethod
     def _validate_catalogue_manifest(cls, manifest):
@@ -219,7 +274,7 @@ class StellarArchiveMaintenance:
     def _download_catalogue_file(url, destination, expected_size, expected_sha):
         request = urllib.request.Request(url, headers={
             "Accept-Encoding": "identity",
-            "User-Agent": "Stellar-Archive-Catalogue/1.5.38",
+            "User-Agent": "Stellar-Archive-Catalogue/1.5.39",
         })
         digest = hashlib.sha256()
         total = 0
@@ -291,7 +346,7 @@ class StellarArchiveMaintenance:
             config = self.config()
             archive_root = self._archive_root(config)
             state_root = self._catalogue_state_root(config)
-            manifest = self._read_limited_json(config["catalogue_manifest_url"])
+            manifest = self._read_verified_catalogue_manifest(config)
             revision, files = self._validate_catalogue_manifest(manifest)
             self.catalogue_status = {"state": "checking", "revision": revision, "message": "Checking catalogue content"}
             state_path = state_root / "state.json"
@@ -301,6 +356,22 @@ class StellarArchiveMaintenance:
                     previous_state = json.loads(state_path.read_text(encoding="utf-8"))
                 except (OSError, ValueError):
                     previous_state = {}
+            installed_revision = str(previous_state.get("revision", ""))
+            if not CATALOGUE_REVISION_RE.fullmatch(installed_revision):
+                try:
+                    installed_worlds = json.loads(
+                        (archive_root / "data" / "worlds.json").read_text(encoding="utf-8")
+                    )
+                    installed_revision = str(installed_worlds.get("catalogueRevision", ""))
+                except (OSError, ValueError):
+                    installed_revision = ""
+            if (
+                CATALOGUE_REVISION_RE.fullmatch(installed_revision)
+                and self._catalogue_revision_key(revision) < self._catalogue_revision_key(installed_revision)
+            ):
+                raise ValueError(
+                    "catalogue rollback rejected: {} is older than {}".format(revision, installed_revision)
+                )
             state_root.parent.mkdir(parents=True, exist_ok=True)
             temp = tempfile.mkdtemp(prefix="stellar-catalogue-", dir=str(state_root.parent))
             stage_root = Path(temp) / "stage"
@@ -524,7 +595,7 @@ class StellarArchiveMaintenance:
     def _download_request(url, byte_range=None):
         headers = {
             "Accept-Encoding": "identity",
-            "User-Agent": "Stellar-Archive-Updater/1.5.38",
+            "User-Agent": "Stellar-Archive-Updater/1.5.39",
         }
         if byte_range:
             headers["Range"] = "bytes={}-{}".format(*byte_range)

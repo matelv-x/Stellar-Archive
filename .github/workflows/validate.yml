@@ -1,0 +1,51 @@
+name: Validate Stellar Archive
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  catalogue:
+    name: Catalogue validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Verify generated catalogue
+        run: |
+          python3 build_catalogue_data.py
+          python3 build_catalogue_manifest.py
+          git diff --exit-code -- payload/stellar-archive/data/worlds.js catalogue/manifest.json
+      - name: Verify pinned catalogue public key
+        run: |
+          PYTHONPATH=. python3 - <<'PY'
+          from pathlib import Path
+          from stellar_archive_maintenance import CATALOGUE_PUBLIC_KEY_PEM
+          expected = Path('catalogue/catalogue-public.pem').read_bytes()
+          if CATALOGUE_PUBLIC_KEY_PEM != expected:
+              raise SystemExit('embedded catalogue public key differs from catalogue/catalogue-public.pem')
+          PY
+      - name: Run Python validation
+        run: |
+          PYTHONPATH=. python3 tests/test-maintenance.py
+          PYTHONPATH=. python3 tests/test-catalogue-content.py
+          PYTHONPATH=. python3 tests/test-archive-image-builder.py
+      - name: Run installer validation
+        run: |
+          bash tests/test-installer.sh
+          bash tests/test-v3-installer.sh
+          bash tests/test-navigation.sh
+          bash tests/test-original-only.sh
+          bash tests/test-upgrade-v112.sh
+      - name: Check JavaScript syntax
+        run: |
+          node --check payload/stellar-archive/app.js
+          node --check payload/stellar-archive/catalogue-loader.js
+          node --check tests/test-browser.cjs

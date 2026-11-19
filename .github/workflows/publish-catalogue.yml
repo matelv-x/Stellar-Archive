@@ -1,0 +1,72 @@
+name: Publish signed catalogue
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Catalogue validation
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - run: |
+          python3 build_catalogue_data.py
+          python3 build_catalogue_manifest.py
+          git diff --exit-code -- payload/stellar-archive/data/worlds.js catalogue/manifest.json
+          PYTHONPATH=. python3 tests/test-catalogue-content.py
+          PYTHONPATH=. python3 tests/test-maintenance.py
+
+  publish:
+    name: Publish catalogue-release
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: catalogue-production
+    env:
+      CATALOGUE_SIGNING_KEY: ${{ secrets.CATALOGUE_SIGNING_KEY }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - name: Sign reviewed manifest
+        run: |
+          set -euo pipefail
+          umask 077
+          key="$RUNNER_TEMP/catalogue-signing-private.pem"
+          printf '%s\n' "$CATALOGUE_SIGNING_KEY" > "$key"
+          openssl pkeyutl -sign -inkey "$key" -rawin -in catalogue/manifest.json -out catalogue/manifest.sig
+          openssl pkeyutl -verify -pubin -inkey catalogue/catalogue-public.pem -rawin -in catalogue/manifest.json -sigfile catalogue/manifest.sig
+          test "$(wc -c < catalogue/manifest.sig)" -eq 64
+          rm -f "$key"
+      - name: Publish immutable validated tree
+        run: |
+          set -euo pipefail
+          git config user.name 'Stellar Archive Publisher'
+          git config user.email 'actions@users.noreply.github.com'
+          git fetch origin catalogue-release:refs/remotes/origin/catalogue-release || true
+          export GIT_INDEX_FILE="$RUNNER_TEMP/catalogue-index"
+          rm -f "$GIT_INDEX_FILE"
+          git read-tree --empty
+          git add -f catalogue/manifest.json catalogue/manifest.sig catalogue/catalogue-public.pem
+          while IFS= read -r source; do
+            git add -f "$source"
+          done < <(python3 - <<'PY'
+          import json
+          for item in json.load(open('catalogue/manifest.json', encoding='utf-8'))['files']:
+              print(item['source'])
+          PY
+          )
+          tree=$(git write-tree)
+          parent_args=()
+          if git show-ref --verify --quiet refs/remotes/origin/catalogue-release; then
+            parent_args=(-p refs/remotes/origin/catalogue-release)
+          fi
+          revision=$(python3 -c "import json; print(json.load(open('catalogue/manifest.json'))['revision'])")
+          commit=$(printf 'Publish signed catalogue %s\n' "$revision" | git commit-tree "$tree" "${parent_args[@]}")
+          git push origin "$commit:refs/heads/catalogue-release"

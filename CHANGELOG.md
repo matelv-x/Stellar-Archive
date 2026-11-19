@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.39
+
+- Moves automatic catalogue delivery from editable `main` content to the
+  generated `catalogue-release` branch.
+- Requires every catalogue manifest to carry a valid Ed25519 signature from
+  the pinned Stellar Archive catalogue key before any file is downloaded.
+- Adds reproducible catalogue builders, mandatory GitHub Actions validation,
+  and a manually approved signed publication workflow.
+- Keeps the existing SHA-256, size, schema, staging, rollback, and offline
+  last-good protections after signature verification succeeds.
+
 ## 1.5.38
 
 - Treats a temporary HTTP 502, 503, or 504 response after a confirmed restart,
