@@ -61,7 +61,8 @@ python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); assert "/catalog
 grep -q '"dialTarget":"original"' "$TARGET/stellar-archive/data/integration-nav.js"
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace retro >/dev/null
-[[ "$(shasum -a 256 "$TARGET/address_book.htm" | awk '{print $1}')" = "$original_hash" ]]
+! grep -q 'mode=original' "$TARGET/address_book.htm"
+grep -q 'address_book.js?v=stellar-archive-1.5.39-status' "$TARGET/address_book.htm"
 grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 grep -q '"dialTarget":"retro"' "$TARGET/stellar-archive/data/integration-nav.js"
 
@@ -70,7 +71,7 @@ grep -q 'mode=original' "$TARGET/address_book.htm"
 grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace standalone >/dev/null
-[[ "$(shasum -a 256 "$TARGET/address_book.htm" | awk '{print $1}')" = "$original_hash" ]]
+! grep -q 'mode=original' "$TARGET/address_book.htm"
 [[ "$(shasum -a 256 "$TARGET/retro/address_book.html" | awk '{print $1}')" = "$retro_hash" ]]
 [[ -f "$TARGET/stellar-archive/index.html" ]]
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/address_book.htm"
