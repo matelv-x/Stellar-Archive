@@ -5756,7 +5756,7 @@
       "designation": "FAN · 096",
       "environment": "PLANET OF MINERAL SPRINGS / ARTIST CONCEPT",
       "classification": "FAN GATE — OWNER LANDSCAPE CONCEPT",
-      "description": "Artistic reconstruction of the owner's SG-1 style gate on the Planet of Mineral Springs.",
+      "description": "A mirror of beauty and life among the gods’; to those who know, a beautiful life on this planet.",
       "evidenceLevel": "owner-landscape-concept",
       "sourceRefs": [
         "Official Stargate address book: Ankh Nefer Chaapa'ai"
@@ -5789,7 +5789,7 @@
       "addressLength": 7,
       "pointOfOrigin": 1,
       "addressStatus": "source-preserved",
-      "addressNote": "Kristian-confirmed Subspace sequence. Project mnemonic ANKHEE follows letters of the gate name in order, skipping letters without a usable glyph; Earth point of origin 1 is appended only for display.",
+      "addressNote":
       "blackHole": false,
       "online": null,
       "visualStatus": "ARTISTIC RECONSTRUCTION / OWNER PHOTO",
