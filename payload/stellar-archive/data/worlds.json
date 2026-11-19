@@ -5789,7 +5789,7 @@
       "addressLength": 7,
       "pointOfOrigin": 1,
       "addressStatus": "source-preserved",
-      "addressNote":
+      "addressNote": "FAN113 source sequence retained; Earth point-of-origin 1 appended for display."
       "blackHole": false,
       "online": null,
       "visualStatus": "ARTISTIC RECONSTRUCTION / OWNER PHOTO",
