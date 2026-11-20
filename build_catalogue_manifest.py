@@ -6,7 +6,6 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -61,10 +60,14 @@ def main() -> None:
             "size": path.stat().st_size,
         })
 
+    generated_date = str(archive.get("generatedAt", "")).strip()
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", generated_date):
+        raise SystemExit("worlds.json has no safe generatedAt date")
+
     payload = {
         "schemaVersion": 1,
         "revision": revision,
-        "generatedAt": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "generatedAt": generated_date + "T00:00:00Z",
         "files": files,
     }
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

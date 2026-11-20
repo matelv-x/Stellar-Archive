@@ -3,6 +3,7 @@ import hashlib
 import io
 import json
 import shutil
+import subprocess
 import tempfile
 import time
 import unittest
@@ -320,13 +321,13 @@ class MaintenanceTests(unittest.TestCase):
         return {"schemaVersion": 1, "revision": revision, "files": records}
 
     def test_catalogue_sync_applies_verified_content_and_keeps_previous_files(self):
-        target, archive, old_files = self.catalogue_fixture("old")
+        target, archive, old_files = self.catalogue_fixture("2026-11-19.3")
         for relative, content in old_files.items():
             path = archive / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(content)
-        _, _, new_files = self.catalogue_fixture("new")
-        manifest = self.catalogue_manifest("new", new_files)
+        _, _, new_files = self.catalogue_fixture("2026-11-19.4")
+        manifest = self.catalogue_manifest("2026-11-19.4", new_files)
         config = json.loads(self.config_path.read_text(encoding="utf-8"))
         config.update({
             "target": str(target),
@@ -336,18 +337,66 @@ class MaintenanceTests(unittest.TestCase):
         })
         self.config_path.write_text(json.dumps(config), encoding="utf-8")
         controller = StellarArchiveMaintenance(self.config_path)
-        controller._read_limited_json = lambda url: manifest
+        controller._read_verified_catalogue_manifest = lambda config: manifest
         controller._download_catalogue_file = lambda url, destination, size, digest: (
             destination.parent.mkdir(parents=True, exist_ok=True),
             destination.write_bytes(new_files[url.split("payload/stellar-archive/", 1)[1]]),
         )
         self.assertTrue(controller.sync_catalogue())
         installed = json.loads((archive / "data/worlds.json").read_text(encoding="utf-8"))
-        self.assertEqual(installed["catalogueRevision"], "new")
+        self.assertEqual(installed["catalogueRevision"], "2026-11-19.4")
         state_root = target / ".stellar-archive-addon" / "catalogue-content"
         self.assertTrue((state_root / "previous" / "data/worlds.json").is_file())
-        self.assertEqual(json.loads((state_root / "state.json").read_text(encoding="utf-8"))["revision"], "new")
+        self.assertEqual(json.loads((state_root / "state.json").read_text(encoding="utf-8"))["revision"], "2026-11-19.4")
         self.assertEqual(controller.catalogue_check()["catalogue"]["records"], 1)
+
+    def test_catalogue_manifest_requires_a_valid_ed25519_signature(self):
+        openssl = shutil.which("openssl")
+        if not openssl:
+            self.skipTest("OpenSSL is unavailable")
+        private_key = self.root / "test-private.pem"
+        public_key = self.root / "test-public.pem"
+        manifest = self.root / "manifest.json"
+        signature = self.root / "manifest.sig"
+        manifest.write_bytes(b'{"schemaVersion":1,"revision":"test","files":[]}\n')
+        subprocess.run([openssl, "genpkey", "-algorithm", "Ed25519", "-out", str(private_key)], check=True)
+        subprocess.run([openssl, "pkey", "-in", str(private_key), "-pubout", "-out", str(public_key)], check=True)
+        subprocess.run([
+            openssl, "pkeyutl", "-sign", "-inkey", str(private_key), "-rawin",
+            "-in", str(manifest), "-out", str(signature),
+        ], check=True)
+        StellarArchiveMaintenance._verify_catalogue_manifest_signature(
+            manifest.read_bytes(), signature.read_bytes(), public_key.read_bytes()
+        )
+        with self.assertRaisesRegex(ValueError, "verification failed"):
+            StellarArchiveMaintenance._verify_catalogue_manifest_signature(
+                manifest.read_bytes() + b" ", signature.read_bytes(), public_key.read_bytes()
+            )
+
+    def test_catalogue_sync_rejects_a_signed_older_revision(self):
+        target, archive, installed_files = self.catalogue_fixture("2026-11-19.5")
+        for relative, content in installed_files.items():
+            path = archive / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+        _, _, older_files = self.catalogue_fixture("2026-11-19.4")
+        manifest = self.catalogue_manifest("2026-11-19.4", older_files)
+        config = json.loads(self.config_path.read_text(encoding="utf-8"))
+        config.update({
+            "target": str(target),
+            "catalogue_manifest_url": "https://example.invalid/catalogue/manifest.json",
+            "catalogue_signature_url": "https://example.invalid/catalogue/manifest.sig",
+            "catalogue_base_url": "https://example.invalid/",
+            "catalogue_autostart": False,
+        })
+        self.config_path.write_text(json.dumps(config), encoding="utf-8")
+        controller = StellarArchiveMaintenance(self.config_path)
+        controller._read_verified_catalogue_manifest = lambda config: manifest
+        controller._download_catalogue_file = lambda *args: self.fail("rollback must stop before download")
+        self.assertFalse(controller.sync_catalogue())
+        self.assertIn("rollback rejected", controller.catalogue_status["message"])
+        installed = json.loads((archive / "data/worlds.json").read_text(encoding="utf-8"))
+        self.assertEqual(installed["catalogueRevision"], "2026-11-19.5")
 
     def test_catalogue_manifest_rejects_path_traversal(self):
         manifest = {

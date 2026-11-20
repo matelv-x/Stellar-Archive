@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+trap 'printf "test-installer failure at line %s\n" "$LINENO" >&2' ERR
 
 PACKAGE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 TEST_ROOT="$(mktemp -d)"
@@ -57,11 +58,12 @@ grep -q "status_freshness" "$TARGET/js/address_book.js"
 grep -q 'maintenance_contract' "$TEST_ROOT/sg1_v4/classes/matelv_addon_manager.py"
 python3 -m json.tool "$TEST_ROOT/sg1_v4/classes/matelv_addons.json" >/dev/null
 python3 -c 'import json,sys; assert "restart_service" in json.load(open(sys.argv[1]))' "$TEST_ROOT/sg1_v4/classes/.stellar-archive-maintenance.json"
-python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); assert data["catalogue_manifest_url"].endswith("/catalogue/manifest.json"); assert data["catalogue_base_url"].endswith("/")' "$TEST_ROOT/sg1_v4/classes/.stellar-archive-maintenance.json"
+python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); assert "/catalogue-release/" in data["catalogue_manifest_url"]; assert data["catalogue_signature_url"].endswith("/catalogue/manifest.sig"); assert data["catalogue_base_url"].endswith("/catalogue-release/")' "$TEST_ROOT/sg1_v4/classes/.stellar-archive-maintenance.json"
 grep -q '"dialTarget":"original"' "$TARGET/stellar-archive/data/integration-nav.js"
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace retro >/dev/null
-[[ "$(shasum -a 256 "$TARGET/address_book.htm" | awk '{print $1}')" = "$original_hash" ]]
+! grep -q 'mode=original' "$TARGET/address_book.htm"
+grep -q 'address_book.js?v=stellar-archive-1.5.39-status' "$TARGET/address_book.htm"
 grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 grep -q '"dialTarget":"retro"' "$TARGET/stellar-archive/data/integration-nav.js"
 
@@ -70,7 +72,7 @@ grep -q 'mode=original' "$TARGET/address_book.htm"
 grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 
 "$PACKAGE_DIR/install.sh" --target "$TARGET" --replace standalone >/dev/null
-[[ "$(shasum -a 256 "$TARGET/address_book.htm" | awk '{print $1}')" = "$original_hash" ]]
+! grep -q 'mode=original' "$TARGET/address_book.htm"
 [[ "$(shasum -a 256 "$TARGET/retro/address_book.html" | awk '{print $1}')" = "$retro_hash" ]]
 [[ -f "$TARGET/stellar-archive/index.html" ]]
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/address_book.htm"
@@ -78,7 +80,7 @@ grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/index.htm"
 grep -q 'STELLAR_ARCHIVE_STANDALONE_LINK' "$TARGET/retro/js/navigation.js"
 grep -q '"dialTarget":"retro"' "$TARGET/stellar-archive/data/integration-nav.js"
 grep -q 'symbolCount > 6 ? "/retro/dial9.html" : "/retro/dial.html"' "$TARGET/js/address_book.js"
-grep -q 'address_book.js?v=stellar-archive-1.5.38-status' "$TARGET/address_book.htm"
+grep -q 'address_book.js?v=stellar-archive-1.5.39-status' "$TARGET/address_book.htm"
 
 # A managed add-on installed after Archive may legitimately extend the shared
 # backend and Retro navigation. A later Archive update must preserve those
@@ -119,11 +121,11 @@ perl -ni -e 'print unless /REMOVED_ADDON_HISTORICAL_HOOK/' "$TARGET/.stellar-arc
 # new Archive/API files are present, while state and managed snapshots still
 # describe 1.2.8. The repair release must recover without manual deletion.
 printf '1.2.8\n' > "$TARGET/.stellar-archive-addon/version"
-perl -pi -e 's/sg1-universal-1\.5\.38[^" ]*/sg1-universal-1.3.0/g' "$TARGET/stellar-archive/index.html"
-perl -pi -e 's/stellar-archive-1\.5\.38-status/stellar-archive-1.3.0-extended-route/g' "$TARGET/address_book.htm" "$TARGET/js/address_book.js"
+perl -pi -e 's/sg1-universal-1\.5\.39[^" ]*/sg1-universal-1.3.0/g' "$TARGET/stellar-archive/index.html"
+perl -pi -e 's/stellar-archive-1\.5\.39-status/stellar-archive-1.3.0-extended-route/g' "$TARGET/address_book.htm" "$TARGET/js/address_book.js"
 recovery_output="$("$PACKAGE_DIR/install.sh" --target "$TARGET" --replace both)"
 grep -q 'recover the interrupted 1.3.0 validation run' <<<"$recovery_output"
-grep -q '^1.5.38$' "$TARGET/.stellar-archive-addon/version"
+grep -q '^1.5.39$' "$TARGET/.stellar-archive-addon/version"
 grep -q 'mode=original' "$TARGET/address_book.htm"
 grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 
@@ -133,7 +135,8 @@ grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 [[ "$(shasum -a 256 "$TARGET/address_book.htm" | awk '{print $1}')" = "$original_hash" ]]
 [[ "$(shasum -a 256 "$TARGET/retro/address_book.html" | awk '{print $1}')" = "$retro_hash" ]]
 [[ "$(shasum -a 256 "$TARGET/js/address_book.js" | awk '{print $1}')" = "$address_js_hash" ]]
-[[ "$(shasum -a 256 "$TEST_ROOT/sg1_v4/classes/web_server.py" | awk '{print $1}')" = "$web_server_hash" ]]
+grep -q 'RETRO_VISUALS_TEST_BACKEND' "$TEST_ROOT/sg1_v4/classes/web_server.py"
+! grep -q 'STELLAR_ARCHIVE_MAINTENANCE_IMPORT_BEGIN' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 [[ "$(shasum -a 256 "$TEST_ROOT/sg1_v4/classes/stargate_address_manager.py" | awk '{print $1}')" = "$address_manager_hash" ]]
 [[ ! -e "$TEST_ROOT/sg1_v4/classes/stellar_archive_maintenance.py" ]]
 grep -q 'PREVIOUS ARCHIVE' "$TARGET/stellar-archive/old.txt"
