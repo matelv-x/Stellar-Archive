@@ -1,0 +1,829 @@
+{
+  "schemaVersion": 1,
+  "revision": "2026-11-19.4",
+  "generatedAt": "2026-11-19T00:00:00Z",
+  "files": [
+    {
+      "path": "assets/archive-approved-fan-096-ankh-nefer-chaapa-ai-v2.png",
+      "source": "payload/stellar-archive/assets/archive-approved-fan-096-ankh-nefer-chaapa-ai-v2.png",
+      "sha256": "f8920e6a0c5b04c495350dc519d5791cf0bf724aa28f940c8bbf0dfd78f52d0a",
+      "size": 2629857
+    },
+    {
+      "path": "assets/archive-approved-lan-001-seed-ship-1-v2.png",
+      "source": "payload/stellar-archive/assets/archive-approved-lan-001-seed-ship-1-v2.png",
+      "sha256": "2cd2687e233c7a837e377afbba519b535a0327213c20a9990ba41fbf5df6a530",
+      "size": 2453401
+    },
+    {
+      "path": "assets/archive-approved-standard-001-abydos-v2.png",
+      "source": "payload/stellar-archive/assets/archive-approved-standard-001-abydos-v2.png",
+      "sha256": "db3301e9a4653fcfe6c4243d1dc4f8db807e1eb03113bda7fed9edfd0e0555dd",
+      "size": 2594975
+    },
+    {
+      "path": "assets/archive-approved-standard-005-chulak-v2.png",
+      "source": "payload/stellar-archive/assets/archive-approved-standard-005-chulak-v2.png",
+      "sha256": "b51a19be57938d2690ad88d0c769b709f852769e88ef0d25f46e53fb830525e0",
+      "size": 2956285
+    },
+    {
+      "path": "assets/archive-approved-standard-008-destroyers-v3.png",
+      "source": "payload/stellar-archive/assets/archive-approved-standard-008-destroyers-v3.png",
+      "sha256": "158869136d68533b500807af7e9c6fa6c7eee7cc9c5c17df1c5e2f64199ebe6e",
+      "size": 2959380
+    },
+    {
+      "path": "assets/archive-approved-standard-010-edora-v2.png",
+      "source": "payload/stellar-archive/assets/archive-approved-standard-010-edora-v2.png",
+      "sha256": "58a445385aeea0adff9d5bd617f9343e02532aee6eeee5565e1f0bdd9b6b5d7a",
+      "size": 2753374
+    },
+    {
+      "path": "assets/archive-approved-standard-035-destiny-v4.png",
+      "source": "payload/stellar-archive/assets/archive-approved-standard-035-destiny-v4.png",
+      "sha256": "463d18fe2f974beb0af9d61c42425a85df3a8a3c27d96d3ea2a2cb5b0a575e7d",
+      "size": 2430091
+    },
+    {
+      "path": "assets/archive-concept-fan-001-kristian-tysse-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-001-kristian-tysse-v1.png",
+      "sha256": "2d8512e3f1912b262129afd2733fb9f4b43ac1b27eff478abe3056b9125cca1e",
+      "size": 703905
+    },
+    {
+      "path": "assets/archive-concept-fan-002-tesseract-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-002-tesseract-v1.png",
+      "sha256": "d8bd65725545a47a31176f3d14a574ddb671180e3b6b47fccb0a4554dda55736",
+      "size": 767254
+    },
+    {
+      "path": "assets/archive-concept-fan-003-tython-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-003-tython-v1.png",
+      "sha256": "f81cda797b442b641c7f4f2b12a6cc2a6e80528fecacf03acb32347b90582352",
+      "size": 787486
+    },
+    {
+      "path": "assets/archive-concept-fan-004-jon-moyes-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-004-jon-moyes-v1.png",
+      "sha256": "a91abce68caef4f7a90b0417fd4f74499d8a867cf1455706bb9debab00c0473e",
+      "size": 670341
+    },
+    {
+      "path": "assets/archive-concept-fan-005-estros-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-005-estros-v1.png",
+      "sha256": "c5558f941187afefe0a50a21ba9c7ffe6448247ca452ac8b3e0b3fa31337b9ec",
+      "size": 694428
+    },
+    {
+      "path": "assets/archive-concept-fan-006-exos-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-006-exos-v1.png",
+      "sha256": "a5da9f64264350f879f36cbbb001ccc885461df5eb4c6bc8ce525260a8fcc8df",
+      "size": 950225
+    },
+    {
+      "path": "assets/archive-concept-fan-007-sepa-s-sanctum-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-007-sepa-s-sanctum-v1.png",
+      "sha256": "656b9c46c14784ca8825e76c7a0ea7e8936a04b6c2d9a531d54d917e1946f42e",
+      "size": 863863
+    },
+    {
+      "path": "assets/archive-concept-fan-008-px1-482-jonathans-gate-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-008-px1-482-jonathans-gate-v1.png",
+      "sha256": "7f3c789dd38293a08a622bdd13911660fe105fa6d0ab63d6b177fbddfd1c303c",
+      "size": 753858
+    },
+    {
+      "path": "assets/archive-concept-fan-009-proxima-centauri-b-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-009-proxima-centauri-b-v1.png",
+      "sha256": "d6a41f13f797878011fd6d5a85aa0c38aade0c21b9761baf255675fc79e5e036",
+      "size": 633226
+    },
+    {
+      "path": "assets/archive-concept-fan-010-fras-alpha-gate-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-010-fras-alpha-gate-v1.png",
+      "sha256": "eece7f30362030b5cbe9253c6ff8a582bb318c9f75a09704d2589d6f3bc047f0",
+      "size": 791440
+    },
+    {
+      "path": "assets/archive-concept-fan-011-serenity-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-011-serenity-v1.png",
+      "sha256": "a3d0a88e2edf959e71bff0c5f9122565cca453f73b1f3568b35b200351474734",
+      "size": 657286
+    },
+    {
+      "path": "assets/archive-concept-fan-012-cyathea-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-012-cyathea-v1.png",
+      "sha256": "f039956c214fbb3be2a0c9fd9aff1953fec58ea9bf925b904571bb22d6c88acc",
+      "size": 559709
+    },
+    {
+      "path": "assets/archive-concept-fan-013-cassidy-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-013-cassidy-v1.png",
+      "sha256": "4ccb237fd11ea45d249c2464d5530b9ea1ef41dbcce07309a0fb2898fddb5938",
+      "size": 742669
+    },
+    {
+      "path": "assets/archive-concept-fan-014-vasut-s-gate-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-014-vasut-s-gate-v1.png",
+      "sha256": "30676765c3a7eed80bac81d48023586d895ab8e69ee82cc7c8b51e2c06737d24",
+      "size": 698539
+    },
+    {
+      "path": "assets/archive-concept-fan-015-new-horizon-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-015-new-horizon-v1.png",
+      "sha256": "772d26810f92752eadd2505d965480bf6b4e16afa4dac313034fd4f39fd4f074",
+      "size": 506051
+    },
+    {
+      "path": "assets/archive-concept-fan-016-vasut-s-second-gate-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-016-vasut-s-second-gate-v1.png",
+      "sha256": "b5e4cf64e6fbf62172cb669035174eb9424d14dc2ad5b21b8eb02af5b2be19ea",
+      "size": 753716
+    },
+    {
+      "path": "assets/archive-concept-fan-017-abythres-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-017-abythres-v1.png",
+      "sha256": "99f84bacfc1145a194b29f4f319a6872a9836c74345d8a20bb7da83583400de8",
+      "size": 676688
+    },
+    {
+      "path": "assets/archive-concept-fan-018-the-continuum-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-018-the-continuum-v1.png",
+      "sha256": "6fd69675493bfbaa68b67d48dc8c87c975c1ffb33b56d6897f1a0ae8aa137c5d",
+      "size": 835742
+    },
+    {
+      "path": "assets/archive-concept-fan-019-centauri-prime-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-019-centauri-prime-v1.png",
+      "sha256": "2a402f229bf6ab5f135acc91b165fd4cd38efb8265aeb956d509cc380c4124a8",
+      "size": 666893
+    },
+    {
+      "path": "assets/archive-concept-fan-020-nab-yloo-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-020-nab-yloo-v1.png",
+      "sha256": "44c82ddc2d04c25a7a66322e9c19523f36969473e85273d9cf8192a260e06f9d",
+      "size": 738822
+    },
+    {
+      "path": "assets/archive-concept-fan-021-jon-s-gate-2-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-021-jon-s-gate-2-v1.png",
+      "sha256": "bce686d1e4e0b8fe61f799a6d6214bd1fa18062d91347263fe9778196cb4d895",
+      "size": 739409
+    },
+    {
+      "path": "assets/archive-concept-fan-022-jon-s-test-gate-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-022-jon-s-test-gate-v1.png",
+      "sha256": "37a4a56cdbc7e92571cc66c9eae4e36eff10b9c4ac66678afc578ddeea8ce9c4",
+      "size": 633705
+    },
+    {
+      "path": "assets/archive-concept-fan-023-abythres2-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-023-abythres2-v1.png",
+      "sha256": "fc741762b1ba8899b0b41f3d965f6277e8bf7b19bfd3ee78319fe0c8f5c0a80f",
+      "size": 516587
+    },
+    {
+      "path": "assets/archive-concept-fan-024-jon-s-staging-gate-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-024-jon-s-staging-gate-v1.png",
+      "sha256": "fec155f119efa7388f53e044d9bfd3f31e533afff7d570dca4aed3732d9b292b",
+      "size": 645393
+    },
+    {
+      "path": "assets/archive-concept-fan-025-cassiopeia-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-025-cassiopeia-v1.png",
+      "sha256": "f065b185aedadeb85da5f3b58a24aeb541b886d8232b9d1b088e2b8d3657409d",
+      "size": 569174
+    },
+    {
+      "path": "assets/archive-concept-fan-026-patitan-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-026-patitan-v1.png",
+      "sha256": "c1ee10fa5323ab39117d692985ab08468083566dea572edb82530c1fc139c30a",
+      "size": 659466
+    },
+    {
+      "path": "assets/archive-concept-fan-027-ailurus-fulgens-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-027-ailurus-fulgens-v1.png",
+      "sha256": "aa360fe2f3878f9dcc28b7f59c398c0f6c232ea32c954b12e0a869c004e1c2c9",
+      "size": 593165
+    },
+    {
+      "path": "assets/archive-concept-fan-028-hundoozelfra-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-028-hundoozelfra-v1.png",
+      "sha256": "86e339a2f35035a962de5937b109a571bc481bcb40ccc6d56f00af27b3900885",
+      "size": 771320
+    },
+    {
+      "path": "assets/archive-concept-fan-029-velma-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-029-velma-v1.png",
+      "sha256": "13f2ff07018ebb832814205cc41332cd3aad15b858c166e6aebcafcc00fff9f2",
+      "size": 673830
+    },
+    {
+      "path": "assets/archive-concept-fan-030-dochia-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-030-dochia-v1.png",
+      "sha256": "f58d9f718003a36c07ca699cbb50a06417184a9447f3e0f67409e17d83ac8772",
+      "size": 770583
+    },
+    {
+      "path": "assets/archive-concept-fan-031-roverius-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-031-roverius-v1.png",
+      "sha256": "1af4e8d0c33400481f697a168b78bb18603d869cc663b2c26f5325ecabbf34f6",
+      "size": 730270
+    },
+    {
+      "path": "assets/archive-concept-fan-032-benzaar-primary-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-032-benzaar-primary-v1.png",
+      "sha256": "79e46d2bd7fad635de380c7946e47c2bbe5c49a8b4721b6b0674a7888adeddc5",
+      "size": 707486
+    },
+    {
+      "path": "assets/archive-concept-fan-033-gaia-designated-p3x-774-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-033-gaia-designated-p3x-774-v1.png",
+      "sha256": "c64dc1465949719d1703c2274d57acba9a7872ac8bf94a6e1aeddaceeba29705",
+      "size": 789048
+    },
+    {
+      "path": "assets/archive-concept-fan-034-boanet-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-034-boanet-v1.png",
+      "sha256": "322873b31e7f5aaa552b133fae3e145f0ba7f4f447a3dd18952faf3cd59f0c6a",
+      "size": 693656
+    },
+    {
+      "path": "assets/archive-concept-fan-035-corot-7b-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-035-corot-7b-v1.png",
+      "sha256": "da351bc92b6bad65b74c87deae4937074f10303bf7d93a782099795083289c3e",
+      "size": 663041
+    },
+    {
+      "path": "assets/archive-concept-fan-036-pbh-403-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-036-pbh-403-v1.png",
+      "sha256": "78ba7eda15a74138eda7ddf067bd7f9b582ff75f49c0fe3f19b3f547e008c08b",
+      "size": 792788
+    },
+    {
+      "path": "assets/archive-concept-fan-037-terra-nova-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-037-terra-nova-v1.png",
+      "sha256": "30ceffbd26eeec83fd9448f1fd9ae9666102c257fe65bd29695cb551abb7d5df",
+      "size": 749134
+    },
+    {
+      "path": "assets/archive-concept-fan-038-gallifrey-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-038-gallifrey-v1.png",
+      "sha256": "e7aabacb80ef01f732635753243db88c0264892e2a4b0e29319f61eb622e9876",
+      "size": 613803
+    },
+    {
+      "path": "assets/archive-concept-fan-039-rubito-prime-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-039-rubito-prime-v1.png",
+      "sha256": "fb090d0f17a768f1c752d34a4a1a5dcfb3bc3da031ee70a353711a18a526c727",
+      "size": 771877
+    },
+    {
+      "path": "assets/archive-concept-fan-040-phoenix-planet-phoenix-site-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-040-phoenix-planet-phoenix-site-v1.png",
+      "sha256": "5d55d447ee4ba1e977e039a0f96af70d5ba3a86fc5ad31f263086c8c43000b39",
+      "size": 801973
+    },
+    {
+      "path": "assets/archive-concept-fan-041-exodus-n7-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-041-exodus-n7-v1.png",
+      "sha256": "aa81dc8b615508129223b2bfe817716f372a320e58593b5d3ce33701a03d8673",
+      "size": 759025
+    },
+    {
+      "path": "assets/archive-concept-fan-042-alpha-site-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-042-alpha-site-v1.png",
+      "sha256": "414bd3f8ac5e4cdd9276676112d0f40952b26d4ede9b9e2d6f04cd8b9429ef92",
+      "size": 701617
+    },
+    {
+      "path": "assets/archive-concept-fan-043-sgc-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-043-sgc-v1.png",
+      "sha256": "b5b6d017bb6f1ed09e5df317e8f181248435d13d452ae5772956a89749e123e9",
+      "size": 639465
+    },
+    {
+      "path": "assets/archive-concept-fan-044-martin-x-treme-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-044-martin-x-treme-v1.png",
+      "sha256": "a09017b9ad74e81f1ddcaddeb32a6d3d2e96fb00b6f6063e7b72c18c60de5332",
+      "size": 655627
+    },
+    {
+      "path": "assets/archive-concept-fan-045-celestys-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-045-celestys-v1.png",
+      "sha256": "85d8bbc65415d5b43f8774c19c51c198a78550535a29b2fd75946f46b058a765",
+      "size": 507956
+    },
+    {
+      "path": "assets/archive-concept-fan-046-tolodam-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-046-tolodam-v1.png",
+      "sha256": "12914ec4fd2e6d056e127bb3c2a43e7808b55b80df7ac3227af05311cc5b499d",
+      "size": 745223
+    },
+    {
+      "path": "assets/archive-concept-fan-047-echelon-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-047-echelon-v1.png",
+      "sha256": "3605de0d90c951c233c13483d0505fd6c1343c3b1c8a2e7b4440ab0a4501c442",
+      "size": 704942
+    },
+    {
+      "path": "assets/archive-concept-fan-048-netu-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-048-netu-v1.png",
+      "sha256": "e77cd8c9083d99db2748b428ceb6da7c9b3ece439a1c13627310ce952007fda3",
+      "size": 647295
+    },
+    {
+      "path": "assets/archive-concept-fan-049-new-hope-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-049-new-hope-v1.png",
+      "sha256": "bc7fdbad52f4e8a5ee3cc3269057a7e82d12c2ecf3858864f03d9c3f68fdc1fd",
+      "size": 616349
+    },
+    {
+      "path": "assets/archive-concept-fan-050-peridea-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-050-peridea-v1.png",
+      "sha256": "8a704da2dc92ab427d32dd9ab4f9c060f46bc35facaa6305d71399bf9ac67968",
+      "size": 553186
+    },
+    {
+      "path": "assets/archive-concept-fan-051-mercury-one-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-051-mercury-one-v1.png",
+      "sha256": "51ede85c99bf487e73b47638e2fdb809680d05137a5c31a2d7c0e33ebe4d9225",
+      "size": 724551
+    },
+    {
+      "path": "assets/archive-concept-fan-052-outlook-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-052-outlook-v1.png",
+      "sha256": "9ffd164e84f42801d6fcb8d70739188ee83769a462085ecf52af27080770a762",
+      "size": 678335
+    },
+    {
+      "path": "assets/archive-concept-fan-053-bavaria-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-053-bavaria-v1.png",
+      "sha256": "62a143e868f54cae08690ab009c707434619a50efd521d528390afc9307f68c7",
+      "size": 708323
+    },
+    {
+      "path": "assets/archive-concept-fan-054-kobalt-7-outpost-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-054-kobalt-7-outpost-v1.png",
+      "sha256": "0f0752a67f8d5af9f1a1b3a41031d11e662d229b986c92a44fa9a7288ce50a36",
+      "size": 700076
+    },
+    {
+      "path": "assets/archive-concept-fan-055-atlostest-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-055-atlostest-v1.png",
+      "sha256": "c4d5dccd2a83f8badb57182a4a2475f62373329fa44184f17ce2f7897b8bfd85",
+      "size": 736913
+    },
+    {
+      "path": "assets/archive-concept-fan-056-valhalla-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-056-valhalla-v1.png",
+      "sha256": "0418fde494781e7950cd3cd0636621564da6eeb7612354c1ebbf9b58dc93c754",
+      "size": 656295
+    },
+    {
+      "path": "assets/archive-concept-fan-057-dos-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-057-dos-v1.png",
+      "sha256": "d99b759fbb094a68b11f34ce8ea394f7988ac14de2cfc099bcb2343512a45a44",
+      "size": 549878
+    },
+    {
+      "path": "assets/archive-concept-fan-058-turtle-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-058-turtle-v1.png",
+      "sha256": "5b7de290e53713089c2aeffc2e5ea739add998cb444eb2a18f07bc0283e40f5e",
+      "size": 726895
+    },
+    {
+      "path": "assets/archive-concept-fan-059-arrakis-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-059-arrakis-v1.png",
+      "sha256": "c4ec9900c0265298b1049356399ae0badc6a3d0b9d1f906947055fc7aed91988",
+      "size": 576043
+    },
+    {
+      "path": "assets/archive-concept-fan-060-zulu-site-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-060-zulu-site-v1.png",
+      "sha256": "aa895a4eee602446ea8feb3235ce6dfb49e07090ecbae89adb8cd4ac001bec61",
+      "size": 580012
+    },
+    {
+      "path": "assets/archive-concept-fan-061-shambhala-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-061-shambhala-v1.png",
+      "sha256": "c27ca7750e14974c0385635349fe08f28bca4f601ff077f5311396cd14a62121",
+      "size": 851852
+    },
+    {
+      "path": "assets/archive-concept-fan-062-typosia-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-062-typosia-v1.png",
+      "sha256": "0544280f4e419a03aeb0387969136316b42a1ff5fe138693a7e2f1971f908af5",
+      "size": 767493
+    },
+    {
+      "path": "assets/archive-concept-fan-063-rhythmkraken-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-063-rhythmkraken-v1.png",
+      "sha256": "ae65a45c5606ad1e20f901a56f753e839aab1a8e52d18ea9b942a44c6397f4ae",
+      "size": 702980
+    },
+    {
+      "path": "assets/archive-concept-fan-064-simeral-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-064-simeral-v1.png",
+      "sha256": "e1616ee274a17c61bf841792d57497c939bfbbaddb70a49c3f4a1fe43846d84c",
+      "size": 658866
+    },
+    {
+      "path": "assets/archive-concept-fan-065-hendryx-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-065-hendryx-v1.png",
+      "sha256": "cbd7b9949a4cc0d42c35fb0276e91764508a05884cc48aaa121d265aefe038a7",
+      "size": 730254
+    },
+    {
+      "path": "assets/archive-concept-fan-066-exidos-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-066-exidos-v1.png",
+      "sha256": "33686cbb22fc1511e958aac0917e373bcc326572b3ed9458e8b572289b703545",
+      "size": 808486
+    },
+    {
+      "path": "assets/archive-concept-fan-067-lhs-2520-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-067-lhs-2520-v1.png",
+      "sha256": "3565dd5c0760ee2dbbe4372b266bfbbe87edf17ae7e0f9a6a1c176ee73e80259",
+      "size": 612377
+    },
+    {
+      "path": "assets/archive-concept-fan-068-yggdrasil-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-068-yggdrasil-v1.png",
+      "sha256": "41cd6a5f653c1d293dd7ef226065536378b9dc467ab735eb2dc97bb4b03a59db",
+      "size": 722306
+    },
+    {
+      "path": "assets/archive-concept-fan-069-nibiru-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-069-nibiru-v1.png",
+      "sha256": "a6efc873fcb206a580ebcd964223b2de741b71959af0f573bc2494be2aac4847",
+      "size": 425699
+    },
+    {
+      "path": "assets/archive-concept-fan-070-smithgard-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-070-smithgard-v1.png",
+      "sha256": "5351c3a94e73155673cdd71d7db52ac25b21cd44a47df034f21a4e033bf82503",
+      "size": 672166
+    },
+    {
+      "path": "assets/archive-concept-fan-071-highlander-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-071-highlander-v1.png",
+      "sha256": "2850c8dd14c47074d2611d59cc900efca9033e0f965f8ae72bd82d83e20e80ff",
+      "size": 749469
+    },
+    {
+      "path": "assets/archive-concept-fan-072-astroguy-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-072-astroguy-v1.png",
+      "sha256": "376f836a417495a84a326db2110de6b942e64d2859cbb1a37f2c090e87a1f1b5",
+      "size": 560690
+    },
+    {
+      "path": "assets/archive-concept-fan-073-keilara-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-073-keilara-v1.png",
+      "sha256": "7fb3d896504340fa201106f97230ebc4f448e95ff8db5a0f1f9cbe283ef2dd30",
+      "size": 744539
+    },
+    {
+      "path": "assets/archive-concept-fan-074-p1x-118-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-074-p1x-118-v1.png",
+      "sha256": "e9d47be676c3a4594dacd68ebc26bbb30224df0e8e6780d942f4451bd219bf38",
+      "size": 672467
+    },
+    {
+      "path": "assets/archive-concept-fan-075-minas-morgul-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-075-minas-morgul-v1.png",
+      "sha256": "baed88280388c6c3854259b9a89dfa7fea1263c5cae839d0ff247b52b233e7f1",
+      "size": 614260
+    },
+    {
+      "path": "assets/archive-concept-fan-076-minas-tirith-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-076-minas-tirith-v1.png",
+      "sha256": "5222752d57a1aa8df5805c201f15adb0bca8f9e17f16600599e35456a02e684d",
+      "size": 767124
+    },
+    {
+      "path": "assets/archive-concept-fan-077-blackomega-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-077-blackomega-v1.png",
+      "sha256": "569d6944b81d42e28d74bf4d9ec15fd822d830f3ece70233104f3e6105ba872c",
+      "size": 522593
+    },
+    {
+      "path": "assets/archive-concept-fan-078-pjc-619-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-078-pjc-619-v1.png",
+      "sha256": "47c7812ce2d4a8d5c98290254a85d63805a51ce86ad229464353b5f79dc4a1c6",
+      "size": 684486
+    },
+    {
+      "path": "assets/archive-concept-fan-079-sivryn-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-079-sivryn-v1.png",
+      "sha256": "c7b802d896016043bca348db37d60080a3a465ca304603fd00907d5e99f3e2e9",
+      "size": 584077
+    },
+    {
+      "path": "assets/archive-concept-fan-080-super-earth-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-080-super-earth-v1.png",
+      "sha256": "c999ea97b2f88756fb718656613fc54c127358132d5a0867cbdb6b96335ded40",
+      "size": 768438
+    },
+    {
+      "path": "assets/archive-concept-fan-081-algashatoli-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-081-algashatoli-v1.png",
+      "sha256": "b5483b96f9490b279281bc2210f3d9b2ad61ecf6794e8b4e2de293e2128d15c9",
+      "size": 720155
+    },
+    {
+      "path": "assets/archive-concept-fan-082-andromoth-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-082-andromoth-v1.png",
+      "sha256": "a31eeccbbae15290d45139f19b78c5ff57778fef24cacd5cd0838c78df41dfd5",
+      "size": 727230
+    },
+    {
+      "path": "assets/archive-concept-fan-083-arrakeen-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-083-arrakeen-v1.png",
+      "sha256": "94c8a0fa3b2b959677132f293e021a437d054d0db64e769bd8fe7135d8e3d956",
+      "size": 670047
+    },
+    {
+      "path": "assets/archive-concept-fan-084-arcadia-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-084-arcadia-v1.png",
+      "sha256": "798463a565b77472983aa0bc2426383cdf81f6b45ed8fb09522799c47ca37a6b",
+      "size": 748573
+    },
+    {
+      "path": "assets/archive-concept-fan-085-paulgate98-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-085-paulgate98-v1.png",
+      "sha256": "56b339fe400ceb05854799f4a08c43e2f5f35f2cf2fa877c6bdad511375fd63d",
+      "size": 774150
+    },
+    {
+      "path": "assets/archive-concept-fan-086-normandy-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-086-normandy-v1.png",
+      "sha256": "ab587fd20c70ae465490b89fa2aa23e8f5adb51d609afd6760d3649547b6b4af",
+      "size": 685055
+    },
+    {
+      "path": "assets/archive-concept-fan-087-eltar-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-087-eltar-v1.png",
+      "sha256": "64d2413dfb33f5819738ca03a299b9e69c49198cce89a0912e8a881fc7a066fd",
+      "size": 818312
+    },
+    {
+      "path": "assets/archive-concept-fan-088-land-of-light-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-088-land-of-light-v1.png",
+      "sha256": "3bfba90109b7170d19f778797817b19065878cef18405ef52aa9082d016cc472",
+      "size": 512652
+    },
+    {
+      "path": "assets/archive-concept-fan-089-bdj-045-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-089-bdj-045-v1.png",
+      "sha256": "3356b5061e05afbf16e9571d305ae9f2158e14fce02b92c78b76385bc4e49d45",
+      "size": 631515
+    },
+    {
+      "path": "assets/archive-concept-fan-090-gottwaldov-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-090-gottwaldov-v1.png",
+      "sha256": "50fe0fd4d7e9ee737faca2e8be6fa01589ceca20d172aa449128286f32cbd380",
+      "size": 724238
+    },
+    {
+      "path": "assets/archive-concept-fan-091-the-gate2-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-091-the-gate2-v1.png",
+      "sha256": "18c0fbdb6979ce7378c5b244da5e67ef08633322090ca67ca536903e181adfc3",
+      "size": 653086
+    },
+    {
+      "path": "assets/archive-concept-fan-092-redstone-city-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-092-redstone-city-v1.png",
+      "sha256": "d3c041f5a1e85a81a2d721a82d819ff8f249d16b1c6560c965232d7fbb8e418e",
+      "size": 803210
+    },
+    {
+      "path": "assets/archive-concept-fan-093-aggnott-s-reach-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-093-aggnott-s-reach-v1.png",
+      "sha256": "82a962674ba666fcee8e18a3a82cbfaccc942398008dbedb2760aa9ed2c0094a",
+      "size": 658665
+    },
+    {
+      "path": "assets/archive-concept-fan-094-solar-talon-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-094-solar-talon-v1.png",
+      "sha256": "692bcdc059b0192ed7eb8ec3ee7e2553930e8a6a2d96da2d1dc60d98d0a102cf",
+      "size": 987776
+    },
+    {
+      "path": "assets/archive-concept-fan-095-solar-talon-belgium-gate-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-fan-095-solar-talon-belgium-gate-v1.png",
+      "sha256": "692bcdc059b0192ed7eb8ec3ee7e2553930e8a6a2d96da2d1dc60d98d0a102cf",
+      "size": 987776
+    },
+    {
+      "path": "assets/archive-concept-standard-002-apophis-s-base-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-002-apophis-s-base-v1.png",
+      "sha256": "dcaf7698fa22facf2503d82c90b8da1755bdc678ba5a029eef11b723d06b7a53",
+      "size": 713804
+    },
+    {
+      "path": "assets/archive-concept-standard-003-castiana-or-sahal-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-003-castiana-or-sahal-v1.png",
+      "sha256": "c3d486c1a4b2997f622fea32c40b90086bf9a15f2e475c41930879441a394972",
+      "size": 581867
+    },
+    {
+      "path": "assets/archive-concept-standard-004-sahal-or-castiana-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-004-sahal-or-castiana-v1.png",
+      "sha256": "e2aa8f6062d4c54f8f45ee8db88ff33f399c01c2982f76a209ae87eabfc1bb07",
+      "size": 532462
+    },
+    {
+      "path": "assets/archive-concept-standard-006-clava-thessara-infinitas-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-006-clava-thessara-infinitas-v1.png",
+      "sha256": "ad347342c40621e2a3ea7923221dae5a1fe0cfe80b35c82d368557d004e5c2f1",
+      "size": 709646
+    },
+    {
+      "path": "assets/archive-concept-standard-007-clava-thessara-infinitas2-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-007-clava-thessara-infinitas2-v1.png",
+      "sha256": "c750b78e3566eef8d5105eb650d42f08049b59dd5ed4b7e6c797e78cd3a8d21e",
+      "size": 670483
+    },
+    {
+      "path": "assets/archive-concept-standard-009-earth-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-009-earth-v1.png",
+      "sha256": "ae88c98a89f57b9a2eabe3c37bbe7df7870e5b7c1ce7b96255118f5cc84cfafd",
+      "size": 723419
+    },
+    {
+      "path": "assets/archive-concept-standard-011-euronda-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-011-euronda-v1.png",
+      "sha256": "477bd1d001e39b092572625394d838e453e3c41aea0f0abeae96a0d61fe58945",
+      "size": 672539
+    },
+    {
+      "path": "assets/archive-concept-standard-012-juna-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-012-juna-v1.png",
+      "sha256": "4a39583bcadd33a9d92fd230d624bb56e1a4fb20ce5d505043bcddc11cddeb2b",
+      "size": 786916
+    },
+    {
+      "path": "assets/archive-concept-standard-013-kallana-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-013-kallana-v1.png",
+      "sha256": "f44a01fa44504dbf8940dbf0be46803fb3e3e7f44571ba1531c5eef48933d27e",
+      "size": 697267
+    },
+    {
+      "path": "assets/archive-concept-standard-014-kheb-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-014-kheb-v1.png",
+      "sha256": "fc708b252ba4b491676dcffb9df0e727113c178ba72286c018a58172dcefaabf",
+      "size": 684283
+    },
+    {
+      "path": "assets/archive-concept-standard-015-k-tau-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-015-k-tau-v1.png",
+      "sha256": "fb7b28bcddbed479056daf0037106ee58e471fea97271cc3ada854a9a73dd843",
+      "size": 750822
+    },
+    {
+      "path": "assets/archive-concept-standard-016-martin-lloyd-s-homeworld-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-016-martin-lloyd-s-homeworld-v1.png",
+      "sha256": "2c6b283e215e7c9da047e2bc9200c1d88038e6f559d5d9dca258075d84c43fd3",
+      "size": 679744
+    },
+    {
+      "path": "assets/archive-concept-standard-017-nid-off-world-base-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-017-nid-off-world-base-v1.png",
+      "sha256": "2d2ef9d26f4706129af131cf1e919f9360dfaaf8f4b4db4dcfa41eb9fedf7e86",
+      "size": 757872
+    },
+    {
+      "path": "assets/archive-concept-standard-018-othala-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-018-othala-v1.png",
+      "sha256": "075cb97d1727ad8a99b03ce8cfb22dc4fa657dc7d1cc9d9c485db7291b681cbc",
+      "size": 690575
+    },
+    {
+      "path": "assets/archive-concept-standard-019-p2x-555-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-019-p2x-555-v1.png",
+      "sha256": "dd44d0b934ac4f495046c57aa912b670313a65d7d0d811fd52c1f4166bf4ebe3",
+      "size": 308784
+    },
+    {
+      "path": "assets/archive-concept-standard-020-p34-353j-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-020-p34-353j-v1.png",
+      "sha256": "201ca88a2ca054fdbe41dafaea36ebbdbfa8d719cc822df2335e367566840112",
+      "size": 720965
+    },
+    {
+      "path": "assets/archive-concept-standard-021-p3w-451-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-021-p3w-451-v1.png",
+      "sha256": "f40070e8b91b3aab830170dae2655fa759da7b13c62299e8c095838c4383232b",
+      "size": 634440
+    },
+    {
+      "path": "assets/archive-concept-standard-022-p3x-118-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-022-p3x-118-v1.png",
+      "sha256": "d7cd679aab055b3cfff3e929897a7991aa67cc0920ae7188418cf66a3ebf28af",
+      "size": 601974
+    },
+    {
+      "path": "assets/archive-concept-standard-023-p3x-562-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-023-p3x-562-v1.png",
+      "sha256": "9c0d13efc11e294ae82972599440c3bd16736ca5114bcbd6e9453eddd68a1262",
+      "size": 740656
+    },
+    {
+      "path": "assets/archive-concept-standard-024-p9c-372-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-024-p9c-372-v1.png",
+      "sha256": "0c0706cfaaf695be1caf69ac24b3ddf6840f07eefe9fb792fa9d2d9131822154",
+      "size": 621632
+    },
+    {
+      "path": "assets/archive-concept-standard-025-pb5-926-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-025-pb5-926-v1.png",
+      "sha256": "4dddfa4773ff7548e2a9f6e33d0fafa28873d9bc7f8f422a949c06a485222436",
+      "size": 577498
+    },
+    {
+      "path": "assets/archive-concept-standard-026-px1-767-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-026-px1-767-v1.png",
+      "sha256": "6d877255b788e8e1ccf5fc0552431675b54c7ff7066a0208dd193a73e86fcf3a",
+      "size": 796243
+    },
+    {
+      "path": "assets/archive-concept-standard-027-praclarush-taonas-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-027-praclarush-taonas-v1.png",
+      "sha256": "292d9c21c2307b163c8668b300a76e5b61fad5c693b5047f671259fc9805eb5e",
+      "size": 658556
+    },
+    {
+      "path": "assets/archive-concept-standard-028-sangreal-planet-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-028-sangreal-planet-v1.png",
+      "sha256": "d9cb12c768efcc3d658b37c8a005577917e53ccae0c01b47dd9f298b59491241",
+      "size": 679029
+    },
+    {
+      "path": "assets/archive-concept-standard-029-tartarus-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-029-tartarus-v1.png",
+      "sha256": "18a51f0020bdc01ffa237d7fdc5c54f208ad52ded9550004c7575f5b152e0b6f",
+      "size": 621856
+    },
+    {
+      "path": "assets/archive-concept-standard-030-tollan-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-030-tollan-v1.png",
+      "sha256": "b83163ff3c1f761cd5cf3a89cb7968483bcada1723f54790a6f92b809c01cc86",
+      "size": 743506
+    },
+    {
+      "path": "assets/archive-concept-standard-031-tollana-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-031-tollana-v1.png",
+      "sha256": "3ff92560f944fe56d03141cb9e746dcd94f75581cac6632553cde49212d32f50",
+      "size": 684906
+    },
+    {
+      "path": "assets/archive-concept-standard-032-vagon-brei-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-032-vagon-brei-v1.png",
+      "sha256": "1c8692afa7fa9e52f817d91ac68559563c1f786abd34e6a18efdc2e4c804f44d",
+      "size": 618587
+    },
+    {
+      "path": "assets/archive-concept-standard-033-final-destination-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-033-final-destination-v1.png",
+      "sha256": "b65fa8760f1ad35bb7a9538cd24977ac08044c57e2b58a82f24f7d98ab994e81",
+      "size": 431201
+    },
+    {
+      "path": "assets/archive-concept-standard-034-lantia-v1.png",
+      "source": "payload/stellar-archive/assets/archive-concept-standard-034-lantia-v1.png",
+      "sha256": "f824b815069b3c33da29eb046ab5c1b1d8e1c9d9fcc296028791103bb6eafbb7",
+      "size": 653447
+    },
+    {
+      "path": "assets/optimized/c056f8d58cd632cd5965c1d0a7eb26b5c9535815417bca33cbd9a3b152050223.webp",
+      "source": "payload/stellar-archive/assets/optimized/c056f8d58cd632cd5965c1d0a7eb26b5c9535815417bca33cbd9a3b152050223.webp",
+      "sha256": "c056f8d58cd632cd5965c1d0a7eb26b5c9535815417bca33cbd9a3b152050223",
+      "size": 614262
+    },
+    {
+      "path": "data/worlds.js",
+      "source": "payload/stellar-archive/data/worlds.js",
+      "sha256": "33aaf318fd32059f13c12e1cf6ae38a92363301cf64df0327d909329a60af926",
+      "size": 126554
+    },
+    {
+      "path": "data/worlds.json",
+      "source": "payload/stellar-archive/data/worlds.json",
+      "sha256": "de406a7bcc9fe792c664754fb93b2b8c15c1901324e437946bd080f367363f26",
+      "size": 184092
+    },
+    {
+      "path": "thumbnail-sprite.css",
+      "source": "payload/stellar-archive/thumbnail-sprite.css",
+      "sha256": "ac07aeb09f3f37fe2af3499dc663191c0ab6bcd56200c2d377a8678b123aee64",
+      "size": 7723
+    },
+    {
+      "path": "world-styles.css",
+      "source": "payload/stellar-archive/world-styles.css",
+      "sha256": "066426bc3047a12db908162e96bfd631f43e042c8e61fa8b4653c2fb304b232c",
+      "size": 37220
+    }
+  ]
+}
