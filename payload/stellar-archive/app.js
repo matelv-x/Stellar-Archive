@@ -20,6 +20,11 @@ const motionEpoch=performance.now();
 let motionNodes=[],motionFrame=0,lastMotionUpdate=0;
 const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 const $=selector=>document.querySelector(selector);
+function reloadArchiveWithFreshAssets(reason){
+ const url=new URL(window.location.href);
+ url.searchParams.set('_stellar_refresh',`${reason}-${Date.now()}`);
+ window.location.replace(url.toString());
+}
 function renderCategoryCounts(){
  const counts={
   all:worlds.length,
@@ -481,7 +486,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.40';
+const installedArchiveVersion='1.5.41';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -858,6 +863,12 @@ $('#addon-progress-restart').addEventListener('click',async()=>{
    try{await maintenanceRequest('/stargate/get/stellar_archive_update');online=true;break}catch(error){await new Promise(resolve=>window.setTimeout(resolve,1000))}
   }
   if(!online)throw new Error('the service did not return within 60 seconds');
+  if(addonProgressContext.id==='stellar-archive'&&addonProgressContext.action==='update'){
+   $('#addon-progress-title').textContent='SERVICE ONLINE';
+   $('#addon-progress-status').textContent='Update installed. Loading the new Stellar Archive files…';
+   window.setTimeout(()=>reloadArchiveWithFreshAssets('software-update'),350);
+   return;
+  }
   $('#addon-progress-overlay').dataset.running='false';
   $('#addon-progress-title').textContent='SERVICE ONLINE';
   $('#addon-progress-status').textContent='The correct Stargate service restarted successfully.';
@@ -1065,7 +1076,7 @@ async function refreshCatalogueRevision(){
   if(!response.ok)return;
   const payload=await response.json();
   const revision=payload?.catalogue?.revision;
-  if(payload?.success&&revision&&revision!==loadedCatalogueRevision)window.location.reload();
+  if(payload?.success&&revision&&revision!==loadedCatalogueRevision)reloadArchiveWithFreshAssets('catalogue-update');
  }catch(error){}
 }
 configureIntegration();

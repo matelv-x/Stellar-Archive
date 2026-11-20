@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.41
+
+- Reloads Stellar Archive automatically with a cache-busting URL after a
+  successful software update and confirmed Stargate service restart.
+- Includes the installed software version in catalogue asset URLs so a browser
+  cannot reuse an older `worlds.js` after a software update.
+- Uses the same cache-busting reload when a newer signed catalogue revision is
+  detected in the background.
+
 ## 1.5.40
 
 - Keeps a cached automatic-update result visible after `VIEW UPDATES` opens
