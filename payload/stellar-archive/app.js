@@ -481,7 +481,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.39';
+const installedArchiveVersion='1.5.40';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -492,9 +492,18 @@ function updateAboutUpdateIndicator(){
 function updateSummarySignature(summary){
  return [summary.archiveLatest||'',...(summary.addonUpdates||[]).map(addon=>`${addon.id}:${addon.latest_revision||''}`).sort()].join('|');
 }
+function applyAutomaticUpdateSummaryToMaintenance(summary){
+ const latest=summary?.archiveLatest||'';
+ const archiveRow=document.querySelector('#dialog-maintenance .archive-row');
+ const archiveButton=$('#check-archive-update');
+ if(archiveRow)archiveRow.classList.toggle('update-row',Boolean(latest));
+ if(archiveButton)archiveButton.textContent=latest?'UPDATE':'CHECK FOR UPDATES';
+ if(latest)$('#maintenance-status').textContent=`Stellar Archive ${latest} is available.`;
+}
 function showAutomaticUpdateSummary(summary){
  automaticUpdateSummary=summary?.count?summary:null;
  const notice=$('#update-notice');
+ applyAutomaticUpdateSummaryToMaintenance(automaticUpdateSummary);
  updateAboutUpdateIndicator();
  if(!automaticUpdateSummary){notice.hidden=true;syncPendingNoticePosition();return}
  const signature=updateSummarySignature(automaticUpdateSummary);

@@ -1,6 +1,6 @@
 # Stellar Archive universal SG1_v3 / SG1_v4 installer
 
-Version 1.5.39 contains one entry-point installer and two isolated adapters. It
+Version 1.5.40 contains one entry-point installer and two isolated adapters. It
 automatically detects the standard SG1_v3 application or SG1_v4 web layout and
 uses only the matching adapter.
 
@@ -23,8 +23,8 @@ follow the selected Original or Retro integration mode.
 
 ```bash
 cd /home/pi
-unzip sg1_v3_v4_stellar_archive_universal_1.5.39.zip
-cd sg1-v3-v4-stellar-archive-universal-v1.5.39
+unzip sg1_v3_v4_stellar_archive_universal_1.5.40.zip
+cd sg1-v3-v4-stellar-archive-universal-v1.5.40
 ./install.sh
 ```
 
@@ -230,6 +230,16 @@ assets are present and the downloaded checksum matches:
 sg1_v3_v4_stellar_archive_universal_X.Y.Z.zip
 sg1_v3_v4_stellar_archive_universal_X.Y.Z.zip.sha256
 ```
+
+The ZIP must contain exactly one top-level directory named
+`sg1-v3-v4-stellar-archive-universal-vX.Y.Z`; `install.sh` belongs directly
+inside that directory. Build and validate both release assets with:
+
+```bash
+./build-release.sh /path/to/output
+```
+
+Do not create the public ZIP directly from an unprefixed `git archive`.
 
 The updater selects the already detected platform and preserves the active v4
 replacement mode. After an update or web-triggered uninstall, restart the
