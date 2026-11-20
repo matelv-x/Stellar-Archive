@@ -11,7 +11,7 @@
    if(payload?.catalogue?.revision)revision=String(payload.catalogue.revision);
   }
  }catch(error){}finally{window.clearTimeout(timeout)}
- const suffix=`catalogue=${encodeURIComponent(revision)}`;
+ const suffix=`catalogue=${encodeURIComponent(revision)}&app=1.5.41`;
  const loadStyle=href=>new Promise((resolve,reject)=>{
   const link=document.createElement('link');
   link.rel='stylesheet';link.href=`${href}?${suffix}`;link.onload=resolve;link.onerror=reject;
@@ -24,8 +24,8 @@
  });
  await Promise.all([loadStyle('thumbnail-sprite.css'),loadStyle('world-styles.css')]);
  await loadScript(`data/worlds.js?${suffix}`);
- await loadScript('data/integration-nav.js?v=sg1-universal-1.5.40');
- await loadScript('app.js?v=sg1-universal-1.5.40-system-action-1');
+ await loadScript('data/integration-nav.js?v=sg1-universal-1.5.41');
+ await loadScript('app.js?v=sg1-universal-1.5.41-system-action-1');
  document.documentElement.dataset.catalogueReady=revision;
 })().catch(error=>{
  const message=document.createElement('p');
