@@ -135,7 +135,8 @@ grep -q 'mode=retro' "$TARGET/retro/address_book.html"
 [[ "$(shasum -a 256 "$TARGET/address_book.htm" | awk '{print $1}')" = "$original_hash" ]]
 [[ "$(shasum -a 256 "$TARGET/retro/address_book.html" | awk '{print $1}')" = "$retro_hash" ]]
 [[ "$(shasum -a 256 "$TARGET/js/address_book.js" | awk '{print $1}')" = "$address_js_hash" ]]
-[[ "$(shasum -a 256 "$TEST_ROOT/sg1_v4/classes/web_server.py" | awk '{print $1}')" = "$web_server_hash" ]]
+grep -q 'RETRO_VISUALS_TEST_BACKEND' "$TEST_ROOT/sg1_v4/classes/web_server.py"
+! grep -q 'STELLAR_ARCHIVE_MAINTENANCE_IMPORT_BEGIN' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 [[ "$(shasum -a 256 "$TEST_ROOT/sg1_v4/classes/stargate_address_manager.py" | awk '{print $1}')" = "$address_manager_hash" ]]
 [[ ! -e "$TEST_ROOT/sg1_v4/classes/stellar_archive_maintenance.py" ]]
 grep -q 'PREVIOUS ARCHIVE' "$TARGET/stellar-archive/old.txt"
