@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.40
+
+- Keeps a cached automatic-update result visible after `VIEW UPDATES` opens
+  the About maintenance screen.
+- Highlights the Stellar Archive row and changes its action to `UPDATE` when
+  the main-page notice reports a newer Archive release.
+- Documents the required single top-level release directory so older universal
+  updaters can locate exactly one `install.sh`.
+
 ## 1.5.39
 
 - Moves automatic catalogue delivery from editable `main` content to the

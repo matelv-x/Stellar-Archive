@@ -174,7 +174,7 @@ class StellarArchiveMaintenance:
     def _read_limited_bytes(url, limit, accept="application/octet-stream"):
         request = urllib.request.Request(url, headers={
             "Accept": accept,
-            "User-Agent": "Stellar-Archive-Catalogue/1.5.39",
+            "User-Agent": "Stellar-Archive-Catalogue/1.5.40",
         })
         with urllib.request.urlopen(request, timeout=20) as response:
             content = response.read(limit + 1)
@@ -274,7 +274,7 @@ class StellarArchiveMaintenance:
     def _download_catalogue_file(url, destination, expected_size, expected_sha):
         request = urllib.request.Request(url, headers={
             "Accept-Encoding": "identity",
-            "User-Agent": "Stellar-Archive-Catalogue/1.5.39",
+            "User-Agent": "Stellar-Archive-Catalogue/1.5.40",
         })
         digest = hashlib.sha256()
         total = 0
@@ -595,7 +595,7 @@ class StellarArchiveMaintenance:
     def _download_request(url, byte_range=None):
         headers = {
             "Accept-Encoding": "identity",
-            "User-Agent": "Stellar-Archive-Updater/1.5.39",
+            "User-Agent": "Stellar-Archive-Updater/1.5.40",
         }
         if byte_range:
             headers["Range"] = "bytes={}-{}".format(*byte_range)
