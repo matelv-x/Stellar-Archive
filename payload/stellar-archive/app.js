@@ -14,6 +14,7 @@ function integrationHomeHref(){
  return configuredHostHomeHref()||(integrationMode==='retro'?'/retro/dial.html':'/index.htm');
 }
 let selected=worlds[0],visible=[];
+let localDefaultResolved=false,userSelectedDestination=false;
 let liveGateStatuses=new Map(),liveLanAddresses=new Set(),liveStatusState='checking',liveStatusSignature='';
 let pendingDestinations=[];
 const motionEpoch=performance.now();
@@ -274,7 +275,7 @@ reduceMotion.addEventListener?.('change',()=>{
 document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState==='visible'&&!reduceMotion.matches&&!motionFrame)motionFrame=requestAnimationFrame(animateDifferentialMotion);
 });
-function choose(event){const button=event.target.closest('[data-id]');if(!button)return;selected=worlds.find(w=>w.id===button.dataset.id);renderSelection()}
+function choose(event){const button=event.target.closest('[data-id]');if(!button)return;userSelectedDestination=true;selected=worlds.find(w=>w.id===button.dataset.id);renderSelection()}
 $('#worlds').addEventListener('click',choose);
 $('#nodes').addEventListener('click',choose);
 $('#search').addEventListener('input',render);
@@ -486,7 +487,7 @@ async function maintenanceRequest(url,options={}){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.41';
+const installedArchiveVersion='1.5.42';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;
@@ -1033,6 +1034,15 @@ async function refreshGateStatuses(){
   renderPendingDestinations(entries);
   const directoryFresh=payload.status_freshness?.stale===false;
   const localAddress=Array.isArray(dialingStatus.local_address)?addressKey(dialingStatus.local_address):'';
+  if(!localDefaultResolved&&!userSelectedDestination&&localAddress){
+   const localName=normalizedDestinationName(dialingStatus.gate_name);
+   const addressMatches=worlds.filter(world=>addressKey(world.storedAddress)===localAddress);
+   const localWorld=addressMatches.find(world=>normalizedDestinationName(world.name)===localName)
+    ||worlds.find(world=>normalizedDestinationName(world.name)===localName)
+    ||addressMatches[0];
+   localDefaultResolved=true;
+   if(localWorld){selected=localWorld;renderSelection()}
+  }
   const v3=dialingStatus.platform==='sg1_v3'||payload.platform==='sg1_v3';
   const counts={online:v3||!directoryFresh?'—':0,offline:v3||!directoryFresh?'—':0,standard:0,lan:0};
   for(const entry of entries){

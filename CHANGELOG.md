@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.42
+
+- Selects the installed gate's own Archive record as the default destination
+  when Stellar Archive is opened.
+- Matches the local record by confirmed gate address, preferring the local gate
+  name when an address has more than one Archive record.
+- Preserves every manual destination choice for the current visit; after DIAL
+  returns to HOME, opening Stellar Archive again restores the local default.
+
 ## 1.5.41
 
 - Reloads Stellar Archive automatically with a cache-busting URL after a
