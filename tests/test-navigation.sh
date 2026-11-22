@@ -14,22 +14,25 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$TARGET/retro/js"
-printf '%s\n' '<nav><a class="navbar-brand" href="/">Stargate Command</a><a class="nav-link" href="index.htm">Home</a><a class="nav-link" href="address_book.htm">Address Book</a><a class="nav-link" href="symbol_overview.htm">Symbols</a><a class="nav-link" href="alarm_clock.htm">Alarm Clock</a><a class="nav-link" href="help.htm">Help</a></nav>' > "$TARGET/address_book.htm"
-touch "$TARGET/index.htm" "$TARGET/symbol_overview.htm" "$TARGET/help.htm"
+printf '%s\n' '<nav><a class="navbar-brand" href="/">Stargate Command</a><a class="nav-link" href="index.htm">Home</a><a class="nav-link" href="address_book.htm">Address Book</a><a class="nav-link" href="symbol_overview.htm">Symbols</a><a class="nav-link" href="#">Admin</a><a class="nav-link" href="alarm_clock.htm">Alarm Clock</a><a class="nav-link" href="help.htm">Help</a></nav>' > "$TARGET/address_book.htm"
+touch "$TARGET/index.htm" "$TARGET/symbol_overview.htm" "$TARGET/help.htm" "$TARGET/connection_history.htm"
 printf '%s\n' 'div.innerHTML = `<div class="navigation-menu"><a href="/">Home</a><a href="/alarm_clock.htm">Alarm Clock</a><a class="a-refresh">Refresh</a><a class="a-fullscreen">Full Screen</a></div>`;' > "$TARGET/retro/js/navigation.js"
 
 python3 "$PACKAGE_DIR/build_navigation.py" --target "$TARGET" --mode original --output "$OUTPUT" >/dev/null
 grep -q '"HOME"' "$OUTPUT"
 grep -q '"dialTarget":"original"' "$OUTPUT"
+grep -q '"label":"CONNECTION HISTORY","href":"/connection_history.htm"' "$OUTPUT"
 if grep -q 'ALARM CLOCK' "$OUTPUT"; then
   printf 'Alarm Clock was detected without its installed page\n' >&2
   exit 1
 fi
 
 touch "$TARGET/alarm_clock.htm"
+touch "$TARGET/retro/history.html"
 printf '%s\n' '{"Archive.Example.Test":"/","198.51.100.10":"/receiver.html"}' > "$HOME_ROUTES"
 python3 "$PACKAGE_DIR/build_navigation.py" --target "$TARGET" --mode both --output "$OUTPUT" --home-routes-file "$HOME_ROUTES" >/dev/null
 grep -q 'ALARM CLOCK' "$OUTPUT"
+grep -q '"label":"CONNECTION HISTORY","href":"/retro/history.html"' "$OUTPUT"
 grep -q '"homeByHost":{"archive.example.test":"/","198.51.100.10":"/receiver.html"}' "$OUTPUT"
 if grep -Eq 'REFRESH|FANCY MODE|FULL SCREEN|"action":"(refresh|fancy|fullscreen)"' "$OUTPUT"; then
   printf 'Excluded Retro controls leaked into Archive navigation\n' >&2
