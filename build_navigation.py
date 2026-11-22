@@ -64,10 +64,16 @@ def make_item(label, href=None, action=None, addon=False, title=None):
 
 
 def admin_item(target, retro=False):
+    smart_history = "/retro/history.html"
+    history_href = (
+        smart_history
+        if installed_link_exists(target, smart_history)
+        else "/connection_history.htm"
+    )
     candidates = [
         ("Testing / Debug", "/debug.htm"),
         ("Sound Board", "/sound_board.htm"),
-        ("Connection History", "/connection_history.htm"),
+        ("Connection History", history_href),
         ("Configuration", "/config.htm"),
         ("Visuals", "/retro/visual_settings.html"),
         ("System Information", "/retro/info.html" if retro else "/info.htm"),
