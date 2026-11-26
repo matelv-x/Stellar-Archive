@@ -14,6 +14,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+import uuid
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -42,6 +43,17 @@ MCowBQYDK2VwAyEAkjOlKwzcR4YZNVAyGXhVf3DyRNj27FzPvtEdsA47GeQ=
 -----END PUBLIC KEY-----
 """
 _controller = None
+_service_instance = uuid.uuid4().hex
+
+
+def system_status():
+    """Use separate identities for a software restart and a machine reboot."""
+    try:
+        boot_id = Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip()
+        boot_instance = uuid.UUID(boot_id).hex
+    except (OSError, ValueError):
+        boot_instance = None
+    return {"success": True, "service_instance": _service_instance, "boot_instance": boot_instance}
 
 
 class ParallelDownloadUnavailable(Exception):
@@ -174,7 +186,7 @@ class StellarArchiveMaintenance:
     def _read_limited_bytes(url, limit, accept="application/octet-stream"):
         request = urllib.request.Request(url, headers={
             "Accept": accept,
-            "User-Agent": "Stellar-Archive-Catalogue/1.5.42",
+            "User-Agent": "Stellar-Archive-Catalogue/1.5.43",
         })
         with urllib.request.urlopen(request, timeout=20) as response:
             content = response.read(limit + 1)
@@ -274,7 +286,7 @@ class StellarArchiveMaintenance:
     def _download_catalogue_file(url, destination, expected_size, expected_sha):
         request = urllib.request.Request(url, headers={
             "Accept-Encoding": "identity",
-            "User-Agent": "Stellar-Archive-Catalogue/1.5.42",
+            "User-Agent": "Stellar-Archive-Catalogue/1.5.43",
         })
         digest = hashlib.sha256()
         total = 0
@@ -595,7 +607,7 @@ class StellarArchiveMaintenance:
     def _download_request(url, byte_range=None):
         headers = {
             "Accept-Encoding": "identity",
-            "User-Agent": "Stellar-Archive-Updater/1.5.42",
+            "User-Agent": "Stellar-Archive-Updater/1.5.43",
         }
         if byte_range:
             headers["Range"] = "bytes={}-{}".format(*byte_range)

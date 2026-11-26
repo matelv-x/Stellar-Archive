@@ -415,6 +415,142 @@ function confirmSystemAction(config,onApprove,onCancel=()=>{}){
 function isExpectedSystemDisconnect(error){
  return /HTTP 50[234]|Failed to fetch|Load failed|NetworkError/i.test(String(error?.message||error));
 }
+async function timedSystemRequest(url,options,timeout,allowEmpty=false){
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),timeout);
+ try{
+  return await maintenanceRequest(url,{...options,signal:controller.signal},allowEmpty);
+ }finally{
+  clearTimeout(timer);
+ }
+}
+async function readSystemStatus(action){
+ const status=await timedSystemRequest(`/stargate/get/stellar_archive_system_status?probe=${Date.now()}`,{},4000);
+ const token=/^[0-9a-f]{32}$/i;
+ if(status.success!==true||!token.test(status.service_instance)
+     ||(action==='reboot'&&!token.test(status.boot_instance))){
+  throw new Error('Gate status verification is unavailable.');
+ }
+ return status;
+}
+function systemImage(source){
+ const image=new Image();
+ image.alt='';
+ image.draggable=false;
+ image.src=source;
+ return image;
+}
+async function decodeSystemImages(images){
+ try{
+  await Promise.all(images.map(image=>image.decode()));
+  return true;
+ }catch{
+  return false;
+ }
+}
+async function loadSystemGateArt(gate){
+ if(gate.dataset.art==='fan113')return;
+ const folder='/fan113/next/assets/interactive/';
+ const names=['gate-base','gate-glyph-ring','gate-chevron-cover-off','gate-chevron-cover-on',
+  'gate-chevron-v-off','gate-chevron-v-on'];
+ const layers=names.map(name=>systemImage(`${folder}${name}.png`));
+ if(!await decodeSystemImages(layers)||gate.dataset.art==='fan113')return;
+ const [base,glyph,coverOff,coverOn,vOff,vOn]=layers;
+ base.className='system-gate-ring-layer system-gate-base-layer';
+ glyph.className='system-gate-ring-layer';
+ const chevrons=gate.querySelector('.system-progress-chevrons');
+ gate.insertBefore(base,chevrons);
+ gate.insertBefore(glyph,chevrons);
+ for(const chevron of chevrons.children){
+  [[coverOff,'cover-off'],[coverOn,'cover-on'],[vOff,'v-off'],[vOn,'v-on']].forEach(([image,label])=>{
+   const layer=image.cloneNode();
+   layer.className=`system-gate-chevron-layer ${label}`;
+   chevron.append(layer);
+  });
+ }
+ gate.dataset.art='fan113';
+}
+async function loadSystemWormhole(horizon){
+ if(horizon.firstElementChild||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const image=systemImage('/retro/images/wormhole.gif');
+ if(await decodeSystemImages([image])&&!horizon.firstElementChild)horizon.append(image);
+}
+async function monitorSystemAction(action,config,request){
+ const dialog=$('#system-action-progress');
+ const title=$('#system-progress-title');
+ const message=$('#system-progress-message');
+ const close=$('#system-progress-close');
+ const chevrons=dialog.querySelectorAll('.system-progress-chevrons i');
+ const loadGraphics=()=>Promise.all([
+  loadSystemGateArt(dialog.querySelector('.system-progress-gate')),
+  loadSystemWormhole(dialog.querySelector('.system-progress-horizon'))
+ ]);
+ const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ let lit=0;
+ chevrons.forEach(chevron=>chevron.classList.remove('is-lit'));
+ const update=async(state,count,text)=>{
+  while(lit>count)chevrons[--lit].classList.remove('is-lit');
+  while(lit<count){
+   if(lit&&!reducedMotion)await new Promise(resolve=>setTimeout(resolve,160));
+   chevrons[lit++].classList.add('is-lit');
+  }
+  dialog.dataset.state=state;
+  if(message.textContent!==text)message.textContent=text;
+ };
+ title.textContent=config.title;
+ close.hidden=true;
+ close.onclick=()=>dialog.close();
+ dialog.oncancel=event=>{if(close.hidden)event.preventDefault()};
+ update('checking',1,'Reading the current Stargate status.');
+ dialog.showModal();
+ const graphics=loadGraphics();
+ try{
+  let before;
+  try{
+   before=await readSystemStatus(action);
+  }catch{
+   throw new Error('The gate status check failed. No command was sent.');
+  }
+  await update('sending',3,'Sending the command.');
+  let acknowledged=true;
+  try{
+   await timedSystemRequest(config.endpoint,request,12000,action==='reboot');
+  }catch(error){
+   if(error.name!=='AbortError'&&!isExpectedSystemDisconnect(error))throw error;
+   acknowledged=false;
+  }
+  const waiting=acknowledged?'Command accepted. Waiting for Stargate to return.':
+   'Command response interrupted. Checking whether Stargate restarts.';
+  await update('waiting',5,waiting);
+  const deadline=performance.now()+(action==='reboot'?180000:90000);
+  let previous=null;
+  while(performance.now()<deadline){
+   await new Promise(resolve=>setTimeout(resolve,1500));
+   const current=await readSystemStatus(action).catch(()=>null);
+   const changed=current&&(action==='reboot'?current.boot_instance!==before.boot_instance:
+    current.service_instance!==before.service_instance);
+   if(!changed){
+    previous=null;
+    await update('waiting',5,waiting);
+    continue;
+   }
+   if(previous?.service_instance===current.service_instance&&previous.boot_instance===current.boot_instance){
+    await update('complete',9,action==='reboot'?'Reboot complete. Stargate is responding.':'Restart complete. Stargate is responding.');
+    void graphics.then(loadGraphics);
+    return;
+   }
+   previous=current;
+   await update('verifying',7,'Stargate is responding. Verifying the new session.');
+  }
+  throw new Error(action==='reboot'?'Reboot could not be confirmed before the status check timed out.':
+   'Restart could not be confirmed before the status check timed out.');
+ }catch(error){
+  await update('failed',lit,error.message||'System action failed.');
+ }finally{
+  close.hidden=false;
+  close.focus();
+ }
+}
 function runSystemAction(action){
  const config={
   restart:{title:'RESTART SOFTWARE',question:'Restart Stargate software?',label:'RESTART',endpoint:'/stargate/do/stellar_archive_restart'},
@@ -423,13 +559,17 @@ function runSystemAction(action){
  }[action];
  if(!config)return;
  confirmSystemAction(config,async()=>{
+  const request={method:'POST',headers:{'Content-Type':'application/json'},body:'{}'};
+  if(action!=='shutdown'){
+   await monitorSystemAction(action,config,request);
+   return;
+  }
   try{
-   await maintenanceRequest(config.endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+   await maintenanceRequest(config.endpoint,request);
   }catch(error){
    const message=String(error?.message||error);
    if(isExpectedSystemDisconnect(error)){
-    const label=action==='restart'?'software restart':action;
-    showDialog('ACTION SENT',`The ${label} command was sent. A temporary connection error is expected while the Stargate service or Raspberry Pi restarts.`);
+    showDialog('ACTION SENT','The shutdown command was sent. A temporary connection error is expected while the Raspberry Pi shuts down.');
     return;
    }
    showDialog('ACTION FAILED',`System action failed: ${message}`);
@@ -477,17 +617,22 @@ function showAboutDialog(){
  $('#details').showModal();
  return loadInstalledAddons();
 }
-async function maintenanceRequest(url,options={}){
+async function maintenanceRequest(url,options={},allowEmpty=false){
  const headers={...(options.headers||{}),'X-Stellar-Archive-Request':'same-origin'};
  const response=await fetch(url,{cache:'no-store',credentials:'same-origin',...options,headers});
- const payload=await response.json().catch(()=>({success:false,message:`HTTP ${response.status}`}));
+ const invalidPayload={success:false,message:`HTTP ${response.status}`};
+ let payload;
+ if(allowEmpty){
+  const raw=await response.text();
+  try{payload=raw.trim()?JSON.parse(raw):{}}catch{payload=invalidPayload}
+ }else payload=await response.json().catch(()=>invalidPayload);
  if(!response.ok||payload.success===false)throw new Error(payload.message||`HTTP ${response.status}`);
  return payload;
 }
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.42';
+const installedArchiveVersion='1.5.43';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;

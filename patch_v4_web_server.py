@@ -6,9 +6,12 @@ IMPORT_ANCHOR = "from http.server import SimpleHTTPRequestHandler"
 GET_ANCHOR = "            request_path, get_vars = self.parse_get_vars()"
 POST_ANCHOR = "            if self.path == '/do/shutdown':"
 IMPORT_BLOCK = """# STELLAR_ARCHIVE_MAINTENANCE_IMPORT_BEGIN
-from stellar_archive_maintenance import get_maintenance_controller
+from stellar_archive_maintenance import get_maintenance_controller, system_status
 # STELLAR_ARCHIVE_MAINTENANCE_IMPORT_END"""
 GET_BLOCK = """            # STELLAR_ARCHIVE_MAINTENANCE_GET_BEGIN
+            if request_path == "/get/stellar_archive_system_status":
+                self.send_json_response(system_status())
+                return
             if request_path == "/get/stellar_archive_update":
                 self.send_json_response(get_maintenance_controller().check())
                 return
@@ -50,8 +53,9 @@ def replace_marked_block(source, name, replacement):
     end = "# STELLAR_ARCHIVE_MAINTENANCE_{}_END".format(name)
     if source.count(begin) != 1 or source.count(end) != 1:
         raise ValueError("expected exactly one marked block: {}".format(name))
-    start = source.index(begin)
-    finish = source.index(end, start) + len(end)
+    marker = source.index(begin)
+    start = source.rfind("\n", 0, marker) + 1
+    finish = source.index(end, marker) + len(end)
     return source[:start] + replacement.strip("\n") + source[finish:]
 
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.43
+
+- Shows live progress for Restart Software and Reboot in the Admin menu.
+- Verifies a new Stargate process for a software restart and a new Linux
+  boot for a reboot. Reports when the result cannot be confirmed.
+- Uses locally installed FAN113 ring art and the Retro wormhole when
+  available. The chevrons light individually, with the top chevron and
+  wormhole appearing when the restart is confirmed.
+
 ## 1.5.42
 
 - Selects the installed gate's own Archive record as the default destination

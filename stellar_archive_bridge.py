@@ -16,7 +16,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote, urlparse
 
-from stellar_archive_maintenance import get_maintenance_controller
+from stellar_archive_maintenance import get_maintenance_controller, system_status
 
 
 ADDRESS_RE = re.compile(r"^[0-9]+(?:-[0-9]+){5,7}$")
@@ -68,6 +68,9 @@ class StellarArchiveBridge:
                     return
                 if parsed.path == "/stargate/get/address_book":
                     self.send_json(200, bridge.address_book())
+                    return
+                if parsed.path == "/stargate/get/stellar_archive_system_status":
+                    self.send_json(200, system_status())
                     return
                 if parsed.path == "/stargate/get/stellar_archive_update":
                     self.send_json(200, get_maintenance_controller().check())

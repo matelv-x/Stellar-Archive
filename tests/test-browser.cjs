@@ -14,6 +14,8 @@ let addonPolls=0;
 let aquilaInstalled=false;
 let addonAction='install';
 let restartRequests=0;
+let systemIdentity={success:true,service_instance:'a'.repeat(32),boot_instance:'b'.repeat(32)};
+let systemStatusAvailable=true;
 let statusRevision=0;
 let staticImageRequests=[];
 let archiveUpdateAvailable=false;
@@ -58,15 +60,15 @@ const server=http.createServer((request,response)=>{
     if(archiveUpdateRequests){
       archiveUpdatePolls+=1;
       const stages=[
-        {state:'running',phase:'download',progress:32,message:'Downloading 1.5.43 · 43%'},
+        {state:'running',phase:'download',progress:32,message:'Downloading 1.5.44 · 43%'},
         {state:'running',phase:'verify',progress:76,message:'Verifying release checksum'},
-        {state:'running',phase:'install',progress:88,message:'Installing 1.5.43'},
+        {state:'running',phase:'install',progress:88,message:'Installing 1.5.44'},
         {state:'complete',phase:'complete',progress:100,message:'Updated safely'}
       ];
       archiveTask=stages[Math.min(archiveUpdatePolls-1,stages.length-1)];
     }
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,current_version:'1.5.42',latest_version:archiveUpdateAvailable?'1.5.43':'1.5.42',update_available:archiveUpdateAvailable,task:archiveTask}));
+    response.end(JSON.stringify({success:true,current_version:'1.5.43',latest_version:archiveUpdateAvailable?'1.5.44':'1.5.43',update_available:archiveUpdateAvailable,task:archiveTask}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_catalogue'){
@@ -78,7 +80,7 @@ const server=http.createServer((request,response)=>{
     archiveUpdateRequests+=1;
     archiveUpdatePolls=0;
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,message:'Update started',task:{state:'running',phase:'download',progress:5,message:'Downloading 1.5.43'}}));
+    response.end(JSON.stringify({success:true,message:'Update started',task:{state:'running',phase:'download',progress:5,message:'Downloading 1.5.44'}}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_addons'){
@@ -149,6 +151,11 @@ const server=http.createServer((request,response)=>{
     });
     return;
   }
+  if(requestPath==='/stargate/get/stellar_archive_system_status'){
+    response.writeHead(systemStatusAvailable?200:503,{'content-type':'application/json'});
+    response.end(JSON.stringify(systemIdentity));
+    return;
+  }
   if(requestPath==='/stargate/do/stellar_archive_restart'&&request.method==='POST'){
     restartRequests+=1;
     response.writeHead(503,{'content-type':'text/plain'});
@@ -159,7 +166,7 @@ const server=http.createServer((request,response)=>{
   if(systemAction&&request.method==='POST'){
     systemActionRequests[systemAction[1]]+=1;
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true}));
+    response.end(systemAction[1]==='reboot'?undefined:JSON.stringify({success:true}));
     return;
   }
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/stellar-archive\/?/,'').replace(/^\//,'');
@@ -409,19 +416,59 @@ const server=http.createServer((request,response)=>{
     await page.waitForSelector('#system-action-confirm[open]');
     assert.strictEqual(await page.locator('#system-action-title').textContent(),'RESTART SOFTWARE');
     assert.strictEqual(restartRequests,0,'system action must wait for in-page confirmation');
+    await page.evaluate(()=>{
+      const ring=document.querySelector('.system-progress-chevrons');
+      window.chevronSequence=[];
+      const observer=new MutationObserver(records=>{
+        for(const {target} of records){
+          if(target.classList.contains('is-lit')){
+            const angle=getComputedStyle(target).getPropertyValue('--angle').trim();
+            window.chevronSequence.push(angle);
+            if(angle==='0deg')observer.disconnect();
+          }
+        }
+      });
+      observer.observe(ring,{subtree:true,attributes:true,attributeFilter:['class']});
+    });
     const restartResponse=page.waitForResponse(response=>response.url().endsWith('/stargate/do/stellar_archive_restart'));
     await page.locator('#system-action-approve').click();
     await restartResponse;
     await page.waitForFunction(()=>document.querySelector('#system-action-confirm').open===false);
     assert.strictEqual(restartRequests,1,'confirmed restart must call the delayed maintenance endpoint once');
-    await page.waitForSelector('#details[open]');
-    assert.strictEqual(await page.locator('#dialog-title').textContent(),'ACTION SENT');
-    assert.match(await page.locator('#dialog-copy').textContent(),/temporary connection error is expected/i);
-    await page.locator('#close-dialog').click();
+    await page.waitForSelector('#system-action-progress[data-state="waiting"][open]');
+    assert.match(await page.locator('#system-progress-message').textContent(),/response interrupted/i);
+    assert.strictEqual(await page.locator('.system-progress-chevrons .is-lit').count(),5);
+    systemIdentity={...systemIdentity,service_instance:'c'.repeat(32)};
+    await page.waitForSelector('#system-action-progress[data-state="verifying"]');
+    assert.strictEqual(await page.locator('.system-progress-chevrons .is-lit').count(),7);
+    await page.waitForSelector('#system-action-progress[data-state="complete"]');
+    assert.strictEqual(await page.locator('.system-progress-chevrons .is-lit').count(),9);
+    assert.deepStrictEqual(await page.evaluate(()=>window.chevronSequence),
+      ['40deg','80deg','120deg','160deg','200deg','240deg','280deg','320deg','0deg']);
+    await page.locator('#system-progress-close').click();
     await page.getByRole('button',{name:'REBOOT'}).click();
     assert.strictEqual(await page.locator('#system-action-title').textContent(),'REBOOT RASPBERRY PI');
     await page.locator('#system-action-cancel').click();
     assert.strictEqual(systemActionRequests.reboot,0,'cancelled reboot must not call its endpoint');
+    await page.getByRole('button',{name:'REBOOT'}).click();
+    await page.locator('#system-action-approve').click();
+    await page.waitForSelector('#system-action-progress[data-state="waiting"]');
+    const nextProbe=page.waitForResponse(response=>response.url().includes('/get/stellar_archive_system_status?'));
+    systemIdentity={...systemIdentity,service_instance:'d'.repeat(32)};
+    await nextProbe;
+    assert.strictEqual(await page.locator('#system-action-progress').getAttribute('data-state'),'waiting');
+    systemIdentity={...systemIdentity,boot_instance:'e'.repeat(32)};
+    await page.waitForSelector('#system-action-progress[data-state="complete"]');
+    assert.strictEqual(systemActionRequests.reboot,1,'confirmed reboot must issue one command');
+    await page.locator('#system-progress-close').click();
+    systemStatusAvailable=false;
+    await page.getByRole('button',{name:'REBOOT'}).click();
+    await page.locator('#system-action-approve').click();
+    await page.waitForSelector('#system-action-progress[data-state="failed"]');
+    assert.match(await page.locator('#system-progress-message').textContent(),/no command was sent/i);
+    assert.strictEqual(systemActionRequests.reboot,1);
+    await page.locator('#system-progress-close').click();
+    systemStatusAvailable=true;
     await page.getByRole('button',{name:'SHUTDOWN'}).click();
     assert.strictEqual(await page.locator('#system-action-title').textContent(),'SHUT DOWN RASPBERRY PI');
     await page.locator('#system-action-cancel').click();
@@ -434,7 +481,7 @@ const server=http.createServer((request,response)=>{
     assert(wideAbout.width>=1000&&wideAbout.width<=1122,'large-screen ABOUT dialog must use the available width without exceeding its cap');
     assert(wideAbout.height<=972,'large-screen ABOUT dialog must remain inside 90% of the viewport height');
     assert.strictEqual(await page.locator('#addon-list').evaluate(node=>getComputedStyle(node).gridTemplateColumns.split(' ').length),2,'large-screen installed add-ons must use two columns');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.42');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.43');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));
@@ -524,7 +571,7 @@ const server=http.createServer((request,response)=>{
     await updateResponse;
     await page.waitForSelector('#addon-progress-overlay[data-state="running"]');
     assert.strictEqual(await page.locator('#addon-progress-eyebrow').textContent(),'STELLAR ARCHIVE SOFTWARE MAINTENANCE');
-    assert.strictEqual(await page.locator('#addon-progress-name').textContent(),'STELLAR ARCHIVE 1.5.42 → 1.5.43');
+    assert.strictEqual(await page.locator('#addon-progress-name').textContent(),'STELLAR ARCHIVE 1.5.43 → 1.5.44');
     await page.waitForFunction(()=>document.querySelector('#addon-progress-bar')?.value>5);
     assert.strictEqual(await page.locator('#addon-progress-bar').getAttribute('style'),null,'progress must not rely on CSP-blocked inline styles');
     await page.waitForFunction(()=>document.querySelector('#addon-progress-overlay')?.dataset.state==='complete');
@@ -698,12 +745,12 @@ const server=http.createServer((request,response)=>{
     await page.reload();
     await page.waitForSelector('#update-notice:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#update-notice-title').textContent(),'2 UPDATES AVAILABLE');
-    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.43 and 1 add-on update'));
+    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.44 and 1 add-on update'));
     assert(await page.getByRole('button',{name:'ABOUT •'}).evaluate(button=>button.classList.contains('update-available')),'ABOUT must show an update indicator');
     await page.screenshot({path:path.join(__dirname,'validation-automatic-update-banner.png'),fullPage:false});
     await page.locator('#update-notice-open').click();
     await page.waitForSelector('#dialog-maintenance:not([hidden])');
-    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.43 is available.');
+    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.44 is available.');
     assert((await page.locator('#addon-list').textContent()).includes('UPDATE AVAILABLE'));
     assert((await page.locator('#addon-manager-status').textContent()).includes('Alarm Clock'),'update review must name the affected add-on');
     assert.strictEqual(await page.locator('#addon-list .update-row').count(),1,'update review must highlight the affected add-on');
@@ -719,7 +766,7 @@ const server=http.createServer((request,response)=>{
     await page.waitForSelector('#update-notice:not([hidden])',{timeout:10000});
     await page.locator('#update-notice-open').click();
     await page.waitForSelector('#dialog-maintenance:not([hidden])');
-    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.43 is available.');
+    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.44 is available.');
     assert.strictEqual(await page.locator('#check-archive-update').textContent(),'UPDATE');
     assert(await page.locator('.archive-row').evaluate(row=>row.classList.contains('update-row')),'cached archive update must remain highlighted in About');
 
