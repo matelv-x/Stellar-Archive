@@ -51,6 +51,7 @@ grep -q 'stellar_archive_addons' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 grep -q 'stellar_archive_addon_install' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 grep -q 'start_addon_install(self, data)' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 grep -q 'stellar_archive_restart' "$TEST_ROOT/sg1_v4/classes/web_server.py"
+grep -q 'stellar_archive_system_status' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 grep -q 'STELLAR_ARCHIVE_GATE_STATUS_BEGIN' "$TEST_ROOT/sg1_v4/classes/web_server.py"
 grep -q 'STELLAR_ARCHIVE_DIRECTORY_RETRY_BEGIN' "$TEST_ROOT/sg1_v4/classes/stargate_address_manager.py"
 grep -q 'STELLAR_ARCHIVE_GATE_STATUS START' "$TARGET/js/address_book.js"
@@ -121,8 +122,8 @@ perl -ni -e 'print unless /REMOVED_ADDON_HISTORICAL_HOOK/' "$TARGET/.stellar-arc
 # new Archive/API files are present, while state and managed snapshots still
 # describe 1.2.8. The repair release must recover without manual deletion.
 printf '1.2.8\n' > "$TARGET/.stellar-archive-addon/version"
-perl -pi -e 's/sg1-universal-1\.5\.42[^" ]*/sg1-universal-1.3.0/g' "$TARGET/stellar-archive/index.html"
-perl -pi -e 's/stellar-archive-1\.5\.42-status/stellar-archive-1.3.0-extended-route/g' "$TARGET/address_book.htm" "$TARGET/js/address_book.js"
+perl -pi -e 's/sg1-universal-\d+\.\d+\.\d+[^" ]*/sg1-universal-1.3.0/g' "$TARGET/stellar-archive/index.html"
+perl -pi -e 's/stellar-archive-\d+\.\d+\.\d+-status/stellar-archive-1.3.0-extended-route/g' "$TARGET/address_book.htm" "$TARGET/js/address_book.js"
 recovery_output="$("$PACKAGE_DIR/install.sh" --target "$TARGET" --replace both)"
 grep -q 'recover the interrupted 1.3.0 validation run' <<<"$recovery_output"
 grep -q '^1.5.43$' "$TARGET/.stellar-archive-addon/version"
