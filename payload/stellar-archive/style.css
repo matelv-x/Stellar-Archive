@@ -188,6 +188,52 @@ dialog p{font-size:14px;line-height:1.9}
 .system-action-buttons button{border:1px solid #4d9aae;background:#071d27;color:#c9edf2;padding:10px 15px;font-size:9px;letter-spacing:.12em;cursor:pointer}
 .system-action-buttons button:hover{border-color:#73d5e8;color:#fff}
 .system-action-buttons button.danger{border-color:#a65a5f;color:#ffb9bc}
+.system-action-progress{
+ box-sizing:border-box;width:min(460px,calc(100vw - 28px));max-height:calc(100vh - 24px);
+ padding:clamp(16px,4vw,28px);overflow:auto;text-align:center
+}
+.system-progress-heading h2{margin:10px 0 18px;font-size:clamp(15px,4vw,21px);letter-spacing:.11em}
+.system-progress-gate{
+ display:none;position:relative;width:min(300px,68vw,42vh);aspect-ratio:1;margin:0 auto;
+ isolation:isolate;filter:drop-shadow(0 10px 16px #010910aa)
+}
+.system-progress-gate[data-art="fan113"]{display:block}
+.system-progress-horizon{
+ position:absolute;inset:19.3%;border-radius:50%;overflow:hidden;background:#04131d
+}
+.system-progress-chevrons{position:absolute;inset:0}
+.system-progress-chevrons i{
+ position:absolute;inset:0;transform:rotate(var(--angle));pointer-events:none
+}
+.system-progress-chevrons i:nth-child(1){--angle:40deg}
+.system-progress-chevrons i:nth-child(2){--angle:80deg}
+.system-progress-chevrons i:nth-child(3){--angle:120deg}
+.system-progress-chevrons i:nth-child(4){--angle:160deg}
+.system-progress-chevrons i:nth-child(5){--angle:200deg}
+.system-progress-chevrons i:nth-child(6){--angle:240deg}
+.system-progress-chevrons i:nth-child(7){--angle:280deg}
+.system-progress-chevrons i:nth-child(8){--angle:320deg}
+.system-progress-chevrons i:nth-child(9){--angle:0deg}
+.system-gate-ring-layer,.system-gate-chevron-layer{position:absolute;display:block;pointer-events:none}
+.system-gate-ring-layer{inset:0;width:100%;height:100%}
+.system-gate-base-layer{clip-path:circle(43.9% at 50% 50%)}
+.system-gate-chevron-layer.cover-off,.system-gate-chevron-layer.cover-on{
+ left:48.291%;top:6.494%;width:3.418%;height:4.053%
+}
+.system-gate-chevron-layer.v-off,.system-gate-chevron-layer.v-on{
+ left:45.898%;top:7.813%;width:8.203%;height:6.445%
+}
+.system-gate-chevron-layer.cover-on,.system-gate-chevron-layer.v-on{visibility:hidden}
+.is-lit .system-gate-chevron-layer.cover-on,.is-lit .system-gate-chevron-layer.v-on{visibility:visible}
+.is-lit .system-gate-chevron-layer.cover-off,.is-lit .system-gate-chevron-layer.v-off{visibility:hidden}
+.system-progress-horizon img{width:100%;height:100%;object-fit:cover;visibility:hidden;display:block}
+.system-action-progress[data-state="complete"] .system-progress-horizon img{visibility:visible}
+@media(prefers-reduced-motion:reduce){
+ .system-action-progress[data-state="complete"] .system-progress-horizon img{visibility:hidden}
+}
+#system-progress-message{min-height:2.8em;margin:18px 0 0;line-height:1.4}
+.system-action-progress[data-state="failed"] #system-progress-message{color:#ffb9bc}
+.system-action-progress .system-action-buttons{margin-top:8px}
 .dialog-maintenance{margin:18px 0;padding:14px;border:1px solid #31515c;background:#04131c99}
 .dialog-maintenance h3{margin:0 0 8px;color:var(--gold);font-size:9px;letter-spacing:.18em}
 .dialog-maintenance p{margin:0;color:#9fc4ce;font-size:11px;line-height:1.5}
