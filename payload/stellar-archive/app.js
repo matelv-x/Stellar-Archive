@@ -449,30 +449,36 @@ async function decodeSystemImages(images){
  }
 }
 async function loadSystemGateArt(gate){
- if(gate.dataset.art==='fan113')return;
- const folder='/fan113/next/assets/interactive/';
+ if(gate.dataset.art==='ready')return;
+ const source='assets/system-monitor/';
  const names=['gate-base','gate-glyph-ring','gate-chevron-cover-off','gate-chevron-cover-on',
   'gate-chevron-v-off','gate-chevron-v-on'];
- const layers=names.map(name=>systemImage(`${folder}${name}.png`));
- if(!await decodeSystemImages(layers)||gate.dataset.art==='fan113')return;
- const [base,glyph,coverOff,coverOn,vOff,vOn]=layers;
- base.className='system-gate-ring-layer system-gate-base-layer';
- glyph.className='system-gate-ring-layer';
+ const layers=names.map(name=>systemImage(`${source}${name}.png`));
+ if(!await decodeSystemImages(layers)||gate.dataset.art==='ready')return;
+ const [base,glyph,...lights]=layers;
+ const ring=document.createElement('canvas');
+ ring.width=ring.height=768;
+ ring.className='system-gate-ring-layer';
+ const context=ring.getContext('2d');
+ if(!context)return;
+ const center=ring.width/2;
+ context.save();
+ context.beginPath();
+ context.arc(center,center,ring.width*.439,0,Math.PI*2);
+ context.clip();
+ context.drawImage(base,0,0,ring.width,ring.height);
+ context.restore();
+ context.drawImage(glyph,0,0,ring.width,ring.height);
+ const labels=['cover-off','cover-on','v-off','v-on'];
+ lights.forEach((image,index)=>{image.className=`system-gate-chevron-layer ${labels[index]}`});
  const chevrons=gate.querySelector('.system-progress-chevrons');
- gate.insertBefore(base,chevrons);
- gate.insertBefore(glyph,chevrons);
- for(const chevron of chevrons.children){
-  [[coverOff,'cover-off'],[coverOn,'cover-on'],[vOff,'v-off'],[vOn,'v-on']].forEach(([image,label])=>{
-   const layer=image.cloneNode();
-   layer.className=`system-gate-chevron-layer ${label}`;
-   chevron.append(layer);
-  });
- }
- gate.dataset.art='fan113';
+ gate.insertBefore(ring,chevrons);
+ for(const chevron of chevrons.children)chevron.append(...lights.map(image=>image.cloneNode()));
+ gate.dataset.art='ready';
 }
 async function loadSystemWormhole(horizon){
  if(horizon.firstElementChild||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
- const image=systemImage('/retro/images/wormhole.gif');
+ const image=systemImage('assets/system-monitor/wormhole.gif');
  if(await decodeSystemImages([image])&&!horizon.firstElementChild)horizon.append(image);
 }
 async function monitorSystemAction(action,config,request){
@@ -632,7 +638,7 @@ async function maintenanceRequest(url,options={},allowEmpty=false){
 const automaticUpdateInterval=6*60*60*1000;
 const automaticUpdateCacheKey='stellar-archive-update-check-v2';
 const dismissedUpdateStorageKey='stellar-archive-dismissed-update-v1';
-const installedArchiveVersion='1.5.43';
+const installedArchiveVersion='1.5.44';
 let automaticUpdateSummary=null;
 let automaticAddonPayload=null;
 let addonsLastCheckedAt=0;

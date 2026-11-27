@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.44
+
+- Bundles the stationary ring, individual chevron lights, and animated
+  Retro wormhole in the Restart and Reboot monitor.
+- Displays the artwork on a standard Stellar Archive installation without
+  requiring FAN113 Home or artwork from another gate.
+
 ## 1.5.43
 
 - Shows live progress for Restart Software and Reboot in the Admin menu.

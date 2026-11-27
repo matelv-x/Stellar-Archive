@@ -8,7 +8,7 @@ const {chromium,webkit}=require('/Users/marcinmagierski/Documents/Codex/2026-09-
 const browserType=process.env.STELLAR_BROWSER==='webkit'?webkit:chromium;
 
 const root=path.resolve(__dirname,'../payload/stellar-archive');
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.png':'image/png','.svg':'image/svg+xml'};
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.png':'image/png','.gif':'image/gif','.svg':'image/svg+xml'};
 let addonTask={state:'idle',message:'Ready'};
 let addonPolls=0;
 let aquilaInstalled=false;
@@ -60,15 +60,15 @@ const server=http.createServer((request,response)=>{
     if(archiveUpdateRequests){
       archiveUpdatePolls+=1;
       const stages=[
-        {state:'running',phase:'download',progress:32,message:'Downloading 1.5.44 · 43%'},
+        {state:'running',phase:'download',progress:32,message:'Downloading 1.5.45 · 43%'},
         {state:'running',phase:'verify',progress:76,message:'Verifying release checksum'},
-        {state:'running',phase:'install',progress:88,message:'Installing 1.5.44'},
+        {state:'running',phase:'install',progress:88,message:'Installing 1.5.45'},
         {state:'complete',phase:'complete',progress:100,message:'Updated safely'}
       ];
       archiveTask=stages[Math.min(archiveUpdatePolls-1,stages.length-1)];
     }
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,current_version:'1.5.43',latest_version:archiveUpdateAvailable?'1.5.44':'1.5.43',update_available:archiveUpdateAvailable,task:archiveTask}));
+    response.end(JSON.stringify({success:true,current_version:'1.5.44',latest_version:archiveUpdateAvailable?'1.5.45':'1.5.44',update_available:archiveUpdateAvailable,task:archiveTask}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_catalogue'){
@@ -80,7 +80,7 @@ const server=http.createServer((request,response)=>{
     archiveUpdateRequests+=1;
     archiveUpdatePolls=0;
     response.writeHead(200,{'content-type':'application/json'});
-    response.end(JSON.stringify({success:true,message:'Update started',task:{state:'running',phase:'download',progress:5,message:'Downloading 1.5.44'}}));
+    response.end(JSON.stringify({success:true,message:'Update started',task:{state:'running',phase:'download',progress:5,message:'Downloading 1.5.45'}}));
     return;
   }
   if(requestPath==='/stargate/get/stellar_archive_addons'){
@@ -438,11 +438,18 @@ const server=http.createServer((request,response)=>{
     await page.waitForSelector('#system-action-progress[data-state="waiting"][open]');
     assert.match(await page.locator('#system-progress-message').textContent(),/response interrupted/i);
     assert.strictEqual(await page.locator('.system-progress-chevrons .is-lit').count(),5);
+    const progressRing=page.locator('canvas.system-gate-ring-layer');
+    await progressRing.waitFor();
+    const ringBefore=await progressRing.evaluate(canvas=>canvas.toDataURL());
+    assert.strictEqual(await page.locator('.system-progress-horizon img:visible').count(),0);
     systemIdentity={...systemIdentity,service_instance:'c'.repeat(32)};
     await page.waitForSelector('#system-action-progress[data-state="verifying"]');
     assert.strictEqual(await page.locator('.system-progress-chevrons .is-lit').count(),7);
     await page.waitForSelector('#system-action-progress[data-state="complete"]');
     assert.strictEqual(await page.locator('.system-progress-chevrons .is-lit').count(),9);
+    assert.strictEqual(await progressRing.evaluate(canvas=>canvas.toDataURL()),ringBefore);
+    await page.waitForSelector('.system-progress-horizon img:visible');
+    assert.strictEqual(await page.locator('.system-progress-horizon img').getAttribute('src'),'assets/system-monitor/wormhole.gif');
     assert.deepStrictEqual(await page.evaluate(()=>window.chevronSequence),
       ['40deg','80deg','120deg','160deg','200deg','240deg','280deg','320deg','0deg']);
     await page.locator('#system-progress-close').click();
@@ -481,7 +488,7 @@ const server=http.createServer((request,response)=>{
     assert(wideAbout.width>=1000&&wideAbout.width<=1122,'large-screen ABOUT dialog must use the available width without exceeding its cap');
     assert(wideAbout.height<=972,'large-screen ABOUT dialog must remain inside 90% of the viewport height');
     assert.strictEqual(await page.locator('#addon-list').evaluate(node=>getComputedStyle(node).gridTemplateColumns.split(' ').length),2,'large-screen installed add-ons must use two columns');
-    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.43');
+    assert.strictEqual(await page.locator('#details > .eyebrow').textContent(),'ANCIENT STELLAR ARCHIVE · INSTALLED VERSION 1.5.44');
     assert.strictEqual(await page.locator('.addon-manager-heading h3').textContent(),'MATELV-X SOFTWARE MAINTENANCE');
     const maintenanceLabels=(await page.locator('.maintenance-fold > summary').allTextContents()).map(value=>value.trim());
     assert(maintenanceLabels[0].startsWith('INSTALLED MATELV-X SOFTWARE'));
@@ -571,7 +578,7 @@ const server=http.createServer((request,response)=>{
     await updateResponse;
     await page.waitForSelector('#addon-progress-overlay[data-state="running"]');
     assert.strictEqual(await page.locator('#addon-progress-eyebrow').textContent(),'STELLAR ARCHIVE SOFTWARE MAINTENANCE');
-    assert.strictEqual(await page.locator('#addon-progress-name').textContent(),'STELLAR ARCHIVE 1.5.43 → 1.5.44');
+    assert.strictEqual(await page.locator('#addon-progress-name').textContent(),'STELLAR ARCHIVE 1.5.44 → 1.5.45');
     await page.waitForFunction(()=>document.querySelector('#addon-progress-bar')?.value>5);
     assert.strictEqual(await page.locator('#addon-progress-bar').getAttribute('style'),null,'progress must not rely on CSP-blocked inline styles');
     await page.waitForFunction(()=>document.querySelector('#addon-progress-overlay')?.dataset.state==='complete');
@@ -745,12 +752,12 @@ const server=http.createServer((request,response)=>{
     await page.reload();
     await page.waitForSelector('#update-notice:not([hidden])',{timeout:10000});
     assert.strictEqual(await page.locator('#update-notice-title').textContent(),'2 UPDATES AVAILABLE');
-    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.44 and 1 add-on update'));
+    assert((await page.locator('#update-notice-copy').textContent()).includes('Stellar Archive 1.5.45 and 1 add-on update'));
     assert(await page.getByRole('button',{name:'ABOUT •'}).evaluate(button=>button.classList.contains('update-available')),'ABOUT must show an update indicator');
     await page.screenshot({path:path.join(__dirname,'validation-automatic-update-banner.png'),fullPage:false});
     await page.locator('#update-notice-open').click();
     await page.waitForSelector('#dialog-maintenance:not([hidden])');
-    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.44 is available.');
+    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.45 is available.');
     assert((await page.locator('#addon-list').textContent()).includes('UPDATE AVAILABLE'));
     assert((await page.locator('#addon-manager-status').textContent()).includes('Alarm Clock'),'update review must name the affected add-on');
     assert.strictEqual(await page.locator('#addon-list .update-row').count(),1,'update review must highlight the affected add-on');
@@ -766,7 +773,7 @@ const server=http.createServer((request,response)=>{
     await page.waitForSelector('#update-notice:not([hidden])',{timeout:10000});
     await page.locator('#update-notice-open').click();
     await page.waitForSelector('#dialog-maintenance:not([hidden])');
-    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.44 is available.');
+    assert.strictEqual(await page.locator('#maintenance-status').textContent(),'Stellar Archive 1.5.45 is available.');
     assert.strictEqual(await page.locator('#check-archive-update').textContent(),'UPDATE');
     assert(await page.locator('.archive-row').evaluate(row=>row.classList.contains('update-row')),'cached archive update must remain highlighted in About');
 
